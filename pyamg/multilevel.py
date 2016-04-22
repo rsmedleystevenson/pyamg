@@ -546,6 +546,10 @@ class multilevel_solver:
         self.levels[lvl].postsmoother(A, x, b)
 
 
+    def test_solve(self, lvl, x, b, cycle):
+        return self.__solve(lvl=lvl, x=x, b=b, cycle=cycle)
+
+
 def coarse_grid_solver(solver):
     """Return a coarse grid solver suitable for multilevel_solver
 
@@ -731,11 +735,27 @@ class multilevel_solver_set:
 
 
     def add_hierarchy(self, hierarchy):
-        if isinstance(h, multilevel_solver):
+        if isinstance(hierarchy, multilevel_solver):
             self.hierarchy_set.append(hierarchy)
             self.num_hierarchies += 1
         else:
-            raise TypeError("Can only add multilevel_solver object to hierarchy.")
+            raise TypeError("Can only add multilevel_solver objects to hierarchy.")
+
+
+    def remove_hierarchy(self, ind):
+        if ind < self.num_hierarchies:
+            del self.hierarchy_set[ind]
+            self.num_hierarchies -= 1
+        else:
+            raise ValueError("Hierarchy only contains %i sets, cannot remove set %i."%(self.num_hierarchies,ind))
+
+
+    def replace_hierarchy(self, hierarchy):
+        if isinstance(hierarchy, multilevel_solver):
+            self.hierarchy_set.append(hierarchy)
+            self.num_hierarchies += 1
+        else:
+            raise TypeError("Can only add multilevel_solver objects to hierarchy.")
 
 
     def cycle_complexity(self, cycle='V'):
@@ -749,7 +769,7 @@ class multilevel_solver_set:
     def operator_complexity(self):
         operator_complexity = 0.0
         for h in self.hierarchy_set:
-            operator_complexity += h.operator_complexity(cycle=cycle)
+            operator_complexity += h.operator_complexity()
 
         return operator_complexity
     
@@ -764,10 +784,10 @@ class multilevel_solver_set:
 
     def aspreconditioner(self, cycle='V'):
         from scipy.sparse.linalg import LinearOperator
-        shape = self.levels[0].A.shape
-        dtype = self.levels[0].A.dtype
+        shape = self.hierarchy_set[0].levels[0].A.shape
+        dtype = self.hierarchy_set[0].levels[0].A.dtype
         def matvec(b):
-            return self.solve(b, maxiter=1, cycle=cycle, tol=1e-12)
+            return self.solve(b, maxiter=1, cycle=cycle, tol=1e-12, accel=None)
 
         return LinearOperator(shape, matvec, dtype=dtype)
 
@@ -866,12 +886,13 @@ class multilevel_solver_set:
 
         while iter_num < maxiter and residuals[-1] > tol:
             # One solve for each hierarchy in set
-            for h in self.hierarchy_set:
+            for hierarchy in self.hierarchy_set:
                 # hierarchy has only 1 level
-                if len(h.levels) == 1:
-                    x = h.coarse_solver(A, b)
+                if len(hierarchy.levels) == 1:
+                    x = hierarchy.coarse_solver(A, b)
                 else:
-                    h.__solve(0, x, b, cycle)
+                    # hierarchy.__solve(0, x, b, cycle)
+                    hierarchy.test_solve(0, x, b, cycle)
 
             residuals.append(residual_norm(A, x, b))
             iter_num += 1

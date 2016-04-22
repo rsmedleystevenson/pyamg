@@ -137,9 +137,7 @@ def preis_matching_1999(G, order='forward', **kwargs):
                 w0 = G[a0,b0]
                 [W, num_pairs] = preis_try_match(a0, b0, w0, W, M, num_pairs, G, aggregated)
 
-
-    print 'Preis - W = ',W,', aggregated = ',np.sum(aggregated[:,1]),' / ',n
-
+    # print 'Preis - W = ',W,', aggregated = ',np.sum(aggregated[:,1]),' / ',n
     S = np.where(aggregated[:,1]==0)[0]       # Get singletons (not aggregated nodes)
     return [ M[0:num_pairs,:], S ]
 
@@ -227,8 +225,8 @@ def drake_matching_2003(G, order='forward', **kwargs):
             G.rows[y] = []
             G.data[y] = []
 
-    print 'Drake - W1 = ',W1,', aggregated = ',np.sum(aggregated1[:,1]),' / ',n
-    print 'Drake - W2 = ',W2,', aggregated = ',np.sum(aggregated2[:,1]),' / ',n
+    # print 'Drake - W1 = ',W1,', aggregated = ',np.sum(aggregated1[:,1]),' / ',n
+    # print 'Drake - W2 = ',W2,', aggregated = ',np.sum(aggregated2[:,1]),' / ',n
     if W1 > W2: 
         S = np.where(aggregated1[:,1]==0)[0]       # Get singletons (not aggregated nodes)
     	return [ M1[0:ind1,:], S ]
@@ -350,7 +348,7 @@ def notay_matching_2010(G, eps=0, order=0, **kwargs):
         # Get number of connections for all neighbors of this aggregate
         local_conns = [num_conns[ind] for ind in neighbors]
 
-    print 'Notay - W = ',W,', aggregated = ',2*M_ind,' / ',n
+    # print 'Notay - W = ',W,', aggregated = ',2*M_ind,' / ',n
     return [ M[0:M_ind,:], S[0:S_ind] ]
 
 
