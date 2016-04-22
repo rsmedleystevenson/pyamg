@@ -7,6 +7,7 @@ from scipy.sparse import csr_matrix, coo_matrix, isspmatrix_csr, isspmatrix_csc
 from pyamg import amg_core
 from pyamg.graph import lloyd_cluster
 from matching import *
+from copy import deepcopy
 
 __all__ = ['standard_aggregation', 'naive_aggregation', 'lloyd_aggregation', 'pairwise_aggregation']
 

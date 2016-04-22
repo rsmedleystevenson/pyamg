@@ -775,6 +775,9 @@ class multilevel_solver_set:
     def solve(self, b, x0=None, tol=1e-5, maxiter=100, cycle='V', accel=None,
               callback=None, residuals=None, return_residuals=False):
 
+        if self.num_hierarchies == 0:
+            raise ValueError("Cannot solve - zero hierarchies stored.")
+
         from pyamg.util.linalg import residual_norm, norm
 
         if x0 is None:

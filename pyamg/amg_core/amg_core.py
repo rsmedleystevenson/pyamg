@@ -407,23 +407,14 @@ def incomplete_mat_mult_bsr(*args):
     """
     return _amg_core.incomplete_mat_mult_bsr(*args)
 
-def new_ideal_interpolation(*args):
+def truncate_rows_csr(*args):
     """
-    new_ideal_interpolation(int [] YRowPtr, int [] YColInds, float [] YValues, int const [] lqTopOpRowPtr, int const [] lqTopOpColInds, float const [] lqTopOpValues, float const [] lqOpBottom, int const [] rhsTopRowPtr, int const [] rhsTopColInds, float const [] rhsTopValues, float const [] rhsBottom, int const numFpts, int const numCpts, int const numBadGuys)
-    new_ideal_interpolation(int [] YRowPtr, int [] YColInds, double [] YValues, int const [] lqTopOpRowPtr, int const [] lqTopOpColInds, double const [] lqTopOpValues, double const [] lqOpBottom, int const [] rhsTopRowPtr, int const [] rhsTopColInds, double const [] rhsTopValues, double const [] rhsBottom, int const numFpts, int const numCpts, int const numBadGuys)
-    new_ideal_interpolation(int [] YRowPtr, int [] YColInds, std::complex< float > [] YValues, int const [] lqTopOpRowPtr, int const [] lqTopOpColInds, std::complex< float > const [] lqTopOpValues, std::complex< float > const [] lqOpBottom, int const [] rhsTopRowPtr, int const [] rhsTopColInds, std::complex< float > const [] rhsTopValues, std::complex< float > const [] rhsBottom, int const numFpts, int const numCpts, int const numBadGuys)
-    new_ideal_interpolation(int [] YRowPtr, int [] YColInds, std::complex< double > [] YValues, int const [] lqTopOpRowPtr, int const [] lqTopOpColInds, std::complex< double > const [] lqTopOpValues, std::complex< double > const [] lqOpBottom, int const [] rhsTopRowPtr, int const [] rhsTopColInds, std::complex< double > const [] rhsTopValues, std::complex< double > const [] rhsBottom, int const numFpts, int const numCpts, int const numBadGuys)
+    truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, float [] Sx)
+    truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, double [] Sx)
+    truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< float > [] Sx)
+    truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< double > [] Sx)
     """
-    return _amg_core.new_ideal_interpolation(*args)
-
-def unconstrained_new_ideal(*args):
-    """
-    unconstrained_new_ideal(int [] YRowPtr, int [] YColInds, float [] YValues, int const [] lqTopOpRowPtr, int const [] lqTopOpColInds, float const [] lqTopOpValues, int const [] rhsTopRowPtr, int const [] rhsTopColInds, float const [] rhsTopValues, int const numFpts, int const numCpts)
-    unconstrained_new_ideal(int [] YRowPtr, int [] YColInds, double [] YValues, int const [] lqTopOpRowPtr, int const [] lqTopOpColInds, double const [] lqTopOpValues, int const [] rhsTopRowPtr, int const [] rhsTopColInds, double const [] rhsTopValues, int const numFpts, int const numCpts)
-    unconstrained_new_ideal(int [] YRowPtr, int [] YColInds, std::complex< float > [] YValues, int const [] lqTopOpRowPtr, int const [] lqTopOpColInds, std::complex< float > const [] lqTopOpValues, int const [] rhsTopRowPtr, int const [] rhsTopColInds, std::complex< float > const [] rhsTopValues, int const numFpts, int const numCpts)
-    unconstrained_new_ideal(int [] YRowPtr, int [] YColInds, std::complex< double > [] YValues, int const [] lqTopOpRowPtr, int const [] lqTopOpColInds, std::complex< double > const [] lqTopOpValues, int const [] rhsTopRowPtr, int const [] rhsTopColInds, std::complex< double > const [] rhsTopValues, int const numFpts, int const numCpts)
-    """
-    return _amg_core.unconstrained_new_ideal(*args)
+    return _amg_core.truncate_rows_csr(*args)
 
 _amg_core.F_NODE_swigconstant(_amg_core)
 F_NODE = _amg_core.F_NODE
