@@ -18,7 +18,7 @@ from pyamg.relaxation.smoothing import change_smoothers, rho_D_inv_A
 from pyamg.krylov import gmres
 from pyamg.util.linalg import norm, approximate_spectral_radius
 from .aggregation import smoothed_aggregation_solver
-from .aggregate import standard_aggregation, lloyd_aggregation
+from .aggregate import standard_aggregation, lloyd_aggregation, pairwise_aggregation
 from .smooth import jacobi_prolongation_smoother, energy_prolongation_smoother,\
     richardson_prolongation_smoother
 from .tentative import fit_candidates
@@ -158,7 +158,7 @@ def adaptive_sa_solver(A, initial_candidates=None, symmetry='hermitian',
                 ('predefined', {'C': csr_matrix}), None]
         Method used to determine the strength of connection between unknowns of
         the linear system.  See smoothed_aggregation_solver(...) documentation.
-    aggregate : ['standard', 'lloyd', 'naive',
+    aggregate : ['standard', 'lloyd', 'naive', 'pairwise',
                  ('predefined', {'AggOp': csr_matrix})]
         Method used to aggregate nodes.  See smoothed_aggregation_solver(...)
         documentation.

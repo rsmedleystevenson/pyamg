@@ -6,8 +6,9 @@ import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, isspmatrix_csr, isspmatrix_csc
 from pyamg import amg_core
 from pyamg.graph import lloyd_cluster
+from matching import *
 
-__all__ = ['standard_aggregation', 'naive_aggregation', 'lloyd_aggregation']
+__all__ = ['standard_aggregation', 'naive_aggregation', 'lloyd_aggregation', 'pairwise_aggregation']
 
 
 def standard_aggregation(C):
@@ -272,3 +273,169 @@ def lloyd_aggregation(C, ratio=0.03, distance='unit', maxiter=10):
     AggOp = coo_matrix((data, (row, col)),
                        shape=(G.shape[0], num_seeds)).tocsr()
     return AggOp, seeds
+
+
+
+def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
+                        algorithm='drake', num_matchings=1,
+                        weights=None, **kwargs):
+    """ Pairwise aggregation of nodes. 
+
+    Parameters
+    ----------
+    A : csr_matrix or bsr_matrix
+        matrix for linear system
+    B : array_like
+        Right near-nullspace candidates stored in the columns of an NxK array.
+    BH : array_like : default None
+        Left near-nullspace candidates stored in the columns of an NxK array.
+        BH is only used if symmetry is 'nonsymmetric'.
+        The default value B=None is equivalent to BH=B.copy()
+    algorithm : string : default 'drake'
+        Algorithm to perform pairwise matching. Current options are 
+        'drake', 'preis', 'notay', referring to the Drake (2003), 
+        Preis (1999), and Notay (2010), respectively. 
+    num_matchings : int : default 1
+        Number of pairwise matchings to do. k matchings will lead to 
+        a coarsening factor of under 2^k.
+    weights : function handle : default None
+        Optional function handle to compute weights used in the matching,
+        e.g. a strength of connection routine. Additional arguments for
+        this routine should be provided in **kwargs. 
+
+    THINGS TO NOTE
+    --------------
+        - Not implemented for non-symmetric
+            + Need to adjust coarse grid operator formed here, i.e. need Bh -> R
+              and need to set up pairwise aggregation to be applicable for 
+              nonsymmetric matrices. 
+
+    """
+
+    n = A.shape[0]
+
+    if not isinstance(num_matchings, int):
+        raise TypeError("Number of matchings must be an integer.")
+
+    if num_matchings < 1:
+        raise ValueError("Number of matchings must be > 0.")
+
+    if (algorithm is not 'drake') and (algorithm is not 'preis') and \
+       (algorithm is not 'notay'):
+       raise ValueError("Only drake, notay and preis algorithms implemeted.")
+
+    if (symmetry != 'symmetric') and (symmetry != 'hermitian') and \
+            (symmetry != 'nonsymmetric'):
+        raise ValueError('expected \'symmetric\', \'nonsymmetric\' or\
+                         \'hermitian\' for the symmetry parameter ')
+
+    if not isspmatrix_csr(A):
+        print "Warning - pairwise aggregation only implemented for csr matrices."
+
+    if (symmetry == 'nonsymmetric') and (Bh == None):
+        print "Warning - no left near null-space vector provided for nonsymmetric matrix.\n\
+        Copying right near null-space vector."
+        Bh = deepcopy(B[0:n,0:1])
+
+    # Dictionary of function names for matching algorithms 
+    get_matching = {
+        'drake': drake_matching_2003,
+        'preis': preis_matching_1999,
+        'notay': notay_matching_2010
+    }
+
+    # Compute weights if function provided, otherwise W = A
+    if weights is not None:
+        W = weights(A, **kwargs)
+    else:
+        W = deepcopy(A)
+
+    try:
+        W=W.tocsr()
+    except:
+        raise TypeError("Could not convert to csr matrix.")
+
+    # Get initial matching
+    [M,S] = get_matching[algorithm](W, order='backward', **kwargs)
+    num_pairs = M.shape[0]
+    num_sing = S.shape[0]
+    Nc = num_pairs+num_sing
+    # Pick C-points and save in list
+    Cpts = np.zeros((Nc,),dtype=int)
+    Cpts[0:num_pairs] = M[:,0]
+    Cpts[num_pairs:Nc] = S
+
+    # Form sparse P from pairwise aggregation
+    row_inds = np.empty(n)
+    row_inds[0:(2*num_pairs)] = M.flatten()
+    row_inds[(2*num_pairs):n] = S
+    col_inds = np.empty(n)
+    col_inds[0:(2*num_pairs)] = ( np.array( ( np.arange(0,num_pairs),np.arange(0,num_pairs) ) ).T).flatten()
+    col_inds[(2*num_pairs):n] = np.arange(num_pairs,Nc)
+    P = csr_matrix( (B[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
+    # P = csr_matrix( (np.ones((n,)), (row_inds,col_inds)), shape=(n,Nc) )
+
+    # If performing one matching, return P and list of C-points
+    if num_matchings == 1:
+        return [P, Cpts]
+    # If performing multiple pairwise matchings, form coarse grid operator
+    # and repeat process
+    else:
+        if symmetry == 'hermitian':
+            R = P.H
+        elif symmetry == 'symmetric':
+            R = P.T            
+        elif symmetry == 'nonsymmetric':
+            R = csr_matrix( (Bh[0:n,0], (col_inds,row_inds)), shape=(Nc,n) )
+            Bhc = R*Bh
+
+        Ac = R*A*P
+        # Bc = R*B[0:n,0:1]
+        Bc = np.ones((n,1))
+        AggOp = deepcopy(P)
+
+        # Loop over the number of pairwise matchings to be done
+        for i in range(1,num_matchings):
+            if weights is not None:
+                W = weights(Ac, **kwargs)
+            else:
+                W = Ac
+            # Get matching
+            [M,S] = get_matching[algorithm](W, order='forward', **kwargs)
+            n = Ac.shape[0]
+            num_pairs = M.shape[0]
+            num_sing = S.shape[0]
+            Nc = num_pairs+num_sing
+            # Pick C-points and save in list
+            temp = np.zeros((Nc,),dtype=int)
+            temp[0:num_pairs] = M[:,0]
+            temp[num_pairs:Nc] = S
+            Cpts = Cpts[temp]
+
+            # Form sparse P from pairwise aggregation
+            row_inds = np.empty(n)
+            row_inds[0:(2*num_pairs)] = M.flatten()
+            row_inds[(2*num_pairs):n] = S
+            col_inds = np.empty(n)
+            col_inds[0:(2*num_pairs)] = ( np.array( ( np.arange(0,num_pairs),np.arange(0,num_pairs) ) ).T).flatten()
+            col_inds[(2*num_pairs):n] = np.arange(num_pairs,Nc)
+            P = csr_matrix( (Bc[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
+
+            # Form coarse grid operator and update aggregation matrix
+            if i<(num_matchings-1):
+                if symmetry == 'hermitian':
+                    R = P.H
+                elif symmetry == 'symmetric':
+                    R = P.T            
+                elif symmetry == 'nonsymmetric':
+                    R = csr_matrix( (Bhc[0:n,0], (col_inds,row_inds)), shape=(Nc,n) )
+                    Bhc = R*Bh
+
+                Ac = R*Ac*P
+                # Bc = R*Bc
+                Bc = np.ones((Nc,1))
+                AggOp = AggOp * P
+            else:
+                AggOp = AggOp * P
+
+        return [AggOp, Cpts]
