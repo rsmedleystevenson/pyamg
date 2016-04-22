@@ -277,7 +277,7 @@ def lloyd_aggregation(C, ratio=0.03, distance='unit', maxiter=10):
 
 
 def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
-                        algorithm='drake', num_matchings=1,
+                        algorithm='drake', matchings=1,
                         weights=None, **kwargs):
     """ Pairwise aggregation of nodes. 
 
@@ -295,7 +295,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
         Algorithm to perform pairwise matching. Current options are 
         'drake', 'preis', 'notay', referring to the Drake (2003), 
         Preis (1999), and Notay (2010), respectively. 
-    num_matchings : int : default 1
+    matchings : int : default 1
         Number of pairwise matchings to do. k matchings will lead to 
         a coarsening factor of under 2^k.
     weights : function handle : default None
@@ -314,10 +314,10 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
 
     n = A.shape[0]
 
-    if not isinstance(num_matchings, int):
+    if not isinstance(matchings, int):
         raise TypeError("Number of matchings must be an integer.")
 
-    if num_matchings < 1:
+    if matchings < 1:
         raise ValueError("Number of matchings must be > 0.")
 
     if (algorithm is not 'drake') and (algorithm is not 'preis') and \
@@ -376,7 +376,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
     # P = csr_matrix( (np.ones((n,)), (row_inds,col_inds)), shape=(n,Nc) )
 
     # If performing one matching, return P and list of C-points
-    if num_matchings == 1:
+    if matchings == 1:
         return [P, Cpts]
     # If performing multiple pairwise matchings, form coarse grid operator
     # and repeat process
@@ -395,7 +395,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
         AggOp = deepcopy(P)
 
         # Loop over the number of pairwise matchings to be done
-        for i in range(1,num_matchings):
+        for i in range(1,matchings):
             if weights is not None:
                 W = weights(Ac, **kwargs)
             else:
@@ -422,7 +422,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
             P = csr_matrix( (Bc[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
 
             # Form coarse grid operator and update aggregation matrix
-            if i<(num_matchings-1):
+            if i<(matchings-1):
                 if symmetry == 'hermitian':
                     R = P.H
                 elif symmetry == 'symmetric':

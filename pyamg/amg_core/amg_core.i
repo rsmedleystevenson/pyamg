@@ -196,8 +196,8 @@ INSTANTIATE_INDEXDATA_COMPLEX(satisfy_constraints_helper)
 INSTANTIATE_INDEXDATA_COMPLEX(calc_BtB)
 INSTANTIATE_INDEXDATA_COMPLEX(incomplete_mat_mult_bsr)
 INSTANTIATE_INDEXDATA_COMPLEX(truncate_rows_csr)
-INSTANTIATE_INDEXDATA_COMPLEX(new_ideal_interpolation)
-INSTANTIATE_INDEXDATA_COMPLEX(unconstrained_new_ideal)
+/* INSTANTIATE_INDEXDATA_COMPLEX(new_ideal_interpolation)
+INSTANTIATE_INDEXDATA_COMPLEX(unconstrained_new_ideal) */
 
 /*----------------------------------------------------------------------------
   ruge_stuben.h

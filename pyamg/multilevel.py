@@ -8,7 +8,7 @@ import scipy as sp
 import numpy as np
 
 
-__all__ = ['multilevel_solver', 'coarse_grid_solver']
+__all__ = ['multilevel_solver', 'coarse_grid_solver', 'multilevel_solver_set']
 
 
 class multilevel_solver:
