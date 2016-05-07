@@ -1,9 +1,10 @@
 import pdb
 import numpy as np
 from scipy.sparse import csr_matrix, lil_matrix, isspmatrix_csr, isspmatrix_bsr
+from pyamg import amg_core
 
 
-__all__ = ['preis_matching_1999', 'drake_matching_2003','notay_matching_2010']
+__all__ = ['preis_matching_1999', 'drake_matching_2003','notay_matching_2010','drake_C']
 
 
 def preis_try_match(a0, b0, w_ab, W, M, M_ind, G, aggregated, recurse = False):
@@ -140,6 +141,64 @@ def preis_matching_1999(G, order='forward', **kwargs):
     # print 'Preis - W = ',W,', aggregated = ',np.sum(aggregated[:,1]),' / ',n
     S = np.where(aggregated[:,1]==0)[0]       # Get singletons (not aggregated nodes)
     return [ M[0:num_pairs,:], S ]
+
+
+def drake_C(G, order='forward', **kwargs):
+
+    # Get off-diagonal of A in linked list form
+    n = int(G.shape[0])
+    V = np.arange(0,n)
+    if not isspmatrix_csr(G):
+        try:
+            G = G.tocsr()
+        except:
+            raise TypeError("Couldn't convert to csr.")
+
+    G.setdiag(np.zeros((n,1)),k=0)
+    G.eliminate_zeros()
+
+    # Nodes aggregated in matching 1
+    agg1 = np.zeros((n,), dtype=np.int32)
+    M1 = np.zeros([(n+2),], dtype=np.int32)
+
+    # Nodes aggregated in matching 2
+    agg2 = np.zeros((n,), dtype=np.int32)
+    M2 = np.zeros(((n+2),), dtype=np.int32)
+
+    # Singleton nodes -- assume sqrt(n) is enough to store singletons
+    S = np.zeros((int(np.sqrt(n)),), dtype=np.int32)
+
+    if order=='forward':
+        ord0 = 0
+    else:
+        ord0 = 1
+
+    match = amg_core.drake_matching
+    match( G.indptr, 
+           G.indices,
+           G.data,
+           n,
+           ord0,
+           agg1,
+           M1,
+           agg2,
+           M2,
+           S )
+
+    if M1[1] >= M2[1]:
+        num_pairs = M1[0]
+        upper_ind_M = 2*(num_pairs+1) 
+        M1 = M1[2:upper_ind_M].reshape((num_pairs,2), order='C')
+        upper_ind_S = S[0]+1
+        S = S[1:upper_ind_S]
+        return [M1, S]
+    else:
+        num_pairs = M2[0]
+        upper_ind_M = 2*(num_pairs+1) 
+        M2 = M2[2:upper_ind_M].reshape((num_pairs,2), order='C')
+        upper_ind_S = S[0]+1
+        S = S[1:upper_ind_S]
+        return [M2, S]
 
 
 def drake_matching_2003(G, order='forward', **kwargs):

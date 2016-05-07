@@ -371,6 +371,31 @@ def standard_aggregation(n_row, Ap, Aj, x, y):
     """standard_aggregation(int const n_row, int const [] Ap, int const [] Aj, int [] x, int [] y) -> int"""
     return _amg_core.standard_aggregation(n_row, Ap, Aj, x, y)
 
+def is_larger(*args):
+    """
+    is_larger(int const & ind0, int const & ind1, float const [] A_data) -> bool
+    is_larger(int const & ind0, int const & ind1, double const [] A_data) -> bool
+    """
+    return _amg_core.is_larger(*args)
+
+def add_edge(*args):
+    """
+    add_edge(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] is_agg, int [] M, float & W, int & ind, int const & row) -> int
+    add_edge(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] is_agg, int [] M, double & W, int & ind, int const & row) -> int
+    """
+    return _amg_core.add_edge(*args)
+
+def get_singletons(agg, S, n):
+    """get_singletons(int const [] agg, int [] S, int const & n)"""
+    return _amg_core.get_singletons(agg, S, n)
+
+def drake_matching(*args):
+    """
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const n, int const order, int [] agg1, int [] M1, int [] agg2, int [] M2, int [] S)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const n, int const order, int [] agg1, int [] M1, int [] agg2, int [] M2, int [] S)
+    """
+    return _amg_core.drake_matching(*args)
+
 def fit_candidates(*args):
     """
     fit_candidates(int const n_row, int const n_col, int const K1, int const K2, int const [] Ap, int const [] Ai, float [] Ax, float const [] B, float [] R, float const tol)

@@ -186,6 +186,10 @@ INSTANTIATE_INDEXDATA_COMPLEX(overlapping_schwarz_csr)
 INSTANTIATE_INDEXDATA_COMPLEX(symmetric_strength_of_connection)
 INSTANTIATE_INDEX_ONLY(naive_aggregation)
 INSTANTIATE_INDEX_ONLY(standard_aggregation)
+INSTANTIATE_INDEXDATA(is_larger)
+INSTANTIATE_INDEXDATA(add_edge)
+INSTANTIATE_INDEX_ONLY(get_singletons)
+INSTANTIATE_INDEXDATA(drake_matching)
 
 %template(fit_candidates)   fit_candidates_real<int,float>;
 %template(fit_candidates)   fit_candidates_real<int,double>;
