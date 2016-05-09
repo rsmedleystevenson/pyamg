@@ -1624,7 +1624,7 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
     for (I row=(n-1); row>=0; row--) {
         I x = row;
         while (true) {
-            test += 1
+            test += 1;
             // Get new edge in matching, M1. Break loop if node x has no
             // edges to unaggregated nodes.
             I y = add_edge(A_rowptr, A_colinds, A_data, agg1, M1, W1, ind1, x);
