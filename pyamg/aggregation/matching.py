@@ -158,9 +158,6 @@ def drake_C(G, order='backward', **kwargs):
         except:
             raise TypeError("Couldn't convert to csr.")
 
-    G.setdiag(np.zeros((n,1)),k=0)
-    G.eliminate_zeros()
-
     # Nodes aggregated in matching 1
     agg1 = np.zeros((n,), dtype=np.int32)
     M1 = np.zeros([(n+2),], dtype=np.int32)
@@ -170,7 +167,7 @@ def drake_C(G, order='backward', **kwargs):
     M2 = np.zeros(((n+2),), dtype=np.int32)
 
     # Singleton nodes -- assume sqrt(n) is enough to store singletons
-    S = np.zeros((int(np.sqrt(n)),), dtype=np.int32)
+    S = np.zeros((2*int(np.sqrt(n)),), dtype=np.int32)
 
     match = amg_core.drake_matching
     match( G.indptr,
@@ -184,7 +181,7 @@ def drake_C(G, order='backward', **kwargs):
            S )
 
     if M1[1] >= M2[1]:
-        print 'Drake - W1 = ', M2[1], ' >= ', M2[1], '= W2, aggregated = ', 2*M1[0], ' / ', n
+        print 'Drake - aggregated = ', 2*M1[0], ' / ', n
         num_pairs = M1[0]
         upper_ind_M = 2*(num_pairs+1) 
         M1 = M1[2:upper_ind_M].reshape((num_pairs,2), order='C')
@@ -192,7 +189,7 @@ def drake_C(G, order='backward', **kwargs):
         S = S[1:upper_ind_S]
         return [M1, S]
     else:
-        print 'Drake - W2 = ', M2[1], ' >= ', M1[1], '= W1, aggregated = ', 2*M2[0], ' / ', n
+        print 'Drake - aggregated = ', 2*M2[0], ' / ', n
         num_pairs = M2[0]
         upper_ind_M = 2*(num_pairs+1) 
         M2 = M2[2:upper_ind_M].reshape((num_pairs,2), order='C')

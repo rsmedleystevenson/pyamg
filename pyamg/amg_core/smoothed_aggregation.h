@@ -1558,7 +1558,8 @@ I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
     // Find maximum edge attached to node 'row'
     for (I i=data_ind0; i<data_ind1; i++) {
         I temp_node = A_colinds[i];
-        if (is_agg[temp_node] == 0) {
+        // Check for self-loops and if node has been aggregated 
+        if ( (temp_node != row) && (is_agg[temp_node] == 0) ) {
             if (is_larger(i, new_ind, A_data)) {
                 new_node = temp_node;
                 new_ind = i;
@@ -1599,7 +1600,6 @@ void get_singletons(const I agg[], I S[], const I &n)
 
 
 template<class I, class T>
-// void drake_matching(const I Ap[], const int Ap_size )
 void drake_matching(const I A_rowptr[], const int A_rowptr_size,
                     const I A_colinds[], const int A_colinds_size,
                     const T A_data[], const int A_data_size,
@@ -1618,15 +1618,16 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
     T W1 = 0;
     T W2 = 0;
 
-    I test = 0;
-
     // Form two matchings, M1, M2, starting from last node in DOFs. 
     for (I row=(n-1); row>=0; row--) {
         I x = row;
-        while (true) {
-            test += 1;
+        while (true) {       
             // Get new edge in matching, M1. Break loop if node x has no
             // edges to unaggregated nodes.
+            // --> In case of symmetric matrix, could add to singleton list... 
+            if (agg1[x] == 1) {
+                break;
+            }    
             I y = add_edge(A_rowptr, A_colinds, A_data, agg1, M1, W1, ind1, x);
             if (y == -1) {
                 break;
@@ -1634,6 +1635,9 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
 
             // Get new edge in matching, M2. Break loop if node y has no
             // edges to unaggregated nodes.
+            if (agg2[y] == 1) {
+                break;
+            }
             x = add_edge(A_rowptr, A_colinds, A_data, agg2, M2, W2, ind2, y);
             if (x == -1) {
                 break;
@@ -1641,10 +1645,10 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
         }
     }
 
-    std::cout << "W1 = " << W1 << ", W2 = " << W2 << ", iterations = " << test << " / " << n << " unknowns." << std::endl;
+    std::cout << "W1 = " << W1 << ", W2 = " << W2 << std::endl;
 
     // Get singletons from better matching
-    if (W1 >= W2) {
+    if (std::abs(W1) >= std::abs(W2)) {
         M1[1] = 1;
         M2[1] = 0;
         get_singletons(agg1, S, n);

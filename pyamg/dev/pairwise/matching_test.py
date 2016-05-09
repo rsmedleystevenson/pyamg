@@ -306,7 +306,7 @@ def plot_multiple_poisson(aggregations, labels, N):
 # ------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------------#
 
-N 			= 100
+N 			= 1000
 problem_dim = 2
 epsilon 	= 0.00
 theta 		= 3.0*np.pi/16
@@ -341,26 +341,27 @@ elif problem_dim == -1:
 
 
 # ------------------------------------------------------------------------------#
-num_matchings = 1
+matchings = 1
 B = np.ones((N*N,1))
 # preis_matching = pairwise_aggregation(A, algorithm='preis', num_matchings=num_matchings)
 # notay_matching, notay_Cpts = pairwise_aggregation(W, algorithm='notay', num_matchings=num_matchings)
 
-start = time.clock()
-drake_matching, drake_Cpts = pairwise_aggregation(A, B=B, algorithm='drake', num_matchings=num_matchings)
-end = time.clock()
-old_time = end-start
+
+# start = time.clock()
+# drake_matching, drake_Cpts = pairwise_aggregation(A, B=B, algorithm='drake', matchings=matchings)
+# end = time.clock()
+# old_time = end-start
 
 start = time.clock()
-new_drake, new_Cpts = pairwise_aggregation(A, B=B, algorithm='drake_C', num_matchings=num_matchings)
+new_drake, new_Cpts = pairwise_aggregation(A, B=B, algorithm='drake_C', matchings=matchings)
 end = time.clock()
 new_time = end-start
 
-print "Python time - ", old_time
+# print "Python time - ", old_time
 print "C time - ", new_time
 
 
-pdb.set_trace()
+# pdb.set_trace()
 
 
 # ------------------------------------------------------------------------------#
@@ -370,11 +371,11 @@ pdb.set_trace()
 # labels = ['Classical SOC/aggregation','Notay pairwise (e=%1.2f,n=%i)'%(0.25,num_matchings),'Drake pairwise (n=%i)'%(num_matchings)]
 # matchings = [ [AggOp,Cpts], [notay_matching, notay_Cpts] , [drake_matching, drake_Cpts] ]
 
+# labels = ['Drake pairwise', 'C-Drake pairwise']
+# matchings = [ [drake_matching,drake_Cpts], [new_drake, new_Cpts] ]
+
 # plot_multiple_poisson(matchings,labels,N)
 
-
-
-# pdb.set_trace()
 
 
 
