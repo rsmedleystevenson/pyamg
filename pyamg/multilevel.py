@@ -6,7 +6,7 @@ from warnings import warn
 
 import scipy as sp
 import numpy as np
-
+from copy import deepcopy
 
 __all__ = ['multilevel_solver', 'coarse_grid_solver', 'multilevel_solver_set']
 
@@ -542,11 +542,12 @@ class multilevel_solver:
                 raise TypeError('Unrecognized cycle type (%s)' % cycle)
 
         x += self.levels[lvl].P * coarse_x   # coarse grid correction
-
         self.levels[lvl].postsmoother(A, x, b)
+        
+        # Only used in experimental additive cycle in multilevel_solver_set
+        return self.levels[lvl].P * coarse_x
 
-
-    def test_solve(self, lvl, x, b, cycle):
+    def test_solve(self, lvl, x, b, cycle, additive=False):
         return self.__solve(lvl=lvl, x=x, b=b, cycle=cycle)
 
 
@@ -750,12 +751,14 @@ class multilevel_solver_set:
             raise ValueError("Hierarchy only contains %i sets, cannot remove set %i."%(self.num_hierarchies,ind))
 
 
-    def replace_hierarchy(self, hierarchy):
-        if isinstance(hierarchy, multilevel_solver):
-            self.hierarchy_set.append(hierarchy)
-            self.num_hierarchies += 1
-        else:
+    def replace_hierarchy(self, hierarchy, ind):
+        if not isinstance(hierarchy, multilevel_solver):
             raise TypeError("Can only add multilevel_solver objects to hierarchy.")
+
+        if ind < self.num_hierarchies:
+            self.hierarchy_set[ind] = hierarchy
+        else:
+            raise ValueError("Hierarchy only contains %i sets, cannot remove set %i."%(self.num_hierarchies,ind))
 
 
     def cycle_complexity(self, cycle='V'):
@@ -793,7 +796,7 @@ class multilevel_solver_set:
 
 
     def solve(self, b, x0=None, tol=1e-5, maxiter=100, cycle='V', accel=None,
-              callback=None, residuals=None, return_residuals=False):
+              callback=None, residuals=None, return_residuals=False, additive=False):
 
         if self.num_hierarchies == 0:
             raise ValueError("Cannot solve - zero hierarchies stored.")
@@ -885,14 +888,27 @@ class multilevel_solver_set:
         iter_num = 0
 
         while iter_num < maxiter and residuals[-1] > tol:
-            # One solve for each hierarchy in set
-            for hierarchy in self.hierarchy_set:
-                # hierarchy has only 1 level
-                if len(hierarchy.levels) == 1:
-                    x = hierarchy.coarse_solver(A, b)
-                else:
-                    # hierarchy.__solve(0, x, b, cycle)
-                    hierarchy.test_solve(0, x, b, cycle)
+            # ----------- Additive solve ----------- #
+            # ------ This doesn't really work ------ #
+            if additive:
+               x_copy = deepcopy(x)
+               for hierarchy in self.hierarchy_set:
+                    this_x = deepcopy(x_copy)
+                    if len(hierarchy.levels) == 1:
+                        this_x = hierarchy.coarse_solver(A, b)
+                    else:
+                        temp = hierarchy.test_solve(0, this_x, b, cycle)
+
+                    x += temp
+            # ----------- Normal solve ----------- #
+            else:
+                # One solve for each hierarchy in set
+                for hierarchy in self.hierarchy_set:
+                    # hierarchy has only 1 level
+                    if len(hierarchy.levels) == 1:
+                        x = hierarchy.coarse_solver(A, b)
+                    else:
+                        hierarchy.test_solve(0, x, b, cycle)
 
             residuals.append(residual_norm(A, x, b))
             iter_num += 1
@@ -900,10 +916,11 @@ class multilevel_solver_set:
             if callback is not None:
                 callback(x)
 
+        n = x.shape[0] 
         if return_residuals:
-            return x, residuals
+            return x.reshape((n,1)), residuals
         else:
-            return x
+            return x.reshape((n,1))
 
 
 

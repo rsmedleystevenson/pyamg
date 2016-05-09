@@ -322,7 +322,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
         raise ValueError("Number of matchings must be > 0.")
 
     if (algorithm is not 'drake') and (algorithm is not 'preis') and \
-       (algorithm is not 'notay'):
+       (algorithm is not 'notay') and (algorithm is not 'drake_C'):
        raise ValueError("Only drake, notay and preis algorithms implemeted.")
 
     if (symmetry != 'symmetric') and (symmetry != 'hermitian') and \
@@ -330,8 +330,8 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
         raise ValueError('expected \'symmetric\', \'nonsymmetric\' or\
                          \'hermitian\' for the symmetry parameter ')
 
-    if not isspmatrix_csr(A):
-        print "Warning - pairwise aggregation only implemented for csr matrices."
+    # if not isspmatrix_csr(A):
+        # print "Warning - pairwise aggregation only implemented for csr matrices."
 
     if (symmetry == 'nonsymmetric') and (Bh == None):
         print "Warning - no left near null-space vector provided for nonsymmetric matrix.\n\
@@ -341,6 +341,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
     # Dictionary of function names for matching algorithms 
     get_matching = {
         'drake': drake_matching_2003,
+        'drake_C': drake_C,
         'preis': preis_matching_1999,
         'notay': notay_matching_2010
     }

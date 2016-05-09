@@ -1,9 +1,10 @@
 import pdb
 import numpy as np
 from scipy.sparse import csr_matrix, lil_matrix, isspmatrix_csr, isspmatrix_bsr
+from pyamg import amg_core
 
 
-__all__ = ['preis_matching_1999', 'drake_matching_2003','notay_matching_2010']
+__all__ = ['preis_matching_1999', 'drake_matching_2003','drake_C','notay_matching_2010']
 
 
 def preis_try_match(a0, b0, w_ab, W, M, M_ind, G, aggregated, recurse = False):
@@ -142,6 +143,64 @@ def preis_matching_1999(G, order='forward', **kwargs):
     return [ M[0:num_pairs,:], S ]
 
 
+# Note, order variable ignored. Should do the C-implementation backwards, because
+# the strongest connection is chosen as the last one of equal weight. So if you start 
+# at the last DOF, and it has a handful of equal strength connections, ths C-implenetation
+# will chose the highest number DOF, which works well for looping through DOFs backwards. 
+def drake_C(G, order='backward', **kwargs):
+
+    # Get off-diagonal of A in linked list form
+    n = int(G.shape[0])
+    V = np.arange(0,n)
+    if not isspmatrix_csr(G):
+        try:
+            G = G.tocsr()
+        except:
+            raise TypeError("Couldn't convert to csr.")
+
+    G.setdiag(np.zeros((n,1)),k=0)
+    G.eliminate_zeros()
+
+    # Nodes aggregated in matching 1
+    agg1 = np.zeros((n,), dtype=np.int32)
+    M1 = np.zeros([(n+2),], dtype=np.int32)
+
+    # Nodes aggregated in matching 2
+    agg2 = np.zeros((n,), dtype=np.int32)
+    M2 = np.zeros(((n+2),), dtype=np.int32)
+
+    # Singleton nodes -- assume sqrt(n) is enough to store singletons
+    S = np.zeros((int(np.sqrt(n)),), dtype=np.int32)
+
+    match = amg_core.drake_matching
+    match( G.indptr,
+           G.indices,
+           G.data,
+           n,
+           agg1,
+           M1,
+           agg2,
+           M2,
+           S )
+
+    if M1[1] >= M2[1]:
+        print 'Drake - W1 = ', M2[1], ' >= ', M2[1], '= W2, aggregated = ', 2*M1[0], ' / ', n
+        num_pairs = M1[0]
+        upper_ind_M = 2*(num_pairs+1) 
+        M1 = M1[2:upper_ind_M].reshape((num_pairs,2), order='C')
+        upper_ind_S = S[0]+1
+        S = S[1:upper_ind_S]
+        return [M1, S]
+    else:
+        print 'Drake - W2 = ', M2[1], ' >= ', M1[1], '= W1, aggregated = ', 2*M2[0], ' / ', n
+        num_pairs = M2[0]
+        upper_ind_M = 2*(num_pairs+1) 
+        M2 = M2[2:upper_ind_M].reshape((num_pairs,2), order='C')
+        upper_ind_S = S[0]+1
+        S = S[1:upper_ind_S]
+        return [M2, S]
+
+
 def drake_matching_2003(G, order='forward', **kwargs):
 
     # Get off-diagonal of A in linked list form
@@ -190,7 +249,7 @@ def drake_matching_2003(G, order='forward', **kwargs):
 
             # Add edge to matching M1
             ind = np.argmax( np.abs( G.data[x] ) )	# find largest edge
-            W1 += np.abs(G.data[x][ind])			# add weight to matching 1
+            W1 += (G.data[x][ind])			# add weight to matching 1
             y = G.rows[x][ind]     					# get index of neighbor node   	  
             M1[ind1,:] = [x,y]           			# add edge to matching
             ind1 += 1
@@ -210,7 +269,7 @@ def drake_matching_2003(G, order='forward', **kwargs):
 
             # Add edge to matching M2
             ind = np.argmax( np.abs( G.data[y] ) )	# find largest edge
-            W2 += np.abs(G.data[y][ind])			# add weight to matching 1
+            W2 += (G.data[y][ind])			# add weight to matching 1
             x = G.rows[y][ind]     					# get index of neighbor node  
             M2[ind2,:] = [x,y]                      # add edge to matching
             ind2 += 1
@@ -225,8 +284,8 @@ def drake_matching_2003(G, order='forward', **kwargs):
             G.rows[y] = []
             G.data[y] = []
 
-    # print 'Drake - W1 = ',W1,', aggregated = ',np.sum(aggregated1[:,1]),' / ',n
-    # print 'Drake - W2 = ',W2,', aggregated = ',np.sum(aggregated2[:,1]),' / ',n
+    print 'Drake - W1 = ',W1,', aggregated = ',np.sum(aggregated1[:,1]),' / ',n
+    print 'Drake - W2 = ',W2,', aggregated = ',np.sum(aggregated2[:,1]),' / ',n
     if W1 > W2: 
         S = np.where(aggregated1[:,1]==0)[0]       # Get singletons (not aggregated nodes)
     	return [ M1[0:ind1,:], S ]

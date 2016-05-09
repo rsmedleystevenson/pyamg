@@ -5,6 +5,7 @@
 #include <vector>
 #include <iterator>
 #include <algorithm>
+#include <set>
 
 #include <assert.h>
 #include <cmath>
@@ -957,7 +958,7 @@ void truncate_rows_csr(const I n_row,
     return;
 }
 
-#if 0
+
 /* Construct operator Y in new ideal interpolation by computing the 
  * appropriate constrained minimization problem for each row, and  
  * constructing a CSR matrix stored in the sparsity pattern passed in
@@ -1011,17 +1012,17 @@ void truncate_rows_csr(const I n_row,
 //      - 
 
 template<class I, class T, class F>
-void new_ideal_interpolation(I YRowPtr[],
-                             I YColInds[],
-                             T YValues[],
-                             const I lqTopOpRowPtr[],
-                             const I lqTopOpColInds[],
-                             const T lqTopOpValues[],
-                             const T lqOpBottom[],
-                             const I rhsTopRowPtr[],
-                             const I rhsTopColInds[],
-                             const T rhsTopValues[],
-                             const T rhsBottom[],
+void new_ideal_interpolation(I YRowPtr[], const int YRowPtr_size,
+                             I YColInds[], const int YColInds_size,
+                             T YValues[], const int YValues_size,
+                             const I lqTopOpRowPtr[], const int lqTopOpRowPtr_size,
+                             const I lqTopOpColInds[], const int lqTopOpColInds_size,
+                             const T lqTopOpValues[], const int lqTopOpValues_size,
+                             const T lqOpBottom[], const int lqOpBottom_size,
+                             const I rhsTopRowPtr[], const int rhsTopRowPtr_size,
+                             const I rhsTopColInds[], const int rhsTopColInds_size,
+                             const T rhsTopValues[], const int rhsTopValues_size,
+                             const T rhsBottom[], const int rhsBottom_size,
                              const I numFpts,
                              const I numCpts,
                              const I numBadGuys)
@@ -1296,15 +1297,15 @@ void new_ideal_interpolation(I YRowPtr[],
  *
  */
 template<class I, class T, class F>
-void unconstrained_new_ideal(I YRowPtr[],
-                             I YColInds[],
-                             T YValues[],
-                             const I lqTopOpRowPtr[],
-                             const I lqTopOpColInds[],
-                             const T lqTopOpValues[],
-                             const I rhsTopRowPtr[],
-                             const I rhsTopColInds[],
-                             const T rhsTopValues[],
+void unconstrained_new_ideal(I YRowPtr[], const int YRowPtr_size,
+                             I YColInds[], const int YColInds_size,
+                             T YValues[], const int YValues_size,
+                             const I lqTopOpRowPtr[], const int lqTopOpRowPtr_size,
+                             const I lqTopOpColInds[], const int lqTopOpColInds_size,
+                             const T lqTopOpValues[], const int lqTopOpValues_size,
+                             const I rhsTopRowPtr[], const int rhsTopRowPtr_size,
+                             const I rhsTopColInds[], const int rhsTopColInds_size,
+                             const T rhsTopValues[], const int rhsTopValues_size,
                              const I numFpts,
                              const I numCpts)
 {
@@ -1479,7 +1480,189 @@ void unconstrained_new_ideal(I YRowPtr[],
     delete[] leastSquaresOp;
     delete[] rightHandSide;
 }
-#endif
+
+
+
+
+/* Function determining which of two elements in the A.data structure is
+ * larger. Allows for easy changing between, e.g., absolute value, hard   
+ * minimum, etc.                       
+ * Input:
+ * ------
+ * ind0 : const {int}
+ *      Index for element in A.data
+ * ind1 : const {int}
+ *      Index for element in A.data
+ * data : const {float array}  
+ *      Data elements for A in sparse format
+ *
+ * Returns:
+ * --------  
+ * bool on if data[ind0] > data[ind1] for the measure of choice. For now this is
+ * an absolute maximum.
+ */
+template<class I, class T>
+bool is_larger(const I &ind0, const I &ind1, const T A_data[])
+{
+    if (std::abs(A_data[ind0]) >= std::abs(A_data[ind1]) ) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+
+
+/* Function that finds the maximum edge connected to a given node and adds
+ * this pair to the matching, for a 'maximum' defined by is_larger(). If a 
+ * pair is found, each node is marked as aggregated, and the new node index
+ * returned. If there are no unaggregated connections to the input node, -1
+ * is returned. 
+ * Input:
+ * ------
+ * A_rowptr : const {int array}
+ *      Row pointer for sparse array in CSR format.
+ * A_colinds : const {int array}
+ *      Column indices for sparse array in CSR format.
+ * A_data : const {float array}
+ *      Data values for sparse array in CSR format.
+ * is_agg : {int array}
+ *      Integer array marking if a node in the graph has been aggregated.
+ *      If new pair is formed, nodes are marked as aggregated. 
+ * M : {int array}
+ *      Approximate matching stored in 1d array, with indices for a pair
+ *      as consecutive elements. If new pair is formed, it is added to M[].
+ * W : {float}
+ *      Additive weight of current matching. If new pair is formed,
+ *      corresponding weight is added to W.
+ * ind : {int}
+ *      Index of next pair to be found in matching. If new pair is found, 
+ *      ind += 1.
+ * row : const {int}
+ *      Index of base node to form pair for matching. 
+ *
+ * Returns:
+ * --------  
+ * Integer index of node connected to input node as a pair in matching. If
+ * no unaggregated nodes are connected to input node, -1 is returned. 
+ */
+template<class I, class T>
+I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
+           I is_agg[], I M[], T &W, I &ind, const I &row)
+{
+    I data_ind0 = A_rowptr[row];
+    I data_ind1 = A_rowptr[row+1];
+    I new_node = -1;
+    I new_ind = data_ind0;
+
+    // Find maximum edge attached to node 'row'
+    for (I i=data_ind0; i<data_ind1; i++) {
+        I temp_node = A_colinds[i];
+        if (is_agg[temp_node] == 0) {
+            if (is_larger(i, new_ind, A_data)) {
+                new_node = temp_node;
+                new_ind = i;
+            }
+        }
+    }
+
+    // Add edge to matching and weight to total edge weight.
+    // Note, matching is indexed (+2) because M[0] tracks the number
+    // of pairs added to the matching, and M[1] the total weight. 
+    // Mark each node in pair as aggregated. 
+    if (new_node != -1) {
+        W += A_data[new_ind];
+        M[2*(ind+1)] = row;
+        M[2*(ind+1)+1] = new_node;
+        is_agg[row] = 1;
+        is_agg[new_node] = 1;
+        ind += 1;        
+    }
+
+    // Return node index in new edge
+    return new_node;
+}
+
+
+template<class I>
+void get_singletons(const I agg[], I S[], const I &n)
+{
+    I ind = 1;
+    for (I i=0; i<n; i++) {
+        if (agg[i] == 0) {
+            S[ind] = i;
+            S[0] += 1;
+            ind += 1;
+        }
+    }
+}
+
+
+template<class I, class T>
+// void drake_matching(const I Ap[], const int Ap_size )
+void drake_matching(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    const I n,
+                    I agg1[], const int agg1_size,
+                    I M1[], const int M1_size,
+                    I agg2[], const int agg2_size,
+                    I M2[], const int M2_size,
+                    I S[], const int S_size)
+{
+    // First element in M1, M2 counts how many pairs have been formed.
+    // Updated by reference variables for readability. 
+    I &ind1 = M1[0];
+    I &ind2 = M2[0];
+    // Empty initial weights.
+    T W1 = 0;
+    T W2 = 0;
+
+    I test = 0;
+
+    // Form two matchings, M1, M2, starting from last node in DOFs. 
+    for (I row=(n-1); row>=0; row--) {
+        I x = row;
+        while (true) {
+            test += 1
+            // Get new edge in matching, M1. Break loop if node x has no
+            // edges to unaggregated nodes.
+            I y = add_edge(A_rowptr, A_colinds, A_data, agg1, M1, W1, ind1, x);
+            if (y == -1) {
+                break;
+            }
+
+            // Get new edge in matching, M2. Break loop if node y has no
+            // edges to unaggregated nodes.
+            x = add_edge(A_rowptr, A_colinds, A_data, agg2, M2, W2, ind2, y);
+            if (x == -1) {
+                break;
+            }
+        }
+    }
+
+    std::cout << "W1 = " << W1 << ", W2 = " << W2 << ", iterations = " << test << std::endl;
+
+    // Get singletons from better matching
+    if (W1 >= W2) {
+        M1[1] = 1;
+        M2[1] = 0;
+        get_singletons(agg1, S, n);
+        if ( (n-S[0]) != 2*M1[0] ) {
+            std::cout << "Error - number of pairs, " << 2*M1[0] << 
+                ", and singletons, " << S[0] << ", does not add up to n, " << n << ".\n";
+        }
+    }
+    else {
+        M1[1] = 0;
+        M2[1] = 1;
+        get_singletons(agg2, S, n);
+        if ( (n-S[0]) != 2*M2[0] ) {
+            std::cout << "Error - number of pairs, " << 2*M2[0] << 
+                ", and singletons, " << S[0] << ", does not add up to n, " << n << ".\n";
+        }
+    }
+}
 
 
 

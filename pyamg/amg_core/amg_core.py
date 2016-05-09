@@ -371,6 +371,13 @@ def standard_aggregation(n_row, Ap, Aj, x, y):
     """standard_aggregation(int const n_row, int const [] Ap, int const [] Aj, int [] x, int [] y) -> int"""
     return _amg_core.standard_aggregation(n_row, Ap, Aj, x, y)
 
+def drake_matching(*args):
+    """
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const n, int [] agg1, int [] M1, int [] agg2, int [] M2, int [] S)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const n, int [] agg1, int [] M1, int [] agg2, int [] M2, int [] S)
+    """
+    return _amg_core.drake_matching(*args)
+
 def fit_candidates(*args):
     """
     fit_candidates(int const n_row, int const n_col, int const K1, int const K2, int const [] Ap, int const [] Ai, float [] Ax, float const [] B, float [] R, float const tol)
@@ -415,6 +422,24 @@ def truncate_rows_csr(*args):
     truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< double > [] Sx)
     """
     return _amg_core.truncate_rows_csr(*args)
+
+def unconstrained_new_ideal(*args):
+    """
+    unconstrained_new_ideal(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, float [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, float const [] lqTopOpValues, int const lqTopOpValues_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, float const [] rhsTopValues, int const rhsTopValues_size, int const numFpts, int const numCpts)
+    unconstrained_new_ideal(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, double [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, double const [] lqTopOpValues, int const lqTopOpValues_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, double const [] rhsTopValues, int const rhsTopValues_size, int const numFpts, int const numCpts)
+    unconstrained_new_ideal(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, std::complex< float > [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, std::complex< float > const [] lqTopOpValues, int const lqTopOpValues_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, std::complex< float > const [] rhsTopValues, int const rhsTopValues_size, int const numFpts, int const numCpts)
+    unconstrained_new_ideal(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, std::complex< double > [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, std::complex< double > const [] lqTopOpValues, int const lqTopOpValues_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, std::complex< double > const [] rhsTopValues, int const rhsTopValues_size, int const numFpts, int const numCpts)
+    """
+    return _amg_core.unconstrained_new_ideal(*args)
+
+def new_ideal_interpolation(*args):
+    """
+    new_ideal_interpolation(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, float [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, float const [] lqTopOpValues, int const lqTopOpValues_size, float const [] lqOpBottom, int const lqOpBottom_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, float const [] rhsTopValues, int const rhsTopValues_size, float const [] rhsBottom, int const rhsBottom_size, int const numFpts, int const numCpts, int const numBadGuys)
+    new_ideal_interpolation(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, double [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, double const [] lqTopOpValues, int const lqTopOpValues_size, double const [] lqOpBottom, int const lqOpBottom_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, double const [] rhsTopValues, int const rhsTopValues_size, double const [] rhsBottom, int const rhsBottom_size, int const numFpts, int const numCpts, int const numBadGuys)
+    new_ideal_interpolation(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, std::complex< float > [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, std::complex< float > const [] lqTopOpValues, int const lqTopOpValues_size, std::complex< float > const [] lqOpBottom, int const lqOpBottom_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, std::complex< float > const [] rhsTopValues, int const rhsTopValues_size, std::complex< float > const [] rhsBottom, int const rhsBottom_size, int const numFpts, int const numCpts, int const numBadGuys)
+    new_ideal_interpolation(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, std::complex< double > [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, std::complex< double > const [] lqTopOpValues, int const lqTopOpValues_size, std::complex< double > const [] lqOpBottom, int const lqOpBottom_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, std::complex< double > const [] rhsTopValues, int const rhsTopValues_size, std::complex< double > const [] rhsBottom, int const rhsBottom_size, int const numFpts, int const numCpts, int const numBadGuys)
+    """
+    return _amg_core.new_ideal_interpolation(*args)
 
 _amg_core.F_NODE_swigconstant(_amg_core)
 F_NODE = _amg_core.F_NODE

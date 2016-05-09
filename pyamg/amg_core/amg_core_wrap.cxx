@@ -3009,10 +3009,11 @@ SWIG_Python_NonDynamicSetAttr(PyObject *obj, PyObject *name, PyObject *value) {
 #define SWIGTYPE_p_char swig_types[0]
 #define SWIGTYPE_p_double swig_types[1]
 #define SWIGTYPE_p_float swig_types[2]
-#define SWIGTYPE_p_std__complexT_double_t swig_types[3]
-#define SWIGTYPE_p_std__complexT_float_t swig_types[4]
-static swig_type_info *swig_types[6];
-static swig_module_info swig_module = {swig_types, 5, 0, 0, 0, 0};
+#define SWIGTYPE_p_int swig_types[3]
+#define SWIGTYPE_p_std__complexT_double_t swig_types[4]
+#define SWIGTYPE_p_std__complexT_float_t swig_types[5]
+static swig_type_info *swig_types[7];
+static swig_module_info swig_module = {swig_types, 6, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -19144,6 +19145,400 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_drake_matching__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  float *arg5 ;
+  int arg6 ;
+  int arg7 ;
+  int *arg8 ;
+  int arg9 ;
+  int *arg10 ;
+  int arg11 ;
+  int *arg12 ;
+  int arg13 ;
+  int *arg14 ;
+  int arg15 ;
+  int *arg16 ;
+  int arg17 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  PyArrayObject *array3 = NULL ;
+  int i3 = 1 ;
+  PyArrayObject *array5 = NULL ;
+  int i5 = 1 ;
+  int val7 ;
+  int ecode7 = 0 ;
+  PyArrayObject *array8 = NULL ;
+  int i8 = 1 ;
+  PyArrayObject *array10 = NULL ;
+  int i10 = 1 ;
+  PyArrayObject *array12 = NULL ;
+  int i12 = 1 ;
+  PyArrayObject *array14 = NULL ;
+  int i14 = 1 ;
+  PyArrayObject *array16 = NULL ;
+  int i16 = 1 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOO:drake_matching",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  {
+    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
+    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
+      || !require_native(array3)) SWIG_fail;
+    arg3 = (int*) array_data(array3);
+    arg4 = 1;
+    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
+  }
+  {
+    array5 = obj_to_array_no_conversion(obj2, NPY_FLOAT);
+    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
+      || !require_native(array5)) SWIG_fail;
+    arg5 = (float*) array_data(array5);
+    arg6 = 1;
+    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
+  }
+  ecode7 = SWIG_AsVal_int(obj3, &val7);
+  if (!SWIG_IsOK(ecode7)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode7), "in method '" "drake_matching" "', argument " "7"" of type '" "int""'");
+  } 
+  arg7 = static_cast< int >(val7);
+  {
+    array8 = obj_to_array_no_conversion(obj4, NPY_INT);
+    if (!array8 || !require_dimensions(array8,1) || !require_contiguous(array8)
+      || !require_native(array8)) SWIG_fail;
+    arg8 = (int*) array_data(array8);
+    arg9 = 1;
+    for (i8=0; i8 < array_numdims(array8); ++i8) arg9 *= array_size(array8,i8);
+  }
+  {
+    array10 = obj_to_array_no_conversion(obj5, NPY_INT);
+    if (!array10 || !require_dimensions(array10,1) || !require_contiguous(array10)
+      || !require_native(array10)) SWIG_fail;
+    arg10 = (int*) array_data(array10);
+    arg11 = 1;
+    for (i10=0; i10 < array_numdims(array10); ++i10) arg11 *= array_size(array10,i10);
+  }
+  {
+    array12 = obj_to_array_no_conversion(obj6, NPY_INT);
+    if (!array12 || !require_dimensions(array12,1) || !require_contiguous(array12)
+      || !require_native(array12)) SWIG_fail;
+    arg12 = (int*) array_data(array12);
+    arg13 = 1;
+    for (i12=0; i12 < array_numdims(array12); ++i12) arg13 *= array_size(array12,i12);
+  }
+  {
+    array14 = obj_to_array_no_conversion(obj7, NPY_INT);
+    if (!array14 || !require_dimensions(array14,1) || !require_contiguous(array14)
+      || !require_native(array14)) SWIG_fail;
+    arg14 = (int*) array_data(array14);
+    arg15 = 1;
+    for (i14=0; i14 < array_numdims(array14); ++i14) arg15 *= array_size(array14,i14);
+  }
+  {
+    array16 = obj_to_array_no_conversion(obj8, NPY_INT);
+    if (!array16 || !require_dimensions(array16,1) || !require_contiguous(array16)
+      || !require_native(array16)) SWIG_fail;
+    arg16 = (int*) array_data(array16);
+    arg17 = 1;
+    for (i16=0; i16 < array_numdims(array16); ++i16) arg17 *= array_size(array16,i16);
+  }
+  drake_matching< int,float >((int const (*))arg1,arg2,(int const (*))arg3,arg4,(float const (*))arg5,arg6,arg7,arg8,arg9,arg10,arg11,arg12,arg13,arg14,arg15,arg16,arg17);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_drake_matching__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  double *arg5 ;
+  int arg6 ;
+  int arg7 ;
+  int *arg8 ;
+  int arg9 ;
+  int *arg10 ;
+  int arg11 ;
+  int *arg12 ;
+  int arg13 ;
+  int *arg14 ;
+  int arg15 ;
+  int *arg16 ;
+  int arg17 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  PyArrayObject *array3 = NULL ;
+  int i3 = 1 ;
+  PyArrayObject *array5 = NULL ;
+  int i5 = 1 ;
+  int val7 ;
+  int ecode7 = 0 ;
+  PyArrayObject *array8 = NULL ;
+  int i8 = 1 ;
+  PyArrayObject *array10 = NULL ;
+  int i10 = 1 ;
+  PyArrayObject *array12 = NULL ;
+  int i12 = 1 ;
+  PyArrayObject *array14 = NULL ;
+  int i14 = 1 ;
+  PyArrayObject *array16 = NULL ;
+  int i16 = 1 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOO:drake_matching",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  {
+    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
+    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
+      || !require_native(array3)) SWIG_fail;
+    arg3 = (int*) array_data(array3);
+    arg4 = 1;
+    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
+  }
+  {
+    array5 = obj_to_array_no_conversion(obj2, NPY_DOUBLE);
+    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
+      || !require_native(array5)) SWIG_fail;
+    arg5 = (double*) array_data(array5);
+    arg6 = 1;
+    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
+  }
+  ecode7 = SWIG_AsVal_int(obj3, &val7);
+  if (!SWIG_IsOK(ecode7)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode7), "in method '" "drake_matching" "', argument " "7"" of type '" "int""'");
+  } 
+  arg7 = static_cast< int >(val7);
+  {
+    array8 = obj_to_array_no_conversion(obj4, NPY_INT);
+    if (!array8 || !require_dimensions(array8,1) || !require_contiguous(array8)
+      || !require_native(array8)) SWIG_fail;
+    arg8 = (int*) array_data(array8);
+    arg9 = 1;
+    for (i8=0; i8 < array_numdims(array8); ++i8) arg9 *= array_size(array8,i8);
+  }
+  {
+    array10 = obj_to_array_no_conversion(obj5, NPY_INT);
+    if (!array10 || !require_dimensions(array10,1) || !require_contiguous(array10)
+      || !require_native(array10)) SWIG_fail;
+    arg10 = (int*) array_data(array10);
+    arg11 = 1;
+    for (i10=0; i10 < array_numdims(array10); ++i10) arg11 *= array_size(array10,i10);
+  }
+  {
+    array12 = obj_to_array_no_conversion(obj6, NPY_INT);
+    if (!array12 || !require_dimensions(array12,1) || !require_contiguous(array12)
+      || !require_native(array12)) SWIG_fail;
+    arg12 = (int*) array_data(array12);
+    arg13 = 1;
+    for (i12=0; i12 < array_numdims(array12); ++i12) arg13 *= array_size(array12,i12);
+  }
+  {
+    array14 = obj_to_array_no_conversion(obj7, NPY_INT);
+    if (!array14 || !require_dimensions(array14,1) || !require_contiguous(array14)
+      || !require_native(array14)) SWIG_fail;
+    arg14 = (int*) array_data(array14);
+    arg15 = 1;
+    for (i14=0; i14 < array_numdims(array14); ++i14) arg15 *= array_size(array14,i14);
+  }
+  {
+    array16 = obj_to_array_no_conversion(obj8, NPY_INT);
+    if (!array16 || !require_dimensions(array16,1) || !require_contiguous(array16)
+      || !require_native(array16)) SWIG_fail;
+    arg16 = (int*) array_data(array16);
+    arg17 = 1;
+    for (i16=0; i16 < array_numdims(array16); ++i16) arg17 *= array_size(array16,i16);
+  }
+  drake_matching< int,double >((int const (*))arg1,arg2,(int const (*))arg3,arg4,(double const (*))arg5,arg6,arg7,arg8,arg9,arg10,arg11,arg12,arg13,arg14,arg15,arg16,arg17);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_drake_matching(PyObject *self, PyObject *args) {
+  Py_ssize_t argc;
+  PyObject *argv[10] = {
+    0
+  };
+  Py_ssize_t ii;
+  
+  if (!PyTuple_Check(args)) SWIG_fail;
+  argc = args ? PyObject_Length(args) : 0;
+  for (ii = 0; (ii < 9) && (ii < argc); ii++) {
+    argv[ii] = PyTuple_GET_ITEM(args,ii);
+  }
+  if (argc == 9) {
+    int _v;
+    {
+      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
+        NPY_INT);
+    }
+    if (_v) {
+      {
+        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
+          NPY_INT);
+      }
+      if (_v) {
+        {
+          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
+            NPY_FLOAT);
+        }
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            {
+              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
+                NPY_INT);
+            }
+            if (_v) {
+              {
+                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
+                  NPY_INT);
+              }
+              if (_v) {
+                {
+                  _v = is_array(argv[6]) && PyArray_EquivTypenums(array_type(argv[6]),
+                    NPY_INT);
+                }
+                if (_v) {
+                  {
+                    _v = is_array(argv[7]) && PyArray_EquivTypenums(array_type(argv[7]),
+                      NPY_INT);
+                  }
+                  if (_v) {
+                    {
+                      _v = is_array(argv[8]) && PyArray_EquivTypenums(array_type(argv[8]),
+                        NPY_INT);
+                    }
+                    if (_v) {
+                      if (argc <= 9) {
+                        return _wrap_drake_matching__SWIG_1(self, args);
+                      }
+                      return _wrap_drake_matching__SWIG_1(self, args);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 9) {
+    int _v;
+    {
+      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
+        NPY_INT);
+    }
+    if (_v) {
+      {
+        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
+          NPY_INT);
+      }
+      if (_v) {
+        {
+          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
+            NPY_DOUBLE);
+        }
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            {
+              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
+                NPY_INT);
+            }
+            if (_v) {
+              {
+                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
+                  NPY_INT);
+              }
+              if (_v) {
+                {
+                  _v = is_array(argv[6]) && PyArray_EquivTypenums(array_type(argv[6]),
+                    NPY_INT);
+                }
+                if (_v) {
+                  {
+                    _v = is_array(argv[7]) && PyArray_EquivTypenums(array_type(argv[7]),
+                      NPY_INT);
+                  }
+                  if (_v) {
+                    {
+                      _v = is_array(argv[8]) && PyArray_EquivTypenums(array_type(argv[8]),
+                        NPY_INT);
+                    }
+                    if (_v) {
+                      if (argc <= 9) {
+                        return _wrap_drake_matching__SWIG_2(self, args);
+                      }
+                      return _wrap_drake_matching__SWIG_2(self, args);
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+fail:
+  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'drake_matching'.\n"
+    "  Possible C/C++ prototypes are:\n"
+    "    drake_matching< int,float >(int const [],int const,int const [],int const,float const [],int const,int const,int [],int const,int [],int const,int [],int const,int [],int const,int [],int const)\n"
+    "    drake_matching< int,double >(int const [],int const,int const [],int const,double const [],int const,int const,int [],int const,int [],int const,int [],int const,int [],int const,int [],int const)\n");
+  return 0;
+}
+
+
 SWIGINTERN PyObject *_wrap_fit_candidates__SWIG_0(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int arg1 ;
@@ -22868,6 +23263,2802 @@ fail:
     "    truncate_rows_csr< int,double,double >(int const,int const,int const [],int const,int [],int const,double [],int const)\n"
     "    truncate_rows_csr< int,std::complex< float >,float >(int const,int const,int const [],int const,int [],int const,std::complex< float > [],int const)\n"
     "    truncate_rows_csr< int,std::complex< double >,double >(int const,int const,int const [],int const,int [],int const,std::complex< double > [],int const)\n");
+  return 0;
+}
+
+
+SWIGINTERN PyObject *_wrap_unconstrained_new_ideal__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  float *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  float *arg11 ;
+  int arg12 ;
+  int *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  float *arg17 ;
+  int arg18 ;
+  int arg19 ;
+  int arg20 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  int val8 ;
+  int ecode8 = 0 ;
+  void *argp9 = 0 ;
+  int res9 = 0 ;
+  int val10 ;
+  int ecode10 = 0 ;
+  void *argp11 = 0 ;
+  int res11 = 0 ;
+  int val12 ;
+  int ecode12 = 0 ;
+  void *argp13 = 0 ;
+  int res13 = 0 ;
+  int val14 ;
+  int ecode14 = 0 ;
+  void *argp15 = 0 ;
+  int res15 = 0 ;
+  int val16 ;
+  int ecode16 = 0 ;
+  void *argp17 = 0 ;
+  int res17 = 0 ;
+  int val18 ;
+  int ecode18 = 0 ;
+  int val19 ;
+  int ecode19 = 0 ;
+  int val20 ;
+  int ecode20 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  PyObject * obj16 = 0 ;
+  PyObject * obj17 = 0 ;
+  PyObject * obj18 = 0 ;
+  PyObject * obj19 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOOOO:unconstrained_new_ideal",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17,&obj18,&obj19)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "unconstrained_new_ideal" "', argument " "1"" of type '" "int []""'"); 
+  } 
+  arg1 = reinterpret_cast< int * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "unconstrained_new_ideal" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "unconstrained_new_ideal" "', argument " "3"" of type '" "int []""'"); 
+  } 
+  arg3 = reinterpret_cast< int * >(argp3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "unconstrained_new_ideal" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "unconstrained_new_ideal" "', argument " "5"" of type '" "float []""'"); 
+  } 
+  arg5 = reinterpret_cast< float * >(argp5);
+  ecode6 = SWIG_AsVal_int(obj5, &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "unconstrained_new_ideal" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = static_cast< int >(val6);
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res7)) {
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "unconstrained_new_ideal" "', argument " "7"" of type '" "int const []""'"); 
+  } 
+  arg7 = reinterpret_cast< int * >(argp7);
+  ecode8 = SWIG_AsVal_int(obj7, &val8);
+  if (!SWIG_IsOK(ecode8)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "unconstrained_new_ideal" "', argument " "8"" of type '" "int""'");
+  } 
+  arg8 = static_cast< int >(val8);
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res9)) {
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "unconstrained_new_ideal" "', argument " "9"" of type '" "int const []""'"); 
+  } 
+  arg9 = reinterpret_cast< int * >(argp9);
+  ecode10 = SWIG_AsVal_int(obj9, &val10);
+  if (!SWIG_IsOK(ecode10)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "unconstrained_new_ideal" "', argument " "10"" of type '" "int""'");
+  } 
+  arg10 = static_cast< int >(val10);
+  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res11)) {
+    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "unconstrained_new_ideal" "', argument " "11"" of type '" "float const []""'"); 
+  } 
+  arg11 = reinterpret_cast< float * >(argp11);
+  ecode12 = SWIG_AsVal_int(obj11, &val12);
+  if (!SWIG_IsOK(ecode12)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "unconstrained_new_ideal" "', argument " "12"" of type '" "int""'");
+  } 
+  arg12 = static_cast< int >(val12);
+  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res13)) {
+    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "unconstrained_new_ideal" "', argument " "13"" of type '" "int const []""'"); 
+  } 
+  arg13 = reinterpret_cast< int * >(argp13);
+  ecode14 = SWIG_AsVal_int(obj13, &val14);
+  if (!SWIG_IsOK(ecode14)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "unconstrained_new_ideal" "', argument " "14"" of type '" "int""'");
+  } 
+  arg14 = static_cast< int >(val14);
+  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res15)) {
+    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "unconstrained_new_ideal" "', argument " "15"" of type '" "int const []""'"); 
+  } 
+  arg15 = reinterpret_cast< int * >(argp15);
+  ecode16 = SWIG_AsVal_int(obj15, &val16);
+  if (!SWIG_IsOK(ecode16)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "unconstrained_new_ideal" "', argument " "16"" of type '" "int""'");
+  } 
+  arg16 = static_cast< int >(val16);
+  res17 = SWIG_ConvertPtr(obj16, &argp17,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res17)) {
+    SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "unconstrained_new_ideal" "', argument " "17"" of type '" "float const []""'"); 
+  } 
+  arg17 = reinterpret_cast< float * >(argp17);
+  ecode18 = SWIG_AsVal_int(obj17, &val18);
+  if (!SWIG_IsOK(ecode18)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode18), "in method '" "unconstrained_new_ideal" "', argument " "18"" of type '" "int""'");
+  } 
+  arg18 = static_cast< int >(val18);
+  ecode19 = SWIG_AsVal_int(obj18, &val19);
+  if (!SWIG_IsOK(ecode19)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode19), "in method '" "unconstrained_new_ideal" "', argument " "19"" of type '" "int""'");
+  } 
+  arg19 = static_cast< int >(val19);
+  ecode20 = SWIG_AsVal_int(obj19, &val20);
+  if (!SWIG_IsOK(ecode20)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode20), "in method '" "unconstrained_new_ideal" "', argument " "20"" of type '" "int""'");
+  } 
+  arg20 = static_cast< int >(val20);
+  unconstrained_new_ideal< int,float,float >(arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(float const (*))arg11,arg12,(int const (*))arg13,arg14,(int const (*))arg15,arg16,(float const (*))arg17,arg18,arg19,arg20);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_unconstrained_new_ideal__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  double *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  double *arg11 ;
+  int arg12 ;
+  int *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  double *arg17 ;
+  int arg18 ;
+  int arg19 ;
+  int arg20 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  int val8 ;
+  int ecode8 = 0 ;
+  void *argp9 = 0 ;
+  int res9 = 0 ;
+  int val10 ;
+  int ecode10 = 0 ;
+  void *argp11 = 0 ;
+  int res11 = 0 ;
+  int val12 ;
+  int ecode12 = 0 ;
+  void *argp13 = 0 ;
+  int res13 = 0 ;
+  int val14 ;
+  int ecode14 = 0 ;
+  void *argp15 = 0 ;
+  int res15 = 0 ;
+  int val16 ;
+  int ecode16 = 0 ;
+  void *argp17 = 0 ;
+  int res17 = 0 ;
+  int val18 ;
+  int ecode18 = 0 ;
+  int val19 ;
+  int ecode19 = 0 ;
+  int val20 ;
+  int ecode20 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  PyObject * obj16 = 0 ;
+  PyObject * obj17 = 0 ;
+  PyObject * obj18 = 0 ;
+  PyObject * obj19 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOOOO:unconstrained_new_ideal",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17,&obj18,&obj19)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "unconstrained_new_ideal" "', argument " "1"" of type '" "int []""'"); 
+  } 
+  arg1 = reinterpret_cast< int * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "unconstrained_new_ideal" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "unconstrained_new_ideal" "', argument " "3"" of type '" "int []""'"); 
+  } 
+  arg3 = reinterpret_cast< int * >(argp3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "unconstrained_new_ideal" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_double, 0 |  0 );
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "unconstrained_new_ideal" "', argument " "5"" of type '" "double []""'"); 
+  } 
+  arg5 = reinterpret_cast< double * >(argp5);
+  ecode6 = SWIG_AsVal_int(obj5, &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "unconstrained_new_ideal" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = static_cast< int >(val6);
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res7)) {
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "unconstrained_new_ideal" "', argument " "7"" of type '" "int const []""'"); 
+  } 
+  arg7 = reinterpret_cast< int * >(argp7);
+  ecode8 = SWIG_AsVal_int(obj7, &val8);
+  if (!SWIG_IsOK(ecode8)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "unconstrained_new_ideal" "', argument " "8"" of type '" "int""'");
+  } 
+  arg8 = static_cast< int >(val8);
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res9)) {
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "unconstrained_new_ideal" "', argument " "9"" of type '" "int const []""'"); 
+  } 
+  arg9 = reinterpret_cast< int * >(argp9);
+  ecode10 = SWIG_AsVal_int(obj9, &val10);
+  if (!SWIG_IsOK(ecode10)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "unconstrained_new_ideal" "', argument " "10"" of type '" "int""'");
+  } 
+  arg10 = static_cast< int >(val10);
+  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_double, 0 |  0 );
+  if (!SWIG_IsOK(res11)) {
+    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "unconstrained_new_ideal" "', argument " "11"" of type '" "double const []""'"); 
+  } 
+  arg11 = reinterpret_cast< double * >(argp11);
+  ecode12 = SWIG_AsVal_int(obj11, &val12);
+  if (!SWIG_IsOK(ecode12)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "unconstrained_new_ideal" "', argument " "12"" of type '" "int""'");
+  } 
+  arg12 = static_cast< int >(val12);
+  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res13)) {
+    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "unconstrained_new_ideal" "', argument " "13"" of type '" "int const []""'"); 
+  } 
+  arg13 = reinterpret_cast< int * >(argp13);
+  ecode14 = SWIG_AsVal_int(obj13, &val14);
+  if (!SWIG_IsOK(ecode14)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "unconstrained_new_ideal" "', argument " "14"" of type '" "int""'");
+  } 
+  arg14 = static_cast< int >(val14);
+  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res15)) {
+    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "unconstrained_new_ideal" "', argument " "15"" of type '" "int const []""'"); 
+  } 
+  arg15 = reinterpret_cast< int * >(argp15);
+  ecode16 = SWIG_AsVal_int(obj15, &val16);
+  if (!SWIG_IsOK(ecode16)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "unconstrained_new_ideal" "', argument " "16"" of type '" "int""'");
+  } 
+  arg16 = static_cast< int >(val16);
+  res17 = SWIG_ConvertPtr(obj16, &argp17,SWIGTYPE_p_double, 0 |  0 );
+  if (!SWIG_IsOK(res17)) {
+    SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "unconstrained_new_ideal" "', argument " "17"" of type '" "double const []""'"); 
+  } 
+  arg17 = reinterpret_cast< double * >(argp17);
+  ecode18 = SWIG_AsVal_int(obj17, &val18);
+  if (!SWIG_IsOK(ecode18)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode18), "in method '" "unconstrained_new_ideal" "', argument " "18"" of type '" "int""'");
+  } 
+  arg18 = static_cast< int >(val18);
+  ecode19 = SWIG_AsVal_int(obj18, &val19);
+  if (!SWIG_IsOK(ecode19)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode19), "in method '" "unconstrained_new_ideal" "', argument " "19"" of type '" "int""'");
+  } 
+  arg19 = static_cast< int >(val19);
+  ecode20 = SWIG_AsVal_int(obj19, &val20);
+  if (!SWIG_IsOK(ecode20)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode20), "in method '" "unconstrained_new_ideal" "', argument " "20"" of type '" "int""'");
+  } 
+  arg20 = static_cast< int >(val20);
+  unconstrained_new_ideal< int,double,double >(arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(double const (*))arg11,arg12,(int const (*))arg13,arg14,(int const (*))arg15,arg16,(double const (*))arg17,arg18,arg19,arg20);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_unconstrained_new_ideal__SWIG_3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  std::complex< float > *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  std::complex< float > *arg11 ;
+  int arg12 ;
+  int *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  std::complex< float > *arg17 ;
+  int arg18 ;
+  int arg19 ;
+  int arg20 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  int val8 ;
+  int ecode8 = 0 ;
+  void *argp9 = 0 ;
+  int res9 = 0 ;
+  int val10 ;
+  int ecode10 = 0 ;
+  void *argp11 = 0 ;
+  int res11 = 0 ;
+  int val12 ;
+  int ecode12 = 0 ;
+  void *argp13 = 0 ;
+  int res13 = 0 ;
+  int val14 ;
+  int ecode14 = 0 ;
+  void *argp15 = 0 ;
+  int res15 = 0 ;
+  int val16 ;
+  int ecode16 = 0 ;
+  void *argp17 = 0 ;
+  int res17 = 0 ;
+  int val18 ;
+  int ecode18 = 0 ;
+  int val19 ;
+  int ecode19 = 0 ;
+  int val20 ;
+  int ecode20 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  PyObject * obj16 = 0 ;
+  PyObject * obj17 = 0 ;
+  PyObject * obj18 = 0 ;
+  PyObject * obj19 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOOOO:unconstrained_new_ideal",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17,&obj18,&obj19)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "unconstrained_new_ideal" "', argument " "1"" of type '" "int []""'"); 
+  } 
+  arg1 = reinterpret_cast< int * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "unconstrained_new_ideal" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "unconstrained_new_ideal" "', argument " "3"" of type '" "int []""'"); 
+  } 
+  arg3 = reinterpret_cast< int * >(argp3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "unconstrained_new_ideal" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_std__complexT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "unconstrained_new_ideal" "', argument " "5"" of type '" "std::complex< float > []""'"); 
+  } 
+  arg5 = reinterpret_cast< std::complex< float > * >(argp5);
+  ecode6 = SWIG_AsVal_int(obj5, &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "unconstrained_new_ideal" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = static_cast< int >(val6);
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res7)) {
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "unconstrained_new_ideal" "', argument " "7"" of type '" "int const []""'"); 
+  } 
+  arg7 = reinterpret_cast< int * >(argp7);
+  ecode8 = SWIG_AsVal_int(obj7, &val8);
+  if (!SWIG_IsOK(ecode8)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "unconstrained_new_ideal" "', argument " "8"" of type '" "int""'");
+  } 
+  arg8 = static_cast< int >(val8);
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res9)) {
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "unconstrained_new_ideal" "', argument " "9"" of type '" "int const []""'"); 
+  } 
+  arg9 = reinterpret_cast< int * >(argp9);
+  ecode10 = SWIG_AsVal_int(obj9, &val10);
+  if (!SWIG_IsOK(ecode10)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "unconstrained_new_ideal" "', argument " "10"" of type '" "int""'");
+  } 
+  arg10 = static_cast< int >(val10);
+  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_std__complexT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res11)) {
+    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "unconstrained_new_ideal" "', argument " "11"" of type '" "std::complex< float > const []""'"); 
+  } 
+  arg11 = reinterpret_cast< std::complex< float > * >(argp11);
+  ecode12 = SWIG_AsVal_int(obj11, &val12);
+  if (!SWIG_IsOK(ecode12)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "unconstrained_new_ideal" "', argument " "12"" of type '" "int""'");
+  } 
+  arg12 = static_cast< int >(val12);
+  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res13)) {
+    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "unconstrained_new_ideal" "', argument " "13"" of type '" "int const []""'"); 
+  } 
+  arg13 = reinterpret_cast< int * >(argp13);
+  ecode14 = SWIG_AsVal_int(obj13, &val14);
+  if (!SWIG_IsOK(ecode14)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "unconstrained_new_ideal" "', argument " "14"" of type '" "int""'");
+  } 
+  arg14 = static_cast< int >(val14);
+  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res15)) {
+    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "unconstrained_new_ideal" "', argument " "15"" of type '" "int const []""'"); 
+  } 
+  arg15 = reinterpret_cast< int * >(argp15);
+  ecode16 = SWIG_AsVal_int(obj15, &val16);
+  if (!SWIG_IsOK(ecode16)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "unconstrained_new_ideal" "', argument " "16"" of type '" "int""'");
+  } 
+  arg16 = static_cast< int >(val16);
+  res17 = SWIG_ConvertPtr(obj16, &argp17,SWIGTYPE_p_std__complexT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res17)) {
+    SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "unconstrained_new_ideal" "', argument " "17"" of type '" "std::complex< float > const []""'"); 
+  } 
+  arg17 = reinterpret_cast< std::complex< float > * >(argp17);
+  ecode18 = SWIG_AsVal_int(obj17, &val18);
+  if (!SWIG_IsOK(ecode18)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode18), "in method '" "unconstrained_new_ideal" "', argument " "18"" of type '" "int""'");
+  } 
+  arg18 = static_cast< int >(val18);
+  ecode19 = SWIG_AsVal_int(obj18, &val19);
+  if (!SWIG_IsOK(ecode19)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode19), "in method '" "unconstrained_new_ideal" "', argument " "19"" of type '" "int""'");
+  } 
+  arg19 = static_cast< int >(val19);
+  ecode20 = SWIG_AsVal_int(obj19, &val20);
+  if (!SWIG_IsOK(ecode20)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode20), "in method '" "unconstrained_new_ideal" "', argument " "20"" of type '" "int""'");
+  } 
+  arg20 = static_cast< int >(val20);
+  unconstrained_new_ideal< int,std::complex< float >,float >(arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(std::complex< float > const (*))arg11,arg12,(int const (*))arg13,arg14,(int const (*))arg15,arg16,(std::complex< float > const (*))arg17,arg18,arg19,arg20);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_unconstrained_new_ideal__SWIG_4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  std::complex< double > *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  std::complex< double > *arg11 ;
+  int arg12 ;
+  int *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  std::complex< double > *arg17 ;
+  int arg18 ;
+  int arg19 ;
+  int arg20 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  int val8 ;
+  int ecode8 = 0 ;
+  void *argp9 = 0 ;
+  int res9 = 0 ;
+  int val10 ;
+  int ecode10 = 0 ;
+  void *argp11 = 0 ;
+  int res11 = 0 ;
+  int val12 ;
+  int ecode12 = 0 ;
+  void *argp13 = 0 ;
+  int res13 = 0 ;
+  int val14 ;
+  int ecode14 = 0 ;
+  void *argp15 = 0 ;
+  int res15 = 0 ;
+  int val16 ;
+  int ecode16 = 0 ;
+  void *argp17 = 0 ;
+  int res17 = 0 ;
+  int val18 ;
+  int ecode18 = 0 ;
+  int val19 ;
+  int ecode19 = 0 ;
+  int val20 ;
+  int ecode20 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  PyObject * obj16 = 0 ;
+  PyObject * obj17 = 0 ;
+  PyObject * obj18 = 0 ;
+  PyObject * obj19 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOOOO:unconstrained_new_ideal",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17,&obj18,&obj19)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "unconstrained_new_ideal" "', argument " "1"" of type '" "int []""'"); 
+  } 
+  arg1 = reinterpret_cast< int * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "unconstrained_new_ideal" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "unconstrained_new_ideal" "', argument " "3"" of type '" "int []""'"); 
+  } 
+  arg3 = reinterpret_cast< int * >(argp3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "unconstrained_new_ideal" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_std__complexT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "unconstrained_new_ideal" "', argument " "5"" of type '" "std::complex< double > []""'"); 
+  } 
+  arg5 = reinterpret_cast< std::complex< double > * >(argp5);
+  ecode6 = SWIG_AsVal_int(obj5, &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "unconstrained_new_ideal" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = static_cast< int >(val6);
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res7)) {
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "unconstrained_new_ideal" "', argument " "7"" of type '" "int const []""'"); 
+  } 
+  arg7 = reinterpret_cast< int * >(argp7);
+  ecode8 = SWIG_AsVal_int(obj7, &val8);
+  if (!SWIG_IsOK(ecode8)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "unconstrained_new_ideal" "', argument " "8"" of type '" "int""'");
+  } 
+  arg8 = static_cast< int >(val8);
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res9)) {
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "unconstrained_new_ideal" "', argument " "9"" of type '" "int const []""'"); 
+  } 
+  arg9 = reinterpret_cast< int * >(argp9);
+  ecode10 = SWIG_AsVal_int(obj9, &val10);
+  if (!SWIG_IsOK(ecode10)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "unconstrained_new_ideal" "', argument " "10"" of type '" "int""'");
+  } 
+  arg10 = static_cast< int >(val10);
+  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_std__complexT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res11)) {
+    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "unconstrained_new_ideal" "', argument " "11"" of type '" "std::complex< double > const []""'"); 
+  } 
+  arg11 = reinterpret_cast< std::complex< double > * >(argp11);
+  ecode12 = SWIG_AsVal_int(obj11, &val12);
+  if (!SWIG_IsOK(ecode12)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "unconstrained_new_ideal" "', argument " "12"" of type '" "int""'");
+  } 
+  arg12 = static_cast< int >(val12);
+  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res13)) {
+    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "unconstrained_new_ideal" "', argument " "13"" of type '" "int const []""'"); 
+  } 
+  arg13 = reinterpret_cast< int * >(argp13);
+  ecode14 = SWIG_AsVal_int(obj13, &val14);
+  if (!SWIG_IsOK(ecode14)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "unconstrained_new_ideal" "', argument " "14"" of type '" "int""'");
+  } 
+  arg14 = static_cast< int >(val14);
+  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res15)) {
+    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "unconstrained_new_ideal" "', argument " "15"" of type '" "int const []""'"); 
+  } 
+  arg15 = reinterpret_cast< int * >(argp15);
+  ecode16 = SWIG_AsVal_int(obj15, &val16);
+  if (!SWIG_IsOK(ecode16)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "unconstrained_new_ideal" "', argument " "16"" of type '" "int""'");
+  } 
+  arg16 = static_cast< int >(val16);
+  res17 = SWIG_ConvertPtr(obj16, &argp17,SWIGTYPE_p_std__complexT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res17)) {
+    SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "unconstrained_new_ideal" "', argument " "17"" of type '" "std::complex< double > const []""'"); 
+  } 
+  arg17 = reinterpret_cast< std::complex< double > * >(argp17);
+  ecode18 = SWIG_AsVal_int(obj17, &val18);
+  if (!SWIG_IsOK(ecode18)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode18), "in method '" "unconstrained_new_ideal" "', argument " "18"" of type '" "int""'");
+  } 
+  arg18 = static_cast< int >(val18);
+  ecode19 = SWIG_AsVal_int(obj18, &val19);
+  if (!SWIG_IsOK(ecode19)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode19), "in method '" "unconstrained_new_ideal" "', argument " "19"" of type '" "int""'");
+  } 
+  arg19 = static_cast< int >(val19);
+  ecode20 = SWIG_AsVal_int(obj19, &val20);
+  if (!SWIG_IsOK(ecode20)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode20), "in method '" "unconstrained_new_ideal" "', argument " "20"" of type '" "int""'");
+  } 
+  arg20 = static_cast< int >(val20);
+  unconstrained_new_ideal< int,std::complex< double >,double >(arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(std::complex< double > const (*))arg11,arg12,(int const (*))arg13,arg14,(int const (*))arg15,arg16,(std::complex< double > const (*))arg17,arg18,arg19,arg20);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_unconstrained_new_ideal(PyObject *self, PyObject *args) {
+  Py_ssize_t argc;
+  PyObject *argv[21] = {
+    0
+  };
+  Py_ssize_t ii;
+  
+  if (!PyTuple_Check(args)) SWIG_fail;
+  argc = args ? PyObject_Length(args) : 0;
+  for (ii = 0; (ii < 20) && (ii < argc); ii++) {
+    argv[ii] = PyTuple_GET_ITEM(args,ii);
+  }
+  if (argc == 20) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_int, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_int(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        void *vptr = 0;
+        int res = SWIG_ConvertPtr(argv[2], &vptr, SWIGTYPE_p_int, 0);
+        _v = SWIG_CheckState(res);
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            void *vptr = 0;
+            int res = SWIG_ConvertPtr(argv[4], &vptr, SWIGTYPE_p_float, 0);
+            _v = SWIG_CheckState(res);
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                void *vptr = 0;
+                int res = SWIG_ConvertPtr(argv[6], &vptr, SWIGTYPE_p_int, 0);
+                _v = SWIG_CheckState(res);
+                if (_v) {
+                  {
+                    int res = SWIG_AsVal_int(argv[7], NULL);
+                    _v = SWIG_CheckState(res);
+                  }
+                  if (_v) {
+                    void *vptr = 0;
+                    int res = SWIG_ConvertPtr(argv[8], &vptr, SWIGTYPE_p_int, 0);
+                    _v = SWIG_CheckState(res);
+                    if (_v) {
+                      {
+                        int res = SWIG_AsVal_int(argv[9], NULL);
+                        _v = SWIG_CheckState(res);
+                      }
+                      if (_v) {
+                        void *vptr = 0;
+                        int res = SWIG_ConvertPtr(argv[10], &vptr, SWIGTYPE_p_float, 0);
+                        _v = SWIG_CheckState(res);
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            void *vptr = 0;
+                            int res = SWIG_ConvertPtr(argv[12], &vptr, SWIGTYPE_p_int, 0);
+                            _v = SWIG_CheckState(res);
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                void *vptr = 0;
+                                int res = SWIG_ConvertPtr(argv[14], &vptr, SWIGTYPE_p_int, 0);
+                                _v = SWIG_CheckState(res);
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    void *vptr = 0;
+                                    int res = SWIG_ConvertPtr(argv[16], &vptr, SWIGTYPE_p_float, 0);
+                                    _v = SWIG_CheckState(res);
+                                    if (_v) {
+                                      {
+                                        int res = SWIG_AsVal_int(argv[17], NULL);
+                                        _v = SWIG_CheckState(res);
+                                      }
+                                      if (_v) {
+                                        {
+                                          int res = SWIG_AsVal_int(argv[18], NULL);
+                                          _v = SWIG_CheckState(res);
+                                        }
+                                        if (_v) {
+                                          {
+                                            int res = SWIG_AsVal_int(argv[19], NULL);
+                                            _v = SWIG_CheckState(res);
+                                          }
+                                          if (_v) {
+                                            return _wrap_unconstrained_new_ideal__SWIG_1(self, args);
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 20) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_int, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_int(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        void *vptr = 0;
+        int res = SWIG_ConvertPtr(argv[2], &vptr, SWIGTYPE_p_int, 0);
+        _v = SWIG_CheckState(res);
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            void *vptr = 0;
+            int res = SWIG_ConvertPtr(argv[4], &vptr, SWIGTYPE_p_double, 0);
+            _v = SWIG_CheckState(res);
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                void *vptr = 0;
+                int res = SWIG_ConvertPtr(argv[6], &vptr, SWIGTYPE_p_int, 0);
+                _v = SWIG_CheckState(res);
+                if (_v) {
+                  {
+                    int res = SWIG_AsVal_int(argv[7], NULL);
+                    _v = SWIG_CheckState(res);
+                  }
+                  if (_v) {
+                    void *vptr = 0;
+                    int res = SWIG_ConvertPtr(argv[8], &vptr, SWIGTYPE_p_int, 0);
+                    _v = SWIG_CheckState(res);
+                    if (_v) {
+                      {
+                        int res = SWIG_AsVal_int(argv[9], NULL);
+                        _v = SWIG_CheckState(res);
+                      }
+                      if (_v) {
+                        void *vptr = 0;
+                        int res = SWIG_ConvertPtr(argv[10], &vptr, SWIGTYPE_p_double, 0);
+                        _v = SWIG_CheckState(res);
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            void *vptr = 0;
+                            int res = SWIG_ConvertPtr(argv[12], &vptr, SWIGTYPE_p_int, 0);
+                            _v = SWIG_CheckState(res);
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                void *vptr = 0;
+                                int res = SWIG_ConvertPtr(argv[14], &vptr, SWIGTYPE_p_int, 0);
+                                _v = SWIG_CheckState(res);
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    void *vptr = 0;
+                                    int res = SWIG_ConvertPtr(argv[16], &vptr, SWIGTYPE_p_double, 0);
+                                    _v = SWIG_CheckState(res);
+                                    if (_v) {
+                                      {
+                                        int res = SWIG_AsVal_int(argv[17], NULL);
+                                        _v = SWIG_CheckState(res);
+                                      }
+                                      if (_v) {
+                                        {
+                                          int res = SWIG_AsVal_int(argv[18], NULL);
+                                          _v = SWIG_CheckState(res);
+                                        }
+                                        if (_v) {
+                                          {
+                                            int res = SWIG_AsVal_int(argv[19], NULL);
+                                            _v = SWIG_CheckState(res);
+                                          }
+                                          if (_v) {
+                                            return _wrap_unconstrained_new_ideal__SWIG_2(self, args);
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 20) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_int, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_int(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        void *vptr = 0;
+        int res = SWIG_ConvertPtr(argv[2], &vptr, SWIGTYPE_p_int, 0);
+        _v = SWIG_CheckState(res);
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            void *vptr = 0;
+            int res = SWIG_ConvertPtr(argv[4], &vptr, SWIGTYPE_p_std__complexT_float_t, 0);
+            _v = SWIG_CheckState(res);
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                void *vptr = 0;
+                int res = SWIG_ConvertPtr(argv[6], &vptr, SWIGTYPE_p_int, 0);
+                _v = SWIG_CheckState(res);
+                if (_v) {
+                  {
+                    int res = SWIG_AsVal_int(argv[7], NULL);
+                    _v = SWIG_CheckState(res);
+                  }
+                  if (_v) {
+                    void *vptr = 0;
+                    int res = SWIG_ConvertPtr(argv[8], &vptr, SWIGTYPE_p_int, 0);
+                    _v = SWIG_CheckState(res);
+                    if (_v) {
+                      {
+                        int res = SWIG_AsVal_int(argv[9], NULL);
+                        _v = SWIG_CheckState(res);
+                      }
+                      if (_v) {
+                        void *vptr = 0;
+                        int res = SWIG_ConvertPtr(argv[10], &vptr, SWIGTYPE_p_std__complexT_float_t, 0);
+                        _v = SWIG_CheckState(res);
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            void *vptr = 0;
+                            int res = SWIG_ConvertPtr(argv[12], &vptr, SWIGTYPE_p_int, 0);
+                            _v = SWIG_CheckState(res);
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                void *vptr = 0;
+                                int res = SWIG_ConvertPtr(argv[14], &vptr, SWIGTYPE_p_int, 0);
+                                _v = SWIG_CheckState(res);
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    void *vptr = 0;
+                                    int res = SWIG_ConvertPtr(argv[16], &vptr, SWIGTYPE_p_std__complexT_float_t, 0);
+                                    _v = SWIG_CheckState(res);
+                                    if (_v) {
+                                      {
+                                        int res = SWIG_AsVal_int(argv[17], NULL);
+                                        _v = SWIG_CheckState(res);
+                                      }
+                                      if (_v) {
+                                        {
+                                          int res = SWIG_AsVal_int(argv[18], NULL);
+                                          _v = SWIG_CheckState(res);
+                                        }
+                                        if (_v) {
+                                          {
+                                            int res = SWIG_AsVal_int(argv[19], NULL);
+                                            _v = SWIG_CheckState(res);
+                                          }
+                                          if (_v) {
+                                            return _wrap_unconstrained_new_ideal__SWIG_3(self, args);
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 20) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_int, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_int(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        void *vptr = 0;
+        int res = SWIG_ConvertPtr(argv[2], &vptr, SWIGTYPE_p_int, 0);
+        _v = SWIG_CheckState(res);
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            void *vptr = 0;
+            int res = SWIG_ConvertPtr(argv[4], &vptr, SWIGTYPE_p_std__complexT_double_t, 0);
+            _v = SWIG_CheckState(res);
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                void *vptr = 0;
+                int res = SWIG_ConvertPtr(argv[6], &vptr, SWIGTYPE_p_int, 0);
+                _v = SWIG_CheckState(res);
+                if (_v) {
+                  {
+                    int res = SWIG_AsVal_int(argv[7], NULL);
+                    _v = SWIG_CheckState(res);
+                  }
+                  if (_v) {
+                    void *vptr = 0;
+                    int res = SWIG_ConvertPtr(argv[8], &vptr, SWIGTYPE_p_int, 0);
+                    _v = SWIG_CheckState(res);
+                    if (_v) {
+                      {
+                        int res = SWIG_AsVal_int(argv[9], NULL);
+                        _v = SWIG_CheckState(res);
+                      }
+                      if (_v) {
+                        void *vptr = 0;
+                        int res = SWIG_ConvertPtr(argv[10], &vptr, SWIGTYPE_p_std__complexT_double_t, 0);
+                        _v = SWIG_CheckState(res);
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            void *vptr = 0;
+                            int res = SWIG_ConvertPtr(argv[12], &vptr, SWIGTYPE_p_int, 0);
+                            _v = SWIG_CheckState(res);
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                void *vptr = 0;
+                                int res = SWIG_ConvertPtr(argv[14], &vptr, SWIGTYPE_p_int, 0);
+                                _v = SWIG_CheckState(res);
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    void *vptr = 0;
+                                    int res = SWIG_ConvertPtr(argv[16], &vptr, SWIGTYPE_p_std__complexT_double_t, 0);
+                                    _v = SWIG_CheckState(res);
+                                    if (_v) {
+                                      {
+                                        int res = SWIG_AsVal_int(argv[17], NULL);
+                                        _v = SWIG_CheckState(res);
+                                      }
+                                      if (_v) {
+                                        {
+                                          int res = SWIG_AsVal_int(argv[18], NULL);
+                                          _v = SWIG_CheckState(res);
+                                        }
+                                        if (_v) {
+                                          {
+                                            int res = SWIG_AsVal_int(argv[19], NULL);
+                                            _v = SWIG_CheckState(res);
+                                          }
+                                          if (_v) {
+                                            return _wrap_unconstrained_new_ideal__SWIG_4(self, args);
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+fail:
+  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'unconstrained_new_ideal'.\n"
+    "  Possible C/C++ prototypes are:\n"
+    "    unconstrained_new_ideal< int,float,float >(int [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const,int const)\n"
+    "    unconstrained_new_ideal< int,double,double >(int [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const,int const)\n"
+    "    unconstrained_new_ideal< int,std::complex< float >,float >(int [],int const,int [],int const,std::complex< float > [],int const,int const [],int const,int const [],int const,std::complex< float > const [],int const,int const [],int const,int const [],int const,std::complex< float > const [],int const,int const,int const)\n"
+    "    unconstrained_new_ideal< int,std::complex< double >,double >(int [],int const,int [],int const,std::complex< double > [],int const,int const [],int const,int const [],int const,std::complex< double > const [],int const,int const [],int const,int const [],int const,std::complex< double > const [],int const,int const,int const)\n");
+  return 0;
+}
+
+
+SWIGINTERN PyObject *_wrap_new_ideal_interpolation__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  float *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  float *arg11 ;
+  int arg12 ;
+  float *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  int *arg17 ;
+  int arg18 ;
+  float *arg19 ;
+  int arg20 ;
+  float *arg21 ;
+  int arg22 ;
+  int arg23 ;
+  int arg24 ;
+  int arg25 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  int val8 ;
+  int ecode8 = 0 ;
+  void *argp9 = 0 ;
+  int res9 = 0 ;
+  int val10 ;
+  int ecode10 = 0 ;
+  void *argp11 = 0 ;
+  int res11 = 0 ;
+  int val12 ;
+  int ecode12 = 0 ;
+  void *argp13 = 0 ;
+  int res13 = 0 ;
+  int val14 ;
+  int ecode14 = 0 ;
+  void *argp15 = 0 ;
+  int res15 = 0 ;
+  int val16 ;
+  int ecode16 = 0 ;
+  void *argp17 = 0 ;
+  int res17 = 0 ;
+  int val18 ;
+  int ecode18 = 0 ;
+  void *argp19 = 0 ;
+  int res19 = 0 ;
+  int val20 ;
+  int ecode20 = 0 ;
+  void *argp21 = 0 ;
+  int res21 = 0 ;
+  int val22 ;
+  int ecode22 = 0 ;
+  int val23 ;
+  int ecode23 = 0 ;
+  int val24 ;
+  int ecode24 = 0 ;
+  int val25 ;
+  int ecode25 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  PyObject * obj16 = 0 ;
+  PyObject * obj17 = 0 ;
+  PyObject * obj18 = 0 ;
+  PyObject * obj19 = 0 ;
+  PyObject * obj20 = 0 ;
+  PyObject * obj21 = 0 ;
+  PyObject * obj22 = 0 ;
+  PyObject * obj23 = 0 ;
+  PyObject * obj24 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOOOOOOOOO:new_ideal_interpolation",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17,&obj18,&obj19,&obj20,&obj21,&obj22,&obj23,&obj24)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "new_ideal_interpolation" "', argument " "1"" of type '" "int []""'"); 
+  } 
+  arg1 = reinterpret_cast< int * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "new_ideal_interpolation" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "new_ideal_interpolation" "', argument " "3"" of type '" "int []""'"); 
+  } 
+  arg3 = reinterpret_cast< int * >(argp3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "new_ideal_interpolation" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "new_ideal_interpolation" "', argument " "5"" of type '" "float []""'"); 
+  } 
+  arg5 = reinterpret_cast< float * >(argp5);
+  ecode6 = SWIG_AsVal_int(obj5, &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "new_ideal_interpolation" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = static_cast< int >(val6);
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res7)) {
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "new_ideal_interpolation" "', argument " "7"" of type '" "int const []""'"); 
+  } 
+  arg7 = reinterpret_cast< int * >(argp7);
+  ecode8 = SWIG_AsVal_int(obj7, &val8);
+  if (!SWIG_IsOK(ecode8)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "new_ideal_interpolation" "', argument " "8"" of type '" "int""'");
+  } 
+  arg8 = static_cast< int >(val8);
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res9)) {
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "new_ideal_interpolation" "', argument " "9"" of type '" "int const []""'"); 
+  } 
+  arg9 = reinterpret_cast< int * >(argp9);
+  ecode10 = SWIG_AsVal_int(obj9, &val10);
+  if (!SWIG_IsOK(ecode10)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "new_ideal_interpolation" "', argument " "10"" of type '" "int""'");
+  } 
+  arg10 = static_cast< int >(val10);
+  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res11)) {
+    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "new_ideal_interpolation" "', argument " "11"" of type '" "float const []""'"); 
+  } 
+  arg11 = reinterpret_cast< float * >(argp11);
+  ecode12 = SWIG_AsVal_int(obj11, &val12);
+  if (!SWIG_IsOK(ecode12)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "new_ideal_interpolation" "', argument " "12"" of type '" "int""'");
+  } 
+  arg12 = static_cast< int >(val12);
+  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res13)) {
+    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "new_ideal_interpolation" "', argument " "13"" of type '" "float const []""'"); 
+  } 
+  arg13 = reinterpret_cast< float * >(argp13);
+  ecode14 = SWIG_AsVal_int(obj13, &val14);
+  if (!SWIG_IsOK(ecode14)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "new_ideal_interpolation" "', argument " "14"" of type '" "int""'");
+  } 
+  arg14 = static_cast< int >(val14);
+  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res15)) {
+    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "new_ideal_interpolation" "', argument " "15"" of type '" "int const []""'"); 
+  } 
+  arg15 = reinterpret_cast< int * >(argp15);
+  ecode16 = SWIG_AsVal_int(obj15, &val16);
+  if (!SWIG_IsOK(ecode16)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "new_ideal_interpolation" "', argument " "16"" of type '" "int""'");
+  } 
+  arg16 = static_cast< int >(val16);
+  res17 = SWIG_ConvertPtr(obj16, &argp17,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res17)) {
+    SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "new_ideal_interpolation" "', argument " "17"" of type '" "int const []""'"); 
+  } 
+  arg17 = reinterpret_cast< int * >(argp17);
+  ecode18 = SWIG_AsVal_int(obj17, &val18);
+  if (!SWIG_IsOK(ecode18)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode18), "in method '" "new_ideal_interpolation" "', argument " "18"" of type '" "int""'");
+  } 
+  arg18 = static_cast< int >(val18);
+  res19 = SWIG_ConvertPtr(obj18, &argp19,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res19)) {
+    SWIG_exception_fail(SWIG_ArgError(res19), "in method '" "new_ideal_interpolation" "', argument " "19"" of type '" "float const []""'"); 
+  } 
+  arg19 = reinterpret_cast< float * >(argp19);
+  ecode20 = SWIG_AsVal_int(obj19, &val20);
+  if (!SWIG_IsOK(ecode20)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode20), "in method '" "new_ideal_interpolation" "', argument " "20"" of type '" "int""'");
+  } 
+  arg20 = static_cast< int >(val20);
+  res21 = SWIG_ConvertPtr(obj20, &argp21,SWIGTYPE_p_float, 0 |  0 );
+  if (!SWIG_IsOK(res21)) {
+    SWIG_exception_fail(SWIG_ArgError(res21), "in method '" "new_ideal_interpolation" "', argument " "21"" of type '" "float const []""'"); 
+  } 
+  arg21 = reinterpret_cast< float * >(argp21);
+  ecode22 = SWIG_AsVal_int(obj21, &val22);
+  if (!SWIG_IsOK(ecode22)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode22), "in method '" "new_ideal_interpolation" "', argument " "22"" of type '" "int""'");
+  } 
+  arg22 = static_cast< int >(val22);
+  ecode23 = SWIG_AsVal_int(obj22, &val23);
+  if (!SWIG_IsOK(ecode23)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode23), "in method '" "new_ideal_interpolation" "', argument " "23"" of type '" "int""'");
+  } 
+  arg23 = static_cast< int >(val23);
+  ecode24 = SWIG_AsVal_int(obj23, &val24);
+  if (!SWIG_IsOK(ecode24)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode24), "in method '" "new_ideal_interpolation" "', argument " "24"" of type '" "int""'");
+  } 
+  arg24 = static_cast< int >(val24);
+  ecode25 = SWIG_AsVal_int(obj24, &val25);
+  if (!SWIG_IsOK(ecode25)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode25), "in method '" "new_ideal_interpolation" "', argument " "25"" of type '" "int""'");
+  } 
+  arg25 = static_cast< int >(val25);
+  new_ideal_interpolation< int,float,float >(arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(float const (*))arg11,arg12,(float const (*))arg13,arg14,(int const (*))arg15,arg16,(int const (*))arg17,arg18,(float const (*))arg19,arg20,(float const (*))arg21,arg22,arg23,arg24,arg25);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_new_ideal_interpolation__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  double *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  double *arg11 ;
+  int arg12 ;
+  double *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  int *arg17 ;
+  int arg18 ;
+  double *arg19 ;
+  int arg20 ;
+  double *arg21 ;
+  int arg22 ;
+  int arg23 ;
+  int arg24 ;
+  int arg25 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  int val8 ;
+  int ecode8 = 0 ;
+  void *argp9 = 0 ;
+  int res9 = 0 ;
+  int val10 ;
+  int ecode10 = 0 ;
+  void *argp11 = 0 ;
+  int res11 = 0 ;
+  int val12 ;
+  int ecode12 = 0 ;
+  void *argp13 = 0 ;
+  int res13 = 0 ;
+  int val14 ;
+  int ecode14 = 0 ;
+  void *argp15 = 0 ;
+  int res15 = 0 ;
+  int val16 ;
+  int ecode16 = 0 ;
+  void *argp17 = 0 ;
+  int res17 = 0 ;
+  int val18 ;
+  int ecode18 = 0 ;
+  void *argp19 = 0 ;
+  int res19 = 0 ;
+  int val20 ;
+  int ecode20 = 0 ;
+  void *argp21 = 0 ;
+  int res21 = 0 ;
+  int val22 ;
+  int ecode22 = 0 ;
+  int val23 ;
+  int ecode23 = 0 ;
+  int val24 ;
+  int ecode24 = 0 ;
+  int val25 ;
+  int ecode25 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  PyObject * obj16 = 0 ;
+  PyObject * obj17 = 0 ;
+  PyObject * obj18 = 0 ;
+  PyObject * obj19 = 0 ;
+  PyObject * obj20 = 0 ;
+  PyObject * obj21 = 0 ;
+  PyObject * obj22 = 0 ;
+  PyObject * obj23 = 0 ;
+  PyObject * obj24 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOOOOOOOOO:new_ideal_interpolation",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17,&obj18,&obj19,&obj20,&obj21,&obj22,&obj23,&obj24)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "new_ideal_interpolation" "', argument " "1"" of type '" "int []""'"); 
+  } 
+  arg1 = reinterpret_cast< int * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "new_ideal_interpolation" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "new_ideal_interpolation" "', argument " "3"" of type '" "int []""'"); 
+  } 
+  arg3 = reinterpret_cast< int * >(argp3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "new_ideal_interpolation" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_double, 0 |  0 );
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "new_ideal_interpolation" "', argument " "5"" of type '" "double []""'"); 
+  } 
+  arg5 = reinterpret_cast< double * >(argp5);
+  ecode6 = SWIG_AsVal_int(obj5, &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "new_ideal_interpolation" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = static_cast< int >(val6);
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res7)) {
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "new_ideal_interpolation" "', argument " "7"" of type '" "int const []""'"); 
+  } 
+  arg7 = reinterpret_cast< int * >(argp7);
+  ecode8 = SWIG_AsVal_int(obj7, &val8);
+  if (!SWIG_IsOK(ecode8)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "new_ideal_interpolation" "', argument " "8"" of type '" "int""'");
+  } 
+  arg8 = static_cast< int >(val8);
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res9)) {
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "new_ideal_interpolation" "', argument " "9"" of type '" "int const []""'"); 
+  } 
+  arg9 = reinterpret_cast< int * >(argp9);
+  ecode10 = SWIG_AsVal_int(obj9, &val10);
+  if (!SWIG_IsOK(ecode10)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "new_ideal_interpolation" "', argument " "10"" of type '" "int""'");
+  } 
+  arg10 = static_cast< int >(val10);
+  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_double, 0 |  0 );
+  if (!SWIG_IsOK(res11)) {
+    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "new_ideal_interpolation" "', argument " "11"" of type '" "double const []""'"); 
+  } 
+  arg11 = reinterpret_cast< double * >(argp11);
+  ecode12 = SWIG_AsVal_int(obj11, &val12);
+  if (!SWIG_IsOK(ecode12)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "new_ideal_interpolation" "', argument " "12"" of type '" "int""'");
+  } 
+  arg12 = static_cast< int >(val12);
+  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_double, 0 |  0 );
+  if (!SWIG_IsOK(res13)) {
+    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "new_ideal_interpolation" "', argument " "13"" of type '" "double const []""'"); 
+  } 
+  arg13 = reinterpret_cast< double * >(argp13);
+  ecode14 = SWIG_AsVal_int(obj13, &val14);
+  if (!SWIG_IsOK(ecode14)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "new_ideal_interpolation" "', argument " "14"" of type '" "int""'");
+  } 
+  arg14 = static_cast< int >(val14);
+  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res15)) {
+    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "new_ideal_interpolation" "', argument " "15"" of type '" "int const []""'"); 
+  } 
+  arg15 = reinterpret_cast< int * >(argp15);
+  ecode16 = SWIG_AsVal_int(obj15, &val16);
+  if (!SWIG_IsOK(ecode16)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "new_ideal_interpolation" "', argument " "16"" of type '" "int""'");
+  } 
+  arg16 = static_cast< int >(val16);
+  res17 = SWIG_ConvertPtr(obj16, &argp17,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res17)) {
+    SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "new_ideal_interpolation" "', argument " "17"" of type '" "int const []""'"); 
+  } 
+  arg17 = reinterpret_cast< int * >(argp17);
+  ecode18 = SWIG_AsVal_int(obj17, &val18);
+  if (!SWIG_IsOK(ecode18)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode18), "in method '" "new_ideal_interpolation" "', argument " "18"" of type '" "int""'");
+  } 
+  arg18 = static_cast< int >(val18);
+  res19 = SWIG_ConvertPtr(obj18, &argp19,SWIGTYPE_p_double, 0 |  0 );
+  if (!SWIG_IsOK(res19)) {
+    SWIG_exception_fail(SWIG_ArgError(res19), "in method '" "new_ideal_interpolation" "', argument " "19"" of type '" "double const []""'"); 
+  } 
+  arg19 = reinterpret_cast< double * >(argp19);
+  ecode20 = SWIG_AsVal_int(obj19, &val20);
+  if (!SWIG_IsOK(ecode20)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode20), "in method '" "new_ideal_interpolation" "', argument " "20"" of type '" "int""'");
+  } 
+  arg20 = static_cast< int >(val20);
+  res21 = SWIG_ConvertPtr(obj20, &argp21,SWIGTYPE_p_double, 0 |  0 );
+  if (!SWIG_IsOK(res21)) {
+    SWIG_exception_fail(SWIG_ArgError(res21), "in method '" "new_ideal_interpolation" "', argument " "21"" of type '" "double const []""'"); 
+  } 
+  arg21 = reinterpret_cast< double * >(argp21);
+  ecode22 = SWIG_AsVal_int(obj21, &val22);
+  if (!SWIG_IsOK(ecode22)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode22), "in method '" "new_ideal_interpolation" "', argument " "22"" of type '" "int""'");
+  } 
+  arg22 = static_cast< int >(val22);
+  ecode23 = SWIG_AsVal_int(obj22, &val23);
+  if (!SWIG_IsOK(ecode23)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode23), "in method '" "new_ideal_interpolation" "', argument " "23"" of type '" "int""'");
+  } 
+  arg23 = static_cast< int >(val23);
+  ecode24 = SWIG_AsVal_int(obj23, &val24);
+  if (!SWIG_IsOK(ecode24)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode24), "in method '" "new_ideal_interpolation" "', argument " "24"" of type '" "int""'");
+  } 
+  arg24 = static_cast< int >(val24);
+  ecode25 = SWIG_AsVal_int(obj24, &val25);
+  if (!SWIG_IsOK(ecode25)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode25), "in method '" "new_ideal_interpolation" "', argument " "25"" of type '" "int""'");
+  } 
+  arg25 = static_cast< int >(val25);
+  new_ideal_interpolation< int,double,double >(arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(double const (*))arg11,arg12,(double const (*))arg13,arg14,(int const (*))arg15,arg16,(int const (*))arg17,arg18,(double const (*))arg19,arg20,(double const (*))arg21,arg22,arg23,arg24,arg25);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_new_ideal_interpolation__SWIG_3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  std::complex< float > *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  std::complex< float > *arg11 ;
+  int arg12 ;
+  std::complex< float > *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  int *arg17 ;
+  int arg18 ;
+  std::complex< float > *arg19 ;
+  int arg20 ;
+  std::complex< float > *arg21 ;
+  int arg22 ;
+  int arg23 ;
+  int arg24 ;
+  int arg25 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  int val8 ;
+  int ecode8 = 0 ;
+  void *argp9 = 0 ;
+  int res9 = 0 ;
+  int val10 ;
+  int ecode10 = 0 ;
+  void *argp11 = 0 ;
+  int res11 = 0 ;
+  int val12 ;
+  int ecode12 = 0 ;
+  void *argp13 = 0 ;
+  int res13 = 0 ;
+  int val14 ;
+  int ecode14 = 0 ;
+  void *argp15 = 0 ;
+  int res15 = 0 ;
+  int val16 ;
+  int ecode16 = 0 ;
+  void *argp17 = 0 ;
+  int res17 = 0 ;
+  int val18 ;
+  int ecode18 = 0 ;
+  void *argp19 = 0 ;
+  int res19 = 0 ;
+  int val20 ;
+  int ecode20 = 0 ;
+  void *argp21 = 0 ;
+  int res21 = 0 ;
+  int val22 ;
+  int ecode22 = 0 ;
+  int val23 ;
+  int ecode23 = 0 ;
+  int val24 ;
+  int ecode24 = 0 ;
+  int val25 ;
+  int ecode25 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  PyObject * obj16 = 0 ;
+  PyObject * obj17 = 0 ;
+  PyObject * obj18 = 0 ;
+  PyObject * obj19 = 0 ;
+  PyObject * obj20 = 0 ;
+  PyObject * obj21 = 0 ;
+  PyObject * obj22 = 0 ;
+  PyObject * obj23 = 0 ;
+  PyObject * obj24 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOOOOOOOOO:new_ideal_interpolation",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17,&obj18,&obj19,&obj20,&obj21,&obj22,&obj23,&obj24)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "new_ideal_interpolation" "', argument " "1"" of type '" "int []""'"); 
+  } 
+  arg1 = reinterpret_cast< int * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "new_ideal_interpolation" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "new_ideal_interpolation" "', argument " "3"" of type '" "int []""'"); 
+  } 
+  arg3 = reinterpret_cast< int * >(argp3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "new_ideal_interpolation" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_std__complexT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "new_ideal_interpolation" "', argument " "5"" of type '" "std::complex< float > []""'"); 
+  } 
+  arg5 = reinterpret_cast< std::complex< float > * >(argp5);
+  ecode6 = SWIG_AsVal_int(obj5, &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "new_ideal_interpolation" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = static_cast< int >(val6);
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res7)) {
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "new_ideal_interpolation" "', argument " "7"" of type '" "int const []""'"); 
+  } 
+  arg7 = reinterpret_cast< int * >(argp7);
+  ecode8 = SWIG_AsVal_int(obj7, &val8);
+  if (!SWIG_IsOK(ecode8)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "new_ideal_interpolation" "', argument " "8"" of type '" "int""'");
+  } 
+  arg8 = static_cast< int >(val8);
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res9)) {
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "new_ideal_interpolation" "', argument " "9"" of type '" "int const []""'"); 
+  } 
+  arg9 = reinterpret_cast< int * >(argp9);
+  ecode10 = SWIG_AsVal_int(obj9, &val10);
+  if (!SWIG_IsOK(ecode10)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "new_ideal_interpolation" "', argument " "10"" of type '" "int""'");
+  } 
+  arg10 = static_cast< int >(val10);
+  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_std__complexT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res11)) {
+    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "new_ideal_interpolation" "', argument " "11"" of type '" "std::complex< float > const []""'"); 
+  } 
+  arg11 = reinterpret_cast< std::complex< float > * >(argp11);
+  ecode12 = SWIG_AsVal_int(obj11, &val12);
+  if (!SWIG_IsOK(ecode12)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "new_ideal_interpolation" "', argument " "12"" of type '" "int""'");
+  } 
+  arg12 = static_cast< int >(val12);
+  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_std__complexT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res13)) {
+    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "new_ideal_interpolation" "', argument " "13"" of type '" "std::complex< float > const []""'"); 
+  } 
+  arg13 = reinterpret_cast< std::complex< float > * >(argp13);
+  ecode14 = SWIG_AsVal_int(obj13, &val14);
+  if (!SWIG_IsOK(ecode14)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "new_ideal_interpolation" "', argument " "14"" of type '" "int""'");
+  } 
+  arg14 = static_cast< int >(val14);
+  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res15)) {
+    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "new_ideal_interpolation" "', argument " "15"" of type '" "int const []""'"); 
+  } 
+  arg15 = reinterpret_cast< int * >(argp15);
+  ecode16 = SWIG_AsVal_int(obj15, &val16);
+  if (!SWIG_IsOK(ecode16)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "new_ideal_interpolation" "', argument " "16"" of type '" "int""'");
+  } 
+  arg16 = static_cast< int >(val16);
+  res17 = SWIG_ConvertPtr(obj16, &argp17,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res17)) {
+    SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "new_ideal_interpolation" "', argument " "17"" of type '" "int const []""'"); 
+  } 
+  arg17 = reinterpret_cast< int * >(argp17);
+  ecode18 = SWIG_AsVal_int(obj17, &val18);
+  if (!SWIG_IsOK(ecode18)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode18), "in method '" "new_ideal_interpolation" "', argument " "18"" of type '" "int""'");
+  } 
+  arg18 = static_cast< int >(val18);
+  res19 = SWIG_ConvertPtr(obj18, &argp19,SWIGTYPE_p_std__complexT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res19)) {
+    SWIG_exception_fail(SWIG_ArgError(res19), "in method '" "new_ideal_interpolation" "', argument " "19"" of type '" "std::complex< float > const []""'"); 
+  } 
+  arg19 = reinterpret_cast< std::complex< float > * >(argp19);
+  ecode20 = SWIG_AsVal_int(obj19, &val20);
+  if (!SWIG_IsOK(ecode20)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode20), "in method '" "new_ideal_interpolation" "', argument " "20"" of type '" "int""'");
+  } 
+  arg20 = static_cast< int >(val20);
+  res21 = SWIG_ConvertPtr(obj20, &argp21,SWIGTYPE_p_std__complexT_float_t, 0 |  0 );
+  if (!SWIG_IsOK(res21)) {
+    SWIG_exception_fail(SWIG_ArgError(res21), "in method '" "new_ideal_interpolation" "', argument " "21"" of type '" "std::complex< float > const []""'"); 
+  } 
+  arg21 = reinterpret_cast< std::complex< float > * >(argp21);
+  ecode22 = SWIG_AsVal_int(obj21, &val22);
+  if (!SWIG_IsOK(ecode22)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode22), "in method '" "new_ideal_interpolation" "', argument " "22"" of type '" "int""'");
+  } 
+  arg22 = static_cast< int >(val22);
+  ecode23 = SWIG_AsVal_int(obj22, &val23);
+  if (!SWIG_IsOK(ecode23)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode23), "in method '" "new_ideal_interpolation" "', argument " "23"" of type '" "int""'");
+  } 
+  arg23 = static_cast< int >(val23);
+  ecode24 = SWIG_AsVal_int(obj23, &val24);
+  if (!SWIG_IsOK(ecode24)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode24), "in method '" "new_ideal_interpolation" "', argument " "24"" of type '" "int""'");
+  } 
+  arg24 = static_cast< int >(val24);
+  ecode25 = SWIG_AsVal_int(obj24, &val25);
+  if (!SWIG_IsOK(ecode25)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode25), "in method '" "new_ideal_interpolation" "', argument " "25"" of type '" "int""'");
+  } 
+  arg25 = static_cast< int >(val25);
+  new_ideal_interpolation< int,std::complex< float >,float >(arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(std::complex< float > const (*))arg11,arg12,(std::complex< float > const (*))arg13,arg14,(int const (*))arg15,arg16,(int const (*))arg17,arg18,(std::complex< float > const (*))arg19,arg20,(std::complex< float > const (*))arg21,arg22,arg23,arg24,arg25);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_new_ideal_interpolation__SWIG_4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  std::complex< double > *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  std::complex< double > *arg11 ;
+  int arg12 ;
+  std::complex< double > *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  int *arg17 ;
+  int arg18 ;
+  std::complex< double > *arg19 ;
+  int arg20 ;
+  std::complex< double > *arg21 ;
+  int arg22 ;
+  int arg23 ;
+  int arg24 ;
+  int arg25 ;
+  void *argp1 = 0 ;
+  int res1 = 0 ;
+  int val2 ;
+  int ecode2 = 0 ;
+  void *argp3 = 0 ;
+  int res3 = 0 ;
+  int val4 ;
+  int ecode4 = 0 ;
+  void *argp5 = 0 ;
+  int res5 = 0 ;
+  int val6 ;
+  int ecode6 = 0 ;
+  void *argp7 = 0 ;
+  int res7 = 0 ;
+  int val8 ;
+  int ecode8 = 0 ;
+  void *argp9 = 0 ;
+  int res9 = 0 ;
+  int val10 ;
+  int ecode10 = 0 ;
+  void *argp11 = 0 ;
+  int res11 = 0 ;
+  int val12 ;
+  int ecode12 = 0 ;
+  void *argp13 = 0 ;
+  int res13 = 0 ;
+  int val14 ;
+  int ecode14 = 0 ;
+  void *argp15 = 0 ;
+  int res15 = 0 ;
+  int val16 ;
+  int ecode16 = 0 ;
+  void *argp17 = 0 ;
+  int res17 = 0 ;
+  int val18 ;
+  int ecode18 = 0 ;
+  void *argp19 = 0 ;
+  int res19 = 0 ;
+  int val20 ;
+  int ecode20 = 0 ;
+  void *argp21 = 0 ;
+  int res21 = 0 ;
+  int val22 ;
+  int ecode22 = 0 ;
+  int val23 ;
+  int ecode23 = 0 ;
+  int val24 ;
+  int ecode24 = 0 ;
+  int val25 ;
+  int ecode25 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  PyObject * obj16 = 0 ;
+  PyObject * obj17 = 0 ;
+  PyObject * obj18 = 0 ;
+  PyObject * obj19 = 0 ;
+  PyObject * obj20 = 0 ;
+  PyObject * obj21 = 0 ;
+  PyObject * obj22 = 0 ;
+  PyObject * obj23 = 0 ;
+  PyObject * obj24 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOOOOOOOOO:new_ideal_interpolation",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17,&obj18,&obj19,&obj20,&obj21,&obj22,&obj23,&obj24)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res1)) {
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "new_ideal_interpolation" "', argument " "1"" of type '" "int []""'"); 
+  } 
+  arg1 = reinterpret_cast< int * >(argp1);
+  ecode2 = SWIG_AsVal_int(obj1, &val2);
+  if (!SWIG_IsOK(ecode2)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "new_ideal_interpolation" "', argument " "2"" of type '" "int""'");
+  } 
+  arg2 = static_cast< int >(val2);
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res3)) {
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "new_ideal_interpolation" "', argument " "3"" of type '" "int []""'"); 
+  } 
+  arg3 = reinterpret_cast< int * >(argp3);
+  ecode4 = SWIG_AsVal_int(obj3, &val4);
+  if (!SWIG_IsOK(ecode4)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "new_ideal_interpolation" "', argument " "4"" of type '" "int""'");
+  } 
+  arg4 = static_cast< int >(val4);
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_std__complexT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res5)) {
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "new_ideal_interpolation" "', argument " "5"" of type '" "std::complex< double > []""'"); 
+  } 
+  arg5 = reinterpret_cast< std::complex< double > * >(argp5);
+  ecode6 = SWIG_AsVal_int(obj5, &val6);
+  if (!SWIG_IsOK(ecode6)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "new_ideal_interpolation" "', argument " "6"" of type '" "int""'");
+  } 
+  arg6 = static_cast< int >(val6);
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res7)) {
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "new_ideal_interpolation" "', argument " "7"" of type '" "int const []""'"); 
+  } 
+  arg7 = reinterpret_cast< int * >(argp7);
+  ecode8 = SWIG_AsVal_int(obj7, &val8);
+  if (!SWIG_IsOK(ecode8)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "new_ideal_interpolation" "', argument " "8"" of type '" "int""'");
+  } 
+  arg8 = static_cast< int >(val8);
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res9)) {
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "new_ideal_interpolation" "', argument " "9"" of type '" "int const []""'"); 
+  } 
+  arg9 = reinterpret_cast< int * >(argp9);
+  ecode10 = SWIG_AsVal_int(obj9, &val10);
+  if (!SWIG_IsOK(ecode10)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "new_ideal_interpolation" "', argument " "10"" of type '" "int""'");
+  } 
+  arg10 = static_cast< int >(val10);
+  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_std__complexT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res11)) {
+    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "new_ideal_interpolation" "', argument " "11"" of type '" "std::complex< double > const []""'"); 
+  } 
+  arg11 = reinterpret_cast< std::complex< double > * >(argp11);
+  ecode12 = SWIG_AsVal_int(obj11, &val12);
+  if (!SWIG_IsOK(ecode12)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "new_ideal_interpolation" "', argument " "12"" of type '" "int""'");
+  } 
+  arg12 = static_cast< int >(val12);
+  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_std__complexT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res13)) {
+    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "new_ideal_interpolation" "', argument " "13"" of type '" "std::complex< double > const []""'"); 
+  } 
+  arg13 = reinterpret_cast< std::complex< double > * >(argp13);
+  ecode14 = SWIG_AsVal_int(obj13, &val14);
+  if (!SWIG_IsOK(ecode14)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "new_ideal_interpolation" "', argument " "14"" of type '" "int""'");
+  } 
+  arg14 = static_cast< int >(val14);
+  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res15)) {
+    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "new_ideal_interpolation" "', argument " "15"" of type '" "int const []""'"); 
+  } 
+  arg15 = reinterpret_cast< int * >(argp15);
+  ecode16 = SWIG_AsVal_int(obj15, &val16);
+  if (!SWIG_IsOK(ecode16)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "new_ideal_interpolation" "', argument " "16"" of type '" "int""'");
+  } 
+  arg16 = static_cast< int >(val16);
+  res17 = SWIG_ConvertPtr(obj16, &argp17,SWIGTYPE_p_int, 0 |  0 );
+  if (!SWIG_IsOK(res17)) {
+    SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "new_ideal_interpolation" "', argument " "17"" of type '" "int const []""'"); 
+  } 
+  arg17 = reinterpret_cast< int * >(argp17);
+  ecode18 = SWIG_AsVal_int(obj17, &val18);
+  if (!SWIG_IsOK(ecode18)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode18), "in method '" "new_ideal_interpolation" "', argument " "18"" of type '" "int""'");
+  } 
+  arg18 = static_cast< int >(val18);
+  res19 = SWIG_ConvertPtr(obj18, &argp19,SWIGTYPE_p_std__complexT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res19)) {
+    SWIG_exception_fail(SWIG_ArgError(res19), "in method '" "new_ideal_interpolation" "', argument " "19"" of type '" "std::complex< double > const []""'"); 
+  } 
+  arg19 = reinterpret_cast< std::complex< double > * >(argp19);
+  ecode20 = SWIG_AsVal_int(obj19, &val20);
+  if (!SWIG_IsOK(ecode20)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode20), "in method '" "new_ideal_interpolation" "', argument " "20"" of type '" "int""'");
+  } 
+  arg20 = static_cast< int >(val20);
+  res21 = SWIG_ConvertPtr(obj20, &argp21,SWIGTYPE_p_std__complexT_double_t, 0 |  0 );
+  if (!SWIG_IsOK(res21)) {
+    SWIG_exception_fail(SWIG_ArgError(res21), "in method '" "new_ideal_interpolation" "', argument " "21"" of type '" "std::complex< double > const []""'"); 
+  } 
+  arg21 = reinterpret_cast< std::complex< double > * >(argp21);
+  ecode22 = SWIG_AsVal_int(obj21, &val22);
+  if (!SWIG_IsOK(ecode22)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode22), "in method '" "new_ideal_interpolation" "', argument " "22"" of type '" "int""'");
+  } 
+  arg22 = static_cast< int >(val22);
+  ecode23 = SWIG_AsVal_int(obj22, &val23);
+  if (!SWIG_IsOK(ecode23)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode23), "in method '" "new_ideal_interpolation" "', argument " "23"" of type '" "int""'");
+  } 
+  arg23 = static_cast< int >(val23);
+  ecode24 = SWIG_AsVal_int(obj23, &val24);
+  if (!SWIG_IsOK(ecode24)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode24), "in method '" "new_ideal_interpolation" "', argument " "24"" of type '" "int""'");
+  } 
+  arg24 = static_cast< int >(val24);
+  ecode25 = SWIG_AsVal_int(obj24, &val25);
+  if (!SWIG_IsOK(ecode25)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode25), "in method '" "new_ideal_interpolation" "', argument " "25"" of type '" "int""'");
+  } 
+  arg25 = static_cast< int >(val25);
+  new_ideal_interpolation< int,std::complex< double >,double >(arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(std::complex< double > const (*))arg11,arg12,(std::complex< double > const (*))arg13,arg14,(int const (*))arg15,arg16,(int const (*))arg17,arg18,(std::complex< double > const (*))arg19,arg20,(std::complex< double > const (*))arg21,arg22,arg23,arg24,arg25);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_new_ideal_interpolation(PyObject *self, PyObject *args) {
+  Py_ssize_t argc;
+  PyObject *argv[26] = {
+    0
+  };
+  Py_ssize_t ii;
+  
+  if (!PyTuple_Check(args)) SWIG_fail;
+  argc = args ? PyObject_Length(args) : 0;
+  for (ii = 0; (ii < 25) && (ii < argc); ii++) {
+    argv[ii] = PyTuple_GET_ITEM(args,ii);
+  }
+  if (argc == 25) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_int, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_int(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        void *vptr = 0;
+        int res = SWIG_ConvertPtr(argv[2], &vptr, SWIGTYPE_p_int, 0);
+        _v = SWIG_CheckState(res);
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            void *vptr = 0;
+            int res = SWIG_ConvertPtr(argv[4], &vptr, SWIGTYPE_p_float, 0);
+            _v = SWIG_CheckState(res);
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                void *vptr = 0;
+                int res = SWIG_ConvertPtr(argv[6], &vptr, SWIGTYPE_p_int, 0);
+                _v = SWIG_CheckState(res);
+                if (_v) {
+                  {
+                    int res = SWIG_AsVal_int(argv[7], NULL);
+                    _v = SWIG_CheckState(res);
+                  }
+                  if (_v) {
+                    void *vptr = 0;
+                    int res = SWIG_ConvertPtr(argv[8], &vptr, SWIGTYPE_p_int, 0);
+                    _v = SWIG_CheckState(res);
+                    if (_v) {
+                      {
+                        int res = SWIG_AsVal_int(argv[9], NULL);
+                        _v = SWIG_CheckState(res);
+                      }
+                      if (_v) {
+                        void *vptr = 0;
+                        int res = SWIG_ConvertPtr(argv[10], &vptr, SWIGTYPE_p_float, 0);
+                        _v = SWIG_CheckState(res);
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            void *vptr = 0;
+                            int res = SWIG_ConvertPtr(argv[12], &vptr, SWIGTYPE_p_float, 0);
+                            _v = SWIG_CheckState(res);
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                void *vptr = 0;
+                                int res = SWIG_ConvertPtr(argv[14], &vptr, SWIGTYPE_p_int, 0);
+                                _v = SWIG_CheckState(res);
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    void *vptr = 0;
+                                    int res = SWIG_ConvertPtr(argv[16], &vptr, SWIGTYPE_p_int, 0);
+                                    _v = SWIG_CheckState(res);
+                                    if (_v) {
+                                      {
+                                        int res = SWIG_AsVal_int(argv[17], NULL);
+                                        _v = SWIG_CheckState(res);
+                                      }
+                                      if (_v) {
+                                        void *vptr = 0;
+                                        int res = SWIG_ConvertPtr(argv[18], &vptr, SWIGTYPE_p_float, 0);
+                                        _v = SWIG_CheckState(res);
+                                        if (_v) {
+                                          {
+                                            int res = SWIG_AsVal_int(argv[19], NULL);
+                                            _v = SWIG_CheckState(res);
+                                          }
+                                          if (_v) {
+                                            void *vptr = 0;
+                                            int res = SWIG_ConvertPtr(argv[20], &vptr, SWIGTYPE_p_float, 0);
+                                            _v = SWIG_CheckState(res);
+                                            if (_v) {
+                                              {
+                                                int res = SWIG_AsVal_int(argv[21], NULL);
+                                                _v = SWIG_CheckState(res);
+                                              }
+                                              if (_v) {
+                                                {
+                                                  int res = SWIG_AsVal_int(argv[22], NULL);
+                                                  _v = SWIG_CheckState(res);
+                                                }
+                                                if (_v) {
+                                                  {
+                                                    int res = SWIG_AsVal_int(argv[23], NULL);
+                                                    _v = SWIG_CheckState(res);
+                                                  }
+                                                  if (_v) {
+                                                    {
+                                                      int res = SWIG_AsVal_int(argv[24], NULL);
+                                                      _v = SWIG_CheckState(res);
+                                                    }
+                                                    if (_v) {
+                                                      return _wrap_new_ideal_interpolation__SWIG_1(self, args);
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 25) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_int, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_int(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        void *vptr = 0;
+        int res = SWIG_ConvertPtr(argv[2], &vptr, SWIGTYPE_p_int, 0);
+        _v = SWIG_CheckState(res);
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            void *vptr = 0;
+            int res = SWIG_ConvertPtr(argv[4], &vptr, SWIGTYPE_p_double, 0);
+            _v = SWIG_CheckState(res);
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                void *vptr = 0;
+                int res = SWIG_ConvertPtr(argv[6], &vptr, SWIGTYPE_p_int, 0);
+                _v = SWIG_CheckState(res);
+                if (_v) {
+                  {
+                    int res = SWIG_AsVal_int(argv[7], NULL);
+                    _v = SWIG_CheckState(res);
+                  }
+                  if (_v) {
+                    void *vptr = 0;
+                    int res = SWIG_ConvertPtr(argv[8], &vptr, SWIGTYPE_p_int, 0);
+                    _v = SWIG_CheckState(res);
+                    if (_v) {
+                      {
+                        int res = SWIG_AsVal_int(argv[9], NULL);
+                        _v = SWIG_CheckState(res);
+                      }
+                      if (_v) {
+                        void *vptr = 0;
+                        int res = SWIG_ConvertPtr(argv[10], &vptr, SWIGTYPE_p_double, 0);
+                        _v = SWIG_CheckState(res);
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            void *vptr = 0;
+                            int res = SWIG_ConvertPtr(argv[12], &vptr, SWIGTYPE_p_double, 0);
+                            _v = SWIG_CheckState(res);
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                void *vptr = 0;
+                                int res = SWIG_ConvertPtr(argv[14], &vptr, SWIGTYPE_p_int, 0);
+                                _v = SWIG_CheckState(res);
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    void *vptr = 0;
+                                    int res = SWIG_ConvertPtr(argv[16], &vptr, SWIGTYPE_p_int, 0);
+                                    _v = SWIG_CheckState(res);
+                                    if (_v) {
+                                      {
+                                        int res = SWIG_AsVal_int(argv[17], NULL);
+                                        _v = SWIG_CheckState(res);
+                                      }
+                                      if (_v) {
+                                        void *vptr = 0;
+                                        int res = SWIG_ConvertPtr(argv[18], &vptr, SWIGTYPE_p_double, 0);
+                                        _v = SWIG_CheckState(res);
+                                        if (_v) {
+                                          {
+                                            int res = SWIG_AsVal_int(argv[19], NULL);
+                                            _v = SWIG_CheckState(res);
+                                          }
+                                          if (_v) {
+                                            void *vptr = 0;
+                                            int res = SWIG_ConvertPtr(argv[20], &vptr, SWIGTYPE_p_double, 0);
+                                            _v = SWIG_CheckState(res);
+                                            if (_v) {
+                                              {
+                                                int res = SWIG_AsVal_int(argv[21], NULL);
+                                                _v = SWIG_CheckState(res);
+                                              }
+                                              if (_v) {
+                                                {
+                                                  int res = SWIG_AsVal_int(argv[22], NULL);
+                                                  _v = SWIG_CheckState(res);
+                                                }
+                                                if (_v) {
+                                                  {
+                                                    int res = SWIG_AsVal_int(argv[23], NULL);
+                                                    _v = SWIG_CheckState(res);
+                                                  }
+                                                  if (_v) {
+                                                    {
+                                                      int res = SWIG_AsVal_int(argv[24], NULL);
+                                                      _v = SWIG_CheckState(res);
+                                                    }
+                                                    if (_v) {
+                                                      return _wrap_new_ideal_interpolation__SWIG_2(self, args);
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 25) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_int, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_int(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        void *vptr = 0;
+        int res = SWIG_ConvertPtr(argv[2], &vptr, SWIGTYPE_p_int, 0);
+        _v = SWIG_CheckState(res);
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            void *vptr = 0;
+            int res = SWIG_ConvertPtr(argv[4], &vptr, SWIGTYPE_p_std__complexT_float_t, 0);
+            _v = SWIG_CheckState(res);
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                void *vptr = 0;
+                int res = SWIG_ConvertPtr(argv[6], &vptr, SWIGTYPE_p_int, 0);
+                _v = SWIG_CheckState(res);
+                if (_v) {
+                  {
+                    int res = SWIG_AsVal_int(argv[7], NULL);
+                    _v = SWIG_CheckState(res);
+                  }
+                  if (_v) {
+                    void *vptr = 0;
+                    int res = SWIG_ConvertPtr(argv[8], &vptr, SWIGTYPE_p_int, 0);
+                    _v = SWIG_CheckState(res);
+                    if (_v) {
+                      {
+                        int res = SWIG_AsVal_int(argv[9], NULL);
+                        _v = SWIG_CheckState(res);
+                      }
+                      if (_v) {
+                        void *vptr = 0;
+                        int res = SWIG_ConvertPtr(argv[10], &vptr, SWIGTYPE_p_std__complexT_float_t, 0);
+                        _v = SWIG_CheckState(res);
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            void *vptr = 0;
+                            int res = SWIG_ConvertPtr(argv[12], &vptr, SWIGTYPE_p_std__complexT_float_t, 0);
+                            _v = SWIG_CheckState(res);
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                void *vptr = 0;
+                                int res = SWIG_ConvertPtr(argv[14], &vptr, SWIGTYPE_p_int, 0);
+                                _v = SWIG_CheckState(res);
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    void *vptr = 0;
+                                    int res = SWIG_ConvertPtr(argv[16], &vptr, SWIGTYPE_p_int, 0);
+                                    _v = SWIG_CheckState(res);
+                                    if (_v) {
+                                      {
+                                        int res = SWIG_AsVal_int(argv[17], NULL);
+                                        _v = SWIG_CheckState(res);
+                                      }
+                                      if (_v) {
+                                        void *vptr = 0;
+                                        int res = SWIG_ConvertPtr(argv[18], &vptr, SWIGTYPE_p_std__complexT_float_t, 0);
+                                        _v = SWIG_CheckState(res);
+                                        if (_v) {
+                                          {
+                                            int res = SWIG_AsVal_int(argv[19], NULL);
+                                            _v = SWIG_CheckState(res);
+                                          }
+                                          if (_v) {
+                                            void *vptr = 0;
+                                            int res = SWIG_ConvertPtr(argv[20], &vptr, SWIGTYPE_p_std__complexT_float_t, 0);
+                                            _v = SWIG_CheckState(res);
+                                            if (_v) {
+                                              {
+                                                int res = SWIG_AsVal_int(argv[21], NULL);
+                                                _v = SWIG_CheckState(res);
+                                              }
+                                              if (_v) {
+                                                {
+                                                  int res = SWIG_AsVal_int(argv[22], NULL);
+                                                  _v = SWIG_CheckState(res);
+                                                }
+                                                if (_v) {
+                                                  {
+                                                    int res = SWIG_AsVal_int(argv[23], NULL);
+                                                    _v = SWIG_CheckState(res);
+                                                  }
+                                                  if (_v) {
+                                                    {
+                                                      int res = SWIG_AsVal_int(argv[24], NULL);
+                                                      _v = SWIG_CheckState(res);
+                                                    }
+                                                    if (_v) {
+                                                      return _wrap_new_ideal_interpolation__SWIG_3(self, args);
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 25) {
+    int _v;
+    void *vptr = 0;
+    int res = SWIG_ConvertPtr(argv[0], &vptr, SWIGTYPE_p_int, 0);
+    _v = SWIG_CheckState(res);
+    if (_v) {
+      {
+        int res = SWIG_AsVal_int(argv[1], NULL);
+        _v = SWIG_CheckState(res);
+      }
+      if (_v) {
+        void *vptr = 0;
+        int res = SWIG_ConvertPtr(argv[2], &vptr, SWIGTYPE_p_int, 0);
+        _v = SWIG_CheckState(res);
+        if (_v) {
+          {
+            int res = SWIG_AsVal_int(argv[3], NULL);
+            _v = SWIG_CheckState(res);
+          }
+          if (_v) {
+            void *vptr = 0;
+            int res = SWIG_ConvertPtr(argv[4], &vptr, SWIGTYPE_p_std__complexT_double_t, 0);
+            _v = SWIG_CheckState(res);
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                void *vptr = 0;
+                int res = SWIG_ConvertPtr(argv[6], &vptr, SWIGTYPE_p_int, 0);
+                _v = SWIG_CheckState(res);
+                if (_v) {
+                  {
+                    int res = SWIG_AsVal_int(argv[7], NULL);
+                    _v = SWIG_CheckState(res);
+                  }
+                  if (_v) {
+                    void *vptr = 0;
+                    int res = SWIG_ConvertPtr(argv[8], &vptr, SWIGTYPE_p_int, 0);
+                    _v = SWIG_CheckState(res);
+                    if (_v) {
+                      {
+                        int res = SWIG_AsVal_int(argv[9], NULL);
+                        _v = SWIG_CheckState(res);
+                      }
+                      if (_v) {
+                        void *vptr = 0;
+                        int res = SWIG_ConvertPtr(argv[10], &vptr, SWIGTYPE_p_std__complexT_double_t, 0);
+                        _v = SWIG_CheckState(res);
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            void *vptr = 0;
+                            int res = SWIG_ConvertPtr(argv[12], &vptr, SWIGTYPE_p_std__complexT_double_t, 0);
+                            _v = SWIG_CheckState(res);
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                void *vptr = 0;
+                                int res = SWIG_ConvertPtr(argv[14], &vptr, SWIGTYPE_p_int, 0);
+                                _v = SWIG_CheckState(res);
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    void *vptr = 0;
+                                    int res = SWIG_ConvertPtr(argv[16], &vptr, SWIGTYPE_p_int, 0);
+                                    _v = SWIG_CheckState(res);
+                                    if (_v) {
+                                      {
+                                        int res = SWIG_AsVal_int(argv[17], NULL);
+                                        _v = SWIG_CheckState(res);
+                                      }
+                                      if (_v) {
+                                        void *vptr = 0;
+                                        int res = SWIG_ConvertPtr(argv[18], &vptr, SWIGTYPE_p_std__complexT_double_t, 0);
+                                        _v = SWIG_CheckState(res);
+                                        if (_v) {
+                                          {
+                                            int res = SWIG_AsVal_int(argv[19], NULL);
+                                            _v = SWIG_CheckState(res);
+                                          }
+                                          if (_v) {
+                                            void *vptr = 0;
+                                            int res = SWIG_ConvertPtr(argv[20], &vptr, SWIGTYPE_p_std__complexT_double_t, 0);
+                                            _v = SWIG_CheckState(res);
+                                            if (_v) {
+                                              {
+                                                int res = SWIG_AsVal_int(argv[21], NULL);
+                                                _v = SWIG_CheckState(res);
+                                              }
+                                              if (_v) {
+                                                {
+                                                  int res = SWIG_AsVal_int(argv[22], NULL);
+                                                  _v = SWIG_CheckState(res);
+                                                }
+                                                if (_v) {
+                                                  {
+                                                    int res = SWIG_AsVal_int(argv[23], NULL);
+                                                    _v = SWIG_CheckState(res);
+                                                  }
+                                                  if (_v) {
+                                                    {
+                                                      int res = SWIG_AsVal_int(argv[24], NULL);
+                                                      _v = SWIG_CheckState(res);
+                                                    }
+                                                    if (_v) {
+                                                      return _wrap_new_ideal_interpolation__SWIG_4(self, args);
+                                                    }
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+fail:
+  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'new_ideal_interpolation'.\n"
+    "  Possible C/C++ prototypes are:\n"
+    "    new_ideal_interpolation< int,float,float >(int [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,float const [],int const,int const,int const,int const)\n"
+    "    new_ideal_interpolation< int,double,double >(int [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,double const [],int const,int const,int const,int const)\n"
+    "    new_ideal_interpolation< int,std::complex< float >,float >(int [],int const,int [],int const,std::complex< float > [],int const,int const [],int const,int const [],int const,std::complex< float > const [],int const,std::complex< float > const [],int const,int const [],int const,int const [],int const,std::complex< float > const [],int const,std::complex< float > const [],int const,int const,int const,int const)\n"
+    "    new_ideal_interpolation< int,std::complex< double >,double >(int [],int const,int [],int const,std::complex< double > [],int const,int const [],int const,int const [],int const,std::complex< double > const [],int const,std::complex< double > const [],int const,int const [],int const,int const [],int const,std::complex< double > const [],int const,std::complex< double > const [],int const,int const,int const,int const)\n");
   return 0;
 }
 
@@ -27220,6 +30411,10 @@ static PyMethodDef SwigMethods[] = {
 		""},
 	 { (char *)"naive_aggregation", _wrap_naive_aggregation, METH_VARARGS, (char *)"naive_aggregation(int const n_row, int const [] Ap, int const [] Aj, int [] x, int [] y) -> int"},
 	 { (char *)"standard_aggregation", _wrap_standard_aggregation, METH_VARARGS, (char *)"standard_aggregation(int const n_row, int const [] Ap, int const [] Aj, int [] x, int [] y) -> int"},
+	 { (char *)"drake_matching", _wrap_drake_matching, METH_VARARGS, (char *)"\n"
+		"drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const n, int [] agg1, int [] M1, int [] agg2, int [] M2, int [] S)\n"
+		"drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const n, int [] agg1, int [] M1, int [] agg2, int [] M2, int [] S)\n"
+		""},
 	 { (char *)"fit_candidates", _wrap_fit_candidates, METH_VARARGS, (char *)"\n"
 		"fit_candidates(int const n_row, int const n_col, int const K1, int const K2, int const [] Ap, int const [] Ai, float [] Ax, float const [] B, float [] R, float const tol)\n"
 		"fit_candidates(int const n_row, int const n_col, int const K1, int const K2, int const [] Ap, int const [] Ai, double [] Ax, double const [] B, double [] R, double const tol)\n"
@@ -27249,6 +30444,18 @@ static PyMethodDef SwigMethods[] = {
 		"truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, double [] Sx)\n"
 		"truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< float > [] Sx)\n"
 		"truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< double > [] Sx)\n"
+		""},
+	 { (char *)"unconstrained_new_ideal", _wrap_unconstrained_new_ideal, METH_VARARGS, (char *)"\n"
+		"unconstrained_new_ideal(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, float [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, float const [] lqTopOpValues, int const lqTopOpValues_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, float const [] rhsTopValues, int const rhsTopValues_size, int const numFpts, int const numCpts)\n"
+		"unconstrained_new_ideal(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, double [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, double const [] lqTopOpValues, int const lqTopOpValues_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, double const [] rhsTopValues, int const rhsTopValues_size, int const numFpts, int const numCpts)\n"
+		"unconstrained_new_ideal(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, std::complex< float > [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, std::complex< float > const [] lqTopOpValues, int const lqTopOpValues_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, std::complex< float > const [] rhsTopValues, int const rhsTopValues_size, int const numFpts, int const numCpts)\n"
+		"unconstrained_new_ideal(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, std::complex< double > [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, std::complex< double > const [] lqTopOpValues, int const lqTopOpValues_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, std::complex< double > const [] rhsTopValues, int const rhsTopValues_size, int const numFpts, int const numCpts)\n"
+		""},
+	 { (char *)"new_ideal_interpolation", _wrap_new_ideal_interpolation, METH_VARARGS, (char *)"\n"
+		"new_ideal_interpolation(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, float [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, float const [] lqTopOpValues, int const lqTopOpValues_size, float const [] lqOpBottom, int const lqOpBottom_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, float const [] rhsTopValues, int const rhsTopValues_size, float const [] rhsBottom, int const rhsBottom_size, int const numFpts, int const numCpts, int const numBadGuys)\n"
+		"new_ideal_interpolation(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, double [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, double const [] lqTopOpValues, int const lqTopOpValues_size, double const [] lqOpBottom, int const lqOpBottom_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, double const [] rhsTopValues, int const rhsTopValues_size, double const [] rhsBottom, int const rhsBottom_size, int const numFpts, int const numCpts, int const numBadGuys)\n"
+		"new_ideal_interpolation(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, std::complex< float > [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, std::complex< float > const [] lqTopOpValues, int const lqTopOpValues_size, std::complex< float > const [] lqOpBottom, int const lqOpBottom_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, std::complex< float > const [] rhsTopValues, int const rhsTopValues_size, std::complex< float > const [] rhsBottom, int const rhsBottom_size, int const numFpts, int const numCpts, int const numBadGuys)\n"
+		"new_ideal_interpolation(int [] YRowPtr, int const YRowPtr_size, int [] YColInds, int const YColInds_size, std::complex< double > [] YValues, int const YValues_size, int const [] lqTopOpRowPtr, int const lqTopOpRowPtr_size, int const [] lqTopOpColInds, int const lqTopOpColInds_size, std::complex< double > const [] lqTopOpValues, int const lqTopOpValues_size, std::complex< double > const [] lqOpBottom, int const lqOpBottom_size, int const [] rhsTopRowPtr, int const rhsTopRowPtr_size, int const [] rhsTopColInds, int const rhsTopColInds_size, std::complex< double > const [] rhsTopValues, int const rhsTopValues_size, std::complex< double > const [] rhsBottom, int const rhsBottom_size, int const numFpts, int const numCpts, int const numBadGuys)\n"
 		""},
 	 { (char *)"F_NODE_swigconstant", F_NODE_swigconstant, METH_VARARGS, NULL},
 	 { (char *)"C_NODE_swigconstant", C_NODE_swigconstant, METH_VARARGS, NULL},
@@ -27305,6 +30512,7 @@ static PyMethodDef SwigMethods[] = {
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_double = {"_p_double", "double *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_float = {"_p_float", "float *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_int = {"_p_int", "int *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__complexT_double_t = {"_p_std__complexT_double_t", "std::complex< double > *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_std__complexT_float_t = {"_p_std__complexT_float_t", "std::complex< float > *", 0, 0, (void*)0, 0};
 
@@ -27312,6 +30520,7 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_char,
   &_swigt__p_double,
   &_swigt__p_float,
+  &_swigt__p_int,
   &_swigt__p_std__complexT_double_t,
   &_swigt__p_std__complexT_float_t,
 };
@@ -27319,6 +30528,7 @@ static swig_type_info *swig_type_initial[] = {
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_double[] = {  {&_swigt__p_double, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_float[] = {  {&_swigt__p_float, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_int[] = {  {&_swigt__p_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__complexT_double_t[] = {  {&_swigt__p_std__complexT_double_t, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_std__complexT_float_t[] = {  {&_swigt__p_std__complexT_float_t, 0, 0, 0},{0, 0, 0, 0}};
 
@@ -27326,6 +30536,7 @@ static swig_cast_info *swig_cast_initial[] = {
   _swigc__p_char,
   _swigc__p_double,
   _swigc__p_float,
+  _swigc__p_int,
   _swigc__p_std__complexT_double_t,
   _swigc__p_std__complexT_float_t,
 };

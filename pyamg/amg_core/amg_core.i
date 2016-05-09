@@ -45,7 +45,14 @@
     (      ctype components [], const int components_size),
     (const ctype Id [], const int Id_size),
     (const ctype splitting [], const int splitting_size),
-    (      ctype splitting [], const int splitting_size)
+    (      ctype splitting [], const int splitting_size),
+    (const ctype A_rowptr [], const int A_rowptr_size),
+    (const ctype A_colinds [], const int A_colinds_size),
+    (      ctype agg1 [], const int agg1_size),
+    (      ctype agg2 [], const int agg2_size),
+    (      ctype M1 [], const int M1_size),
+    (      ctype M2 [], const int M2_size),
+    (      ctype S [], const int S_size)
 };
 %enddef
 
@@ -71,7 +78,8 @@
     (      ctype AA [], const int AA_size),
     (      ctype  R [], const int  R_size),
     (      ctype temp [], const int temp_size),
-    (const ctype omega [], const int omega_size)
+    (const ctype omega [], const int omega_size),
+    (const ctype A_data [], const int A_data_size)
 };
 %enddef
 
@@ -186,6 +194,7 @@ INSTANTIATE_INDEXDATA_COMPLEX(overlapping_schwarz_csr)
 INSTANTIATE_INDEXDATA_COMPLEX(symmetric_strength_of_connection)
 INSTANTIATE_INDEX_ONLY(naive_aggregation)
 INSTANTIATE_INDEX_ONLY(standard_aggregation)
+INSTANTIATE_INDEXDATA(drake_matching)
 
 %template(fit_candidates)   fit_candidates_real<int,float>;
 %template(fit_candidates)   fit_candidates_real<int,double>;
@@ -196,8 +205,8 @@ INSTANTIATE_INDEXDATA_COMPLEX(satisfy_constraints_helper)
 INSTANTIATE_INDEXDATA_COMPLEX(calc_BtB)
 INSTANTIATE_INDEXDATA_COMPLEX(incomplete_mat_mult_bsr)
 INSTANTIATE_INDEXDATA_COMPLEX(truncate_rows_csr)
-/* INSTANTIATE_INDEXDATA_COMPLEX(new_ideal_interpolation)
-INSTANTIATE_INDEXDATA_COMPLEX(unconstrained_new_ideal) */
+INSTANTIATE_INDEXDATA_COMPLEX(unconstrained_new_ideal)
+INSTANTIATE_INDEXDATA_COMPLEX(new_ideal_interpolation)
 
 /*----------------------------------------------------------------------------
   ruge_stuben.h
