@@ -278,6 +278,9 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
                       coarse_solver='pinv', keep=False,
                       additive=False, reconstruct=False,
                       max_hierarchies=10, use_ritz=False,
+                      improve_candidates=[('block_gauss_seidel',
+                                          {'sweep': 'symmetric',
+                                                'iterations': 4})],
                       **kwargs):
 
     if not (isspmatrix_csr(A) or isspmatrix_bsr(A)):
@@ -363,8 +366,8 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
                                                                max_coarse=max_coarse,
                                                                coarse_solver=coarse_solver,
                                                                diagonal_dominance=diagonal_dominance,
-                                                               improve_candidates=None, keep=keep,
-                                                               **kwargs) )
+                                                               improve_candidates=improve_candidates, 
+                                                               keep=keep, **kwargs) )
         # Test for convergence factor using new hierarchy.
         x0 = np.random.rand(n,1)
         residuals = []
