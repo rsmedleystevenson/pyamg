@@ -1645,7 +1645,7 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
         }
     }
 
-    std::cout << "W1 = " << W1 << ", W2 = " << W2 << std::endl;
+    // std::cout << "W1 = " << W1 << ", W2 = " << W2 << std::endl;
 
     // Get singletons from better matching
     if (std::abs(W1) >= std::abs(W2)) {

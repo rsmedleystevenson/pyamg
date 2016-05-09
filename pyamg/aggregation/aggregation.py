@@ -362,7 +362,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     elif fn == 'lloyd':
         AggOp = lloyd_aggregation(C, **kwargs)[0]
     elif fn == 'pairwise':
-        AggOp = pairwise_aggregation(C, B, improve_candidates=improve_candidates[len(levels)-1] **kwargs)[0]
+        AggOp = pairwise_aggregation(C, B, improve_candidates=improve_candidates[len(levels)-1], **kwargs)[0]
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
     else:

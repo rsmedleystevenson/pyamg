@@ -125,7 +125,7 @@ def get_geometric_weights_d2(A, theta, Nx, Ny):
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
-N 			= 150
+N 			= 500
 problem_dim = 2
 epsilon 	= 0.01
 theta 		= 3.0*np.pi/16
@@ -179,16 +179,17 @@ is_pdef            = True       # Assume matrix positive definite (only for aSA)
 keep_levels        = False      # Also store SOC, aggregation, and tentative P operators
 diagonal_dominance = False      # Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
-accel = None
+accel = 'cg'
 
-aggregate = ('pairwise', {'num_matchings': 2, 'algorithm': 'drake'})
-interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree':1 } )
-# interp_smooth = None
-# relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
-relaxation = ('jacobi', {'omega': 4.0/3.0} )
-improve_candidates = [('gauss_seidel', {'sweep': 'symmetric', 'iterations': 4})]
-test_iterations = 20
-desired_convergence = 0.6
+aggregate = ('pairwise', {'num_matchings': 2, 'algorithm': 'drake_C'})
+# interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree':1 } )
+interp_smooth = None
+relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
+# relaxation = ('jacobi', {'omega': 4.0/3.0} )
+improve_candidates = [('gauss_seidel', {'sweep': 'symmetric', 'iterations': 5})]
+# improve_candidates = None
+test_iterations = 15
+desired_convergence = 0.7
 additive = False
 reconstruct = False
 use_ritz = False
@@ -199,14 +200,17 @@ use_ritz = False
 ml_asa = adaptive_pairwise_solver(A, initial_targets = None, symmetry = 'symmetric',
                                   desired_convergence = desired_convergence,
                                   test_iterations = test_iterations, 
+                                  test_accel=accel,
                                   strength = None,
                                   aggregate = aggregate,
                                   presmoother = relaxation,
                                   postsmoother = relaxation,
                                   max_levels = max_levels, max_coarse = max_coarse,
-                                  coarse_solver='pinv', additive=additive,
-                                  reconstruct=reconstruct, use_ritz=use_ritz)
-complexity = ml_asa.operator_complexity()
+                                  coarse_solver=coarse_solver, additive=additive,
+                                  reconstruct=reconstruct, use_ritz=use_ritz,
+                                  improve_candidates=improve_candidates)
+grid = ml_asa.operator_complexity()
+cycle = ml_asa.cycle_complexity()
 
 sol = ml_asa.solve(b, x0, tol=tol, residuals=asa_residuals, accel=accel, additive=additive)
 asa_conv_factors = np.zeros((len(asa_residuals)-1,1))
@@ -214,7 +218,8 @@ for i in range(0,len(asa_residuals)-1):
   asa_conv_factors[i] = asa_residuals[i]/asa_residuals[i-1]
 
 print "Adaptive SA/AMG - ", np.mean(asa_conv_factors[1:])
-print " operator complexity - ", complexity, "\n"
+print " operator complexity - ", grid
+print " cycle complexity - ", cycle, "\n"
 
 # pdb.set_trace()
 

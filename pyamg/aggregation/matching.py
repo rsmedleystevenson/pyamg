@@ -147,6 +147,7 @@ def preis_matching_1999(G, order='forward', **kwargs):
 # the strongest connection is chosen as the last one of equal weight. So if you start 
 # at the last DOF, and it has a handful of equal strength connections, ths C-implenetation
 # will chose the highest number DOF, which works well for looping through DOFs backwards. 
+# Note, may be better way to pre-allocate singletons, but hard to say. 
 def drake_C(G, order='backward', **kwargs):
 
     # Get off-diagonal of A in linked list form
@@ -167,7 +168,7 @@ def drake_C(G, order='backward', **kwargs):
     M2 = np.zeros(((n+2),), dtype=np.int32)
 
     # Singleton nodes -- assume sqrt(n) is enough to store singletons
-    S = np.zeros((2*int(np.sqrt(n)),), dtype=np.int32)
+    S = np.zeros((n,), dtype=np.int32)
 
     match = amg_core.drake_matching
     match( G.indptr,
@@ -181,7 +182,7 @@ def drake_C(G, order='backward', **kwargs):
            S )
 
     if M1[1] >= M2[1]:
-        print 'Drake - aggregated = ', 2*M1[0], ' / ', n
+        # print 'Drake - aggregated = ', 2*M1[0], ' / ', n
         num_pairs = M1[0]
         upper_ind_M = 2*(num_pairs+1) 
         M1 = M1[2:upper_ind_M].reshape((num_pairs,2), order='C')
@@ -189,7 +190,7 @@ def drake_C(G, order='backward', **kwargs):
         S = S[1:upper_ind_S]
         return [M1, S]
     else:
-        print 'Drake - aggregated = ', 2*M2[0], ' / ', n
+        # print 'Drake - aggregated = ', 2*M2[0], ' / ', n
         num_pairs = M2[0]
         upper_ind_M = 2*(num_pairs+1) 
         M2 = M2[2:upper_ind_M].reshape((num_pairs,2), order='C')
@@ -281,8 +282,8 @@ def drake_matching_2003(G, order='forward', **kwargs):
             G.rows[y] = []
             G.data[y] = []
 
-    print 'Drake - W1 = ',W1,', aggregated = ',np.sum(aggregated1[:,1]),' / ',n
-    print 'Drake - W2 = ',W2,', aggregated = ',np.sum(aggregated2[:,1]),' / ',n
+    # print 'Drake - W1 = ',W1,', aggregated = ',np.sum(aggregated1[:,1]),' / ',n
+    # print 'Drake - W2 = ',W2,', aggregated = ',np.sum(aggregated2[:,1]),' / ',n
     if W1 > W2: 
         S = np.where(aggregated1[:,1]==0)[0]       # Get singletons (not aggregated nodes)
     	return [ M1[0:ind1,:], S ]

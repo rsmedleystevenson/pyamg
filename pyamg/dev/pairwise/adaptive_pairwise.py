@@ -7,7 +7,7 @@ from pyamg.strength import classical_strength_of_connection,\
     algebraic_distance, affinity_distance
 from pyamg.aggregation.aggregate import standard_aggregation, naive_aggregation,\
     lloyd_aggregation, pairwise_aggregation
-from pyamg.util.utils import blocksize
+from pyamg.util.utils import blocksize, relaxation_as_linear_operator
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr
 import numpy as np
 import scipy
@@ -27,8 +27,7 @@ import pdb
 # - Check Preis alg. with Pasqua's implementation
 # - Check Notay approximation of minimum 
 # - Should only compute matching on finest level once, because it will always be the same.
-# ---> Does Panayot smooth and develop a new bad guy on every level? Maybe this will improve convergence.
-#      Yes, need to add this to coarsening and adaptive pairwise.  
+# ---> Does Panayot smooth and develop a new bad guy on every level? Yes, doesn't seem to help though...
 
 # SHOULD MAYBE MOVE SMOOTHING OF TARGETS TO HERE INSTEAD OF IN SA SO THAT WE CAN KEEP TRACK OF WHAT TARGETS ARE USED.
 
@@ -279,9 +278,20 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
                       additive=False, reconstruct=False,
                       max_hierarchies=10, use_ritz=False,
                       improve_candidates=[('block_gauss_seidel',
-                                          {'sweep': 'symmetric',
-                                                'iterations': 4})],
+                                         {'sweep': 'symmetric',
+                                         'iterations': 4})],
                       **kwargs):
+
+    def unpack_arg(v):
+        if isinstance(v, tuple):
+            return v[0], v[1]
+        elif v is None:
+            return None
+        else:
+            return v, {}
+
+    if isspmatrix_bsr(A):
+        warn("Only currently implemented for CSR matrices.")
 
     if not (isspmatrix_csr(A) or isspmatrix_bsr(A)):
         try:
@@ -319,6 +329,19 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
                               dimensions for matrix A')
         if initial_targets.shape[1] < blocksize(A):
             raise ValueError('initial_targets.shape[1] must be >= the blocksize of A')
+
+    # Improve near nullspace candidates by relaxing on A B = 0
+    if improve_candidates is not None:
+        fn, temp_args = unpack_arg(improve_candidates[0])
+    else:
+        fn = None
+
+    if fn is not None:
+        b = np.zeros((A.shape[0], 1), dtype=A.dtype)
+        initial_targets = relaxation_as_linear_operator((fn, temp_args), A, b) * initial_targets
+        if A.symmetry == "nonsymmetric":
+            AH = A.H.asformat(A.format)
+            BH = relaxation_as_linear_operator((fn, temp_args), AH, b) * BH
 
     # Empty set of solver hierarchies 
     solvers = multilevel_solver_set()
@@ -364,9 +387,9 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
                                                                smooth=smooth, strength=strength,
                                                                max_levels=max_levels,
                                                                max_coarse=max_coarse,
-                                                               coarse_solver=coarse_solver,
                                                                diagonal_dominance=diagonal_dominance,
-                                                               improve_candidates=improve_candidates, 
+                                                               coarse_solver=coarse_solver,
+                                                               improve_candidates=improve_candidates,
                                                                keep=keep, **kwargs) )
         # Test for convergence factor using new hierarchy.
         x0 = np.random.rand(n,1)

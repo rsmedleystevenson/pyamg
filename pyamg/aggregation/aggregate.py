@@ -4,7 +4,7 @@ __docformat__ = "restructuredtext en"
 
 from warnings import warn
 import numpy as np
-from scipy.sparse import csr_matrix, coo_matrix, isspmatrix_csr, isspmatrix_csc,
+from scipy.sparse import csr_matrix, coo_matrix, isspmatrix_csr, isspmatrix_csc,\
                         SparseEfficiencyWarning
 from pyamg.util.utils import relaxation_as_linear_operator
 from pyamg import amg_core

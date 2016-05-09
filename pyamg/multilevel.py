@@ -846,9 +846,10 @@ class multilevel_solver_set:
 
             M = self.aspreconditioner(cycle=cycle)
 
+            n = x.shape[0] 
             try:  # try PyAMG style interface which has a residuals parameter
                 return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,
-                             callback=callback, residuals=residuals)[0]
+                             callback=callback, residuals=residuals)[0].reshape((n,1))
             except:
                 # try the scipy.sparse.linalg.isolve style interface,
                 # which requires a call back function if a residual
@@ -867,7 +868,7 @@ class multilevel_solver_set:
                             cb(x)
 
                 return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,
-                             callback=callback)[0]
+                             callback=callback)[0].reshape((n,1))
 
         else:
             # Scale tol by normb
