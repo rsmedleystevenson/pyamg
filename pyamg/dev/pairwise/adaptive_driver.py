@@ -148,6 +148,8 @@ vec_size  = A.shape[0]
 # W = get_geometric_weights(A, theta, N, N)
 # W.eliminate_zeros()
 
+pdb.set_trace()
+
 # Zero right hand side or sin(pi x)
 if zero_rhs:
     b = np.zeros((vec_size,1))
