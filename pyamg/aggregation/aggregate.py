@@ -281,7 +281,7 @@ def lloyd_aggregation(C, ratio=0.03, distance='unit', maxiter=10):
 
 
 def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
-                        algorithm='drake', matchings=1,
+                        algorithm='drake_C', matchings=1,
                         weights=None, improve_candidates=None, **kwargs):
     """ Pairwise aggregation of nodes. 
 
