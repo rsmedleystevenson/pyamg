@@ -384,8 +384,6 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
 
-    # pdb.set_trace()
-
     # Improve near nullspace candidates by relaxing on A B = 0
     fn, kwargs = unpack_arg(improve_candidates[len(levels)-1])
     if fn is not None:
