@@ -125,7 +125,7 @@ def get_geometric_weights_d2(A, theta, Nx, Ny):
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
-N 			= 500
+N 			= 200
 problem_dim = 2
 epsilon 	= 0.01
 theta 		= 3.0*np.pi/16
@@ -183,7 +183,7 @@ diagonal_dominance = False      # Avoid coarsening diagonally dominant rows
 coarse_solver = 'pinv'
 accel = 'cg'
 
-aggregate = ('pairwise', {'num_matchings': 2, 'algorithm': 'drake_C'})
+aggregate = ('pairwise', {'matchings': 2, 'algorithm': 'drake_C'})
 # interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree':1 } )
 interp_smooth = None
 relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )

@@ -3,6 +3,9 @@ from __future__ import absolute_import
 
 __docformat__ = "restructuredtext en"
 
+import pdb 
+import matplotlib.pyplot as plt
+
 import numpy as np
 from warnings import warn
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr,\
@@ -20,7 +23,7 @@ from pyamg.strength import classical_strength_of_connection,\
     energy_based_strength_of_connection, distance_strength_of_connection,\
     algebraic_distance, affinity_distance
 from .aggregate import standard_aggregation, naive_aggregation, \
-    lloyd_aggregation
+    lloyd_aggregation, pairwise_aggregation
 from .tentative import fit_candidates
 from .smooth import energy_prolongation_smoother
 
@@ -372,11 +375,16 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         AggOp, Cnodes = naive_aggregation(C, **kwargs)
     elif fn == 'lloyd':
         AggOp, Cnodes = lloyd_aggregation(C, **kwargs)
+    elif fn == 'pairwise':
+        AggOp, Cnodes = pairwise_aggregation(A, B, symmetry=A.symmetry,
+                    improve_candidates=improve_candidates[len(levels)-1], **kwargs)
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
         Cnodes = kwargs['Cnodes']
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
+
+    # pdb.set_trace()
 
     # Improve near nullspace candidates by relaxing on A B = 0
     fn, kwargs = unpack_arg(improve_candidates[len(levels)-1])

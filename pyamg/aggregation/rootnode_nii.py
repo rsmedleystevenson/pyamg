@@ -22,7 +22,7 @@ from pyamg.strength import classical_strength_of_connection,\
     algebraic_distance
 from aggregate import standard_aggregation, naive_aggregation, \
     lloyd_aggregation, pairwise_aggregation
-from tentative import new_ideal_interpolation, py_ideal_interpolation
+from tentative import ben_ideal_interpolation
 from smooth import jacobi_prolongation_smoother,\
     richardson_prolongation_smoother, energy_prolongation_smoother
 

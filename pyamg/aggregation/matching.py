@@ -168,7 +168,7 @@ def drake_C(G, order='backward', **kwargs):
     M2 = np.zeros(((n+2),), dtype=np.int32)
 
     # Singleton nodes -- assume sqrt(n) is enough to store singletons
-    S = np.zeros((n,), dtype=np.int32)
+    S = np.zeros((n+2,), dtype=np.int32)
 
     match = amg_core.drake_matching
     match( G.indptr,

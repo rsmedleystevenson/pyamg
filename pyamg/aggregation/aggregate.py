@@ -2,6 +2,8 @@
 
 __docformat__ = "restructuredtext en"
 
+import pdb 
+
 from warnings import warn
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, isspmatrix_csr, isspmatrix_csc,\
@@ -388,14 +390,16 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
     col_inds = np.empty(n)
     col_inds[0:(2*num_pairs)] = ( np.array( ( np.arange(0,num_pairs),np.arange(0,num_pairs) ) ).T).flatten()
     col_inds[(2*num_pairs):n] = np.arange(num_pairs,Nc)
-    P = csr_matrix( (B[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
+    AggOp = csr_matrix( (np.ones((n,), dtype=bool), (row_inds,col_inds)), shape=(n,Nc) )
 
     # If performing one matching, return P and list of C-points
     if matchings == 1:
-        return [P, Cpts]
+        return AggOp, Cpts
     # If performing multiple pairwise matchings, form coarse grid operator
     # and repeat process
     else:
+        P = csr_matrix( (B[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
+        Bc = np.ones((Nc,1))
         if symmetry == 'hermitian':
             R = P.H
             Ac = R*A*P
@@ -407,9 +411,6 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
             Ac = R*A*P
             AcH = Ac.H.asformat(Ac.format)
             Bhc = np.ones((Nc,1))
-
-        AggOp = deepcopy(P)
-        Bc = np.ones((Nc,1))
 
         # Loop over the number of pairwise matchings to be done
         for i in range(1,matchings):
@@ -432,9 +433,9 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
             # Improve near nullspace candidates by relaxing on A B = 0
             fn, kwargs = unpack_arg(improve_candidates)
             if fn is not None:
-                b = np.zeros((Nc, 1), dtype=Ac.dtype)
+                b = np.zeros((n, 1), dtype=Ac.dtype)
                 Bc = relaxation_as_linear_operator((fn, kwargs), Ac, b) * Bc
-                if A.symmetry == "nonsymmetric":
+                if symmetry == "nonsymmetric":
                     Bhc = relaxation_as_linear_operator((fn, kwargs), AcH, b) * Bhc
 
             # Form sparse P from pairwise aggregation
@@ -444,10 +445,10 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
             col_inds = np.empty(n)
             col_inds[0:(2*num_pairs)] = ( np.array( ( np.arange(0,num_pairs),np.arange(0,num_pairs) ) ).T).flatten()
             col_inds[(2*num_pairs):n] = np.arange(num_pairs,Nc)
-            P = csr_matrix( (Bc[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
 
             # Form coarse grid operator and update aggregation matrix
             if i<(matchings-1):
+                P = csr_matrix( (Bc[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
                 if symmetry == 'hermitian':
                     R = P.H
                     Ac = R*Ac*P
@@ -460,12 +461,13 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
                     AcH = Ac.H.asformat(Ac.format)
                     Bhc = np.ones((Nc,1))
 
-                AggOp = AggOp * P
+                AggOp = csr_matrix(AggOp * P, dtype=bool)
                 Bc = np.ones((Nc,1))
             else:
-                AggOp = AggOp * P
+                P = csr_matrix( (np.ones((n,), dtype=bool), (row_inds,col_inds)), shape=(n,Nc) )
+                AggOp = csr_matrix(AggOp * P, dtype=bool)
 
-        return [AggOp, Cpts]
+        return AggOp, Cpts
 
 
 
