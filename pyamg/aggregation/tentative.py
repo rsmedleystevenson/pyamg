@@ -212,16 +212,15 @@ def ben_ideal_interpolation(A, AggOp, Cnodes, B=None, SOC=None, weighting=10.0, 
         num_Cpts = len(Cpts)
         num_bad_guys = B.shape[1]
 
-    # Get necessary submatrices / form operators for minimization
-    Acc = A[Cpts,:][:,Cpts]
-    Afc = -1.0*A[Fpts,:][:,Cpts]
-    Acf = Afc.transpose()
-    rhsTop = identity(num_Fpts,format='csr')
 
+    # ----------------------------------------------------------------------------- #
+    # Shouldn't even compute F points in Python as above. If I can avoid
+    # constructing submatrices at all, just pass A and C-points into the C-code...
+    #   - Is it better to form Acc a-priori for w = \hat{w}*Acc? \hat{B}_c = AccB_c?
+    #   - Can I form LQ minimization operators w/o Afc explicit? 
+    #   - How am I computing sparsity pattern? Preferably in C I suppose? 
+    # ----------------------------------------------------------------------------- #
 
-    # Pre-allocate sparsity pattern for \hat{W}
-    # Y = csr_matrix( K + lqTopOp!=0, dtype=np.float64)
-    # pdb.set_trace()
 
     # Unconstrained new ideal interpolation if no bad guys are provided
     if B is None:
@@ -259,22 +258,7 @@ def ben_ideal_interpolation(A, AggOp, Cnodes, B=None, SOC=None, weighting=10.0, 
             num_bad_guys )
 
     # Form P
-    P = vstack( [W*Acc, identity(num_Cpts,format='csr')], format='csr')
-    # NOTE, FIX THIS
-    #     ---> vstack and hstack are very slow, because they 
-    #          convert to COO matrix stack, then revert... 
-    #     Instead should modify underlying data arrays and just add identity to (K+Y)Afc. 
-    # Maybe I can preallocate P including A_{cc} = I before calling fn? 
 
-    # Arrange rows of P in proper order, convert to bsr matrix
-    permute = identity(num_pts,format='csr')
-    permute.indices = np.concatenate((Fpts,Cpts))
-    permute = permute.T;
-    if blocksize:
-        P = bsr_matrix(permute*P,blocksize=blocksize)
-        A.tobsr(blocksize=blocksize)
-    else:
-        P = bsr_matrix(permute*P,blocksize=(1,1))
 
     return P
 
