@@ -306,7 +306,7 @@ def plot_multiple_poisson(aggregations, labels, N):
 # ------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------------#
 
-N 			= 1000
+N 			= 10
 problem_dim = 2
 epsilon 	= 0.00
 theta 		= 3.0*np.pi/16
@@ -341,27 +341,25 @@ elif problem_dim == -1:
 
 
 # ------------------------------------------------------------------------------#
-matchings = 1
+matchings = 2
+strength = [matchings+1,'int']
+
 B = np.ones((N*N,1))
 # preis_matching = pairwise_aggregation(A, algorithm='preis', num_matchings=num_matchings)
 # notay_matching, notay_Cpts = pairwise_aggregation(W, algorithm='notay', num_matchings=num_matchings)
 
 
-# start = time.clock()
-# drake_matching, drake_Cpts = pairwise_aggregation(A, B=B, algorithm='drake', matchings=matchings)
-# end = time.clock()
-# old_time = end-start
+AggOp, Cpts, C = pairwise_aggregation(A, B=B, strength=strength,
+                                            algorithm='drake_C', matchings=matchings)
 
-start = time.clock()
-new_drake, new_Cpts = pairwise_aggregation(A, B=B, algorithm='drake_C', matchings=matchings)
-end = time.clock()
-new_time = end-start
+fig = plt.figure()
+ax1 = fig.add_subplot(1,2,1)
+ax2 = fig.add_subplot(1,2,2)
+ax1.spy(A)
+ax2.spy(C)
+plt.show()
 
-# print "Python time - ", old_time
-print "C time - ", new_time
-
-
-# pdb.set_trace()
+pdb.set_trace()
 
 
 # ------------------------------------------------------------------------------#

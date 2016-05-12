@@ -3,6 +3,8 @@ from __future__ import print_function
 
 __docformat__ = "restructuredtext en"
 
+import pdb
+
 import numpy as np
 import scipy as sp
 from scipy.linalg import norm
@@ -13,18 +15,26 @@ from ..relaxation.relaxation import gauss_seidel, gauss_seidel_indexed
 __all__ = ['CR', 'binormalize']
 
 
-def _CRsweep(A, Findex, Cindex, nu, thetacr, method):
+def _CRsweep(A, B, Findex, Cindex, nu, thetacr, method):
 
     n = A.shape[0]    # problem size
     numax = nu
     z = np.zeros((n,))
-    e = np.ones((n,))
+    # Set initial vector. If none provided, set default
+    # initial vector of ones
+    if B is None:
+        e = np.ones((n,))
+    elif (B.ndim == 2):
+        e = deepcopy(B[:,0])
+    else:
+        e = deepcopy(B)
+
     e[Cindex] = 0.0
     enorm = norm(e)
     rhok = 1
+    it = 0
 
-    for it in range(1, numax+1):
-
+    while True:
         if method == 'habituated':
             gauss_seidel(A, e, z, iterations=1)
             e[Cindex] = 0.0
@@ -38,18 +48,20 @@ def _CRsweep(A, Findex, Cindex, nu, thetacr, method):
         enorm = norm(e)
         rhok_old = rhok
         rhok = enorm / enorm_old
+        it += 1
 
-        # criteria 1
-        if (abs(rhok - rhok_old) / rhok < 0.1) and (it >= nu):
-            return rhok, e
+        # criteria 1 -- at least nu iters, relative change in CF is small (<0.1)
+        if ( (abs(rhok - rhok_old) / rhok) < 0.1) and (it >= nu):
+            break
+        # criteria 2 -- fast convergence 
+        elif rhok < 0.1 * thetacr:
+            break
 
-        # criteria 2
-        if rhok < 0.1 * thetacr:
-            return rhok, e
+    return rhok, e
 
 
-def CR(A, method='habituated', nu=3, thetacr=0.7, thetacs=[0.3, 0.5],
-            maxiter=20):
+def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
+        thetacs=[0.3, 0.5], maxiter=20):
     """Use Compatible Relaxation to compute a C/F splitting
 
     Parameters
@@ -60,6 +72,8 @@ def CR(A, method='habituated', nu=3, thetacr=0.7, thetacs=[0.3, 0.5],
         Method used during relaxation:
             - concurrent: GS relaxation on F-points, leaving e_c = 0
             - habituated: full relaxation, setting e_c = 0
+    B : 
+
     nu : 
 
     thetacr :
@@ -102,9 +116,9 @@ def CR(A, method='habituated', nu=3, thetacr=0.7, thetacs=[0.3, 0.5],
     gamma = np.zeros((n,))
 
     # 3.1b
-    Cindex = np.where(splitting == 1)[0]
-    Findex = np.where(splitting == 0)[0]
-    rho, e = _CRsweep(A, Findex, Cindex, nu, thetacr, method=method)
+    Cindex = np.empty((0,), dtype='intc')
+    Findex = np.arange(0,n, dtype='intc')
+    rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
 
     # 3.1c
     for it in range(0, maxiter):
@@ -150,7 +164,7 @@ def CR(A, method='habituated', nu=3, thetacr=0.7, thetacs=[0.3, 0.5],
 
         Cindex = np.where(splitting == 1)[0]
         Findex = np.where(splitting == 0)[0]
-        rho, e = _CRsweep(A, Findex, Cindex, nu, thetacr, method=method)
+        rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
 
         print(rho)
         if rho < thetacr:

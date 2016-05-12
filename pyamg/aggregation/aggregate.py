@@ -355,7 +355,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
 
     if strength is not None:
         if strength[0] < matchings:
-            warn("Expect number of matchings for SOC >= matchings for aggregation.")\
+            warn("Expect number of matchings for SOC >= matchings for aggregation.")
             diff = 0
         else:
             diff = strength[0] - matchings  # How many more matchings to do for SOC
@@ -408,11 +408,13 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
     col_inds[(2*num_pairs):n] = np.arange(num_pairs,Nc)
     AggOp = csr_matrix( (np.ones((n,), dtype=bool), (row_inds,col_inds)), shape=(n,Nc) )
 
+    # Predefine SOC matrix is only one pairwise pass is done for aggregation
+    if (matchings == 1) and (diff > 0):
+        AggOp2 = csr_matrix(AggOp, dtype=strength[1])
+
     # If performing multiple pairwise matchings, form coarse grid operator
     # and repeat process
-    if matchings > 1:
-
-
+    if (matchings+diff) > 1:
         P = csr_matrix( (B[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
         Bc = np.ones((Nc,1))
         if symmetry == 'hermitian':
@@ -498,8 +500,8 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
                         Bhc = np.ones((Nc,1))
 
                     Bc = np.ones((Nc,1))
-                    AggOp2 = deepcopy(AggOp)
-            # Pairwise iterations between 
+                    AggOp2 = csr_matrix(AggOp, dtype=strength[1])
+            # Pairwise iterations for SOC
             elif i < (matchings+diff-1):
                 P = csr_matrix( (Bc[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
                 if symmetry == 'hermitian':

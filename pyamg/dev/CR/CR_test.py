@@ -11,14 +11,7 @@ from pyamg.gallery import poisson, linear_elasticity
 from pyamg.gallery.diffusion import diffusion_stencil_2d
 from pyamg.gallery.stencil import stencil_grid
 from pyamg.util.utils import symmetric_rescaling
-from pyamg.strength import classical_strength_of_connection,\
-    symmetric_strength_of_connection, evolution_strength_of_connection,\
-    energy_based_strength_of_connection, distance_strength_of_connection,\
-    algebraic_distance
-from pyamg.aggregation.aggregate import standard_aggregation, naive_aggregation,\
-    lloyd_aggregation, pairwise_aggregation
-
-from pyamg.aggregation.matching import *
+from pyamg.classical import CR
 
 
 # pyAMG diffusion stencil is rotated from what it looks like, i.e. each row of 3
@@ -39,7 +32,7 @@ def ind_to_coordinates(i, Nx, Ny):
 # Optional input, figure and subplot indices [num_plots, i, j]
 def plot_poisson_matching(splitting, N, fig=None, subplot=None, label=None):
 
-    # AggOplot nodes in grid
+    # Plot nodes in grid
     if fig == None:
         fig, ax = plt.subplots()
     else:
@@ -54,8 +47,8 @@ def plot_poisson_matching(splitting, N, fig=None, subplot=None, label=None):
     for i in range(0,num_unknowns):
         node_locations[i,:] = ind_to_coordinates(i=i, Nx=N, Ny=N)
 
-    ax.scatter(node_locations[Fpts,0],node_locations[Fpts,1], color='black')
-    ax.scatter(node_locations[Cpts,0],node_locations[Cpts,1], color='darkred', size=3)
+    ax.scatter(node_locations[Fpts,0],node_locations[Fpts,1], color='black', s=15)
+    ax.scatter(node_locations[Cpts,0],node_locations[Cpts,1], color='darkred', s=50)
 
     ax.axes.get_xaxis().set_ticks([])
     ax.axes.get_yaxis().set_ticks([])
@@ -69,19 +62,19 @@ def plot_multiple_poisson(splittings, labels, N):
         plot_poisson_matching(splittings[0], N)
     elif num_plots == 2:
         fig = plt.figure()
-        plot_poisson_matching(AggOp=splittings[0], N=N, fig=fig, subplot=[1,2,1], label=labels[0])
-        plot_poisson_matching(AggOp=splittings[1], N=N, fig=fig, subplot=[1,2,2], label=labels[1])
+        plot_poisson_matching(splitting=splittings[0], N=N, fig=fig, subplot=[1,2,1], label=labels[0])
+        plot_poisson_matching(splitting=splittings[1], N=N, fig=fig, subplot=[1,2,2], label=labels[1])
     elif num_plots == 3:
         fig = plt.figure()
-        plot_poisson_matching(AggOp=splittings[0], N=N, fig=fig, subplot=[1,3,1], label=labels[0])
-        plot_poisson_matching(AggOp=splittings[1], N=N, fig=fig, subplot=[1,3,2], label=labels[1])
-        plot_poisson_matching(AggOp=splittings[2], N=N, fig=fig, subplot=[1,3,3], label=labels[2])
+        plot_poisson_matching(splitting=splittings[0], N=N, fig=fig, subplot=[1,3,1], label=labels[0])
+        plot_poisson_matching(splitting=splittings[1], N=N, fig=fig, subplot=[1,3,2], label=labels[1])
+        plot_poisson_matching(splitting=splittings[2], N=N, fig=fig, subplot=[1,3,3], label=labels[2])
     elif num_plots == 4:
         fig = plt.figure()
-        plot_poisson_matching(AggOp=splittings[0], N=N, fig=fig, subplot=[2,2,1], label=labels[0])
-        plot_poisson_matching(AggOp=splittings[1], N=N, fig=fig, subplot=[2,2,2], label=labels[1])
-        plot_poisson_matching(AggOp=splittings[2], N=N, fig=fig, subplot=[2,2,3], label=labels[2])
-        plot_poisson_matching(AggOp=splittings[3], N=N, fig=fig, subplot=[2,2,4], label=labels[3])
+        plot_poisson_matching(splitting=splittings[0], N=N, fig=fig, subplot=[2,2,1], label=labels[0])
+        plot_poisson_matching(splitting=splittings[1], N=N, fig=fig, subplot=[2,2,2], label=labels[1])
+        plot_poisson_matching(splitting=splittings[2], N=N, fig=fig, subplot=[2,2,3], label=labels[2])
+        plot_poisson_matching(splitting=splittings[3], N=N, fig=fig, subplot=[2,2,4], label=labels[3])
     else:
         raise ValueError('Too many plots.')
 
@@ -96,10 +89,10 @@ def plot_multiple_poisson(splittings, labels, N):
 # ------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------------#
 
-N 			= 20
+N 			= 25
 problem_dim = 2
-epsilon 	= 1.00
-theta 		= 3.0*np.pi/16
+epsilon 	= 0.0
+theta 		= 1.0*np.pi/4
 
 # 1d Poisson 
 if problem_dim == 1:
@@ -119,8 +112,9 @@ elif problem_dim == -1:
 
 # ------------------------------------------------------------------------------#
 
-thetacs = [0.3,0.5]
-thetacr = 0.7
+
+thetacs = [0.1,0.2]
+thetacr = 0.5
 nu = 3
 maxiter = 20
 
