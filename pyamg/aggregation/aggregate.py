@@ -469,6 +469,8 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
 
         return AggOp, Cpts
 
+        # Can get SOC through C = csr_matrix(AggOp*AggOp, dtype=int)
+
 
 
 
