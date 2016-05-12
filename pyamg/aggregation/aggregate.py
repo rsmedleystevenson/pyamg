@@ -284,7 +284,8 @@ def lloyd_aggregation(C, ratio=0.03, distance='unit', maxiter=10):
 
 def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
                         algorithm='drake_C', matchings=1,
-                        weights=None, improve_candidates=None, **kwargs):
+                        weights=None, improve_candidates=None,
+                        strength=None, **kwargs):
     """ Pairwise aggregation of nodes. 
 
     Parameters
@@ -311,6 +312,12 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
     improve_candidates : {tuple, string, list} : default None
         The list elements are relaxation descriptors of the form used for
         presmoother and postsmoother.  A value of None implies no action on B.
+    strength : {(int, string) or None} : default None
+        If a strength of connection matrix should be returned along with
+        aggregation. If None, no SOC matrix returned. To return a SOC matrix,
+        pass in a tuple (a,b), for int a > matchings telling how many matchings
+        to use to construct a SOC matrix, and string b with data type.
+        E.g. strength = (4,'bool'). 
 
     THINGS TO NOTE
     --------------
@@ -345,6 +352,15 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
             (symmetry != 'nonsymmetric'):
         raise ValueError('expected \'symmetric\', \'nonsymmetric\' or\
                          \'hermitian\' for the symmetry parameter ')
+
+    if strength is not None:
+        if strength[0] < matchings:
+            warn("Expect number of matchings for SOC >= matchings for aggregation.")\
+            diff = 0
+        else:
+            diff = strength[0] - matchings  # How many more matchings to do for SOC
+    else:
+        diff = 0
 
     # Compute weights if function provided, otherwise let W = A
     if weights is not None:
@@ -392,12 +408,11 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
     col_inds[(2*num_pairs):n] = np.arange(num_pairs,Nc)
     AggOp = csr_matrix( (np.ones((n,), dtype=bool), (row_inds,col_inds)), shape=(n,Nc) )
 
-    # If performing one matching, return P and list of C-points
-    if matchings == 1:
-        return AggOp, Cpts
     # If performing multiple pairwise matchings, form coarse grid operator
     # and repeat process
-    else:
+    if matchings > 1:
+
+
         P = csr_matrix( (B[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
         Bc = np.ones((Nc,1))
         if symmetry == 'hermitian':
@@ -413,7 +428,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
             Bhc = np.ones((Nc,1))
 
         # Loop over the number of pairwise matchings to be done
-        for i in range(1,matchings):
+        for i in range(1,(matchings+diff)):
             if weights is not None:
                 W = weights(Ac, **kwargs)
             else:
@@ -447,7 +462,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
             col_inds[(2*num_pairs):n] = np.arange(num_pairs,Nc)
 
             # Form coarse grid operator and update aggregation matrix
-            if i<(matchings-1):
+            if i < (matchings-1):
                 P = csr_matrix( (Bc[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
                 if symmetry == 'hermitian':
                     R = P.H
@@ -463,14 +478,54 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
 
                 AggOp = csr_matrix(AggOp * P, dtype=bool)
                 Bc = np.ones((Nc,1))
-            else:
+            # Construct final aggregation matrix
+            elif i == (matchings-1):
                 P = csr_matrix( (np.ones((n,), dtype=bool), (row_inds,col_inds)), shape=(n,Nc) )
                 AggOp = csr_matrix(AggOp * P, dtype=bool)
+                # Construct coarse grids and additional aggregation matrix
+                # only if doing more matchings for SOC.
+                if diff > 0:
+                    if symmetry == 'hermitian':
+                        R = P.H
+                        Ac = R*Ac*P
+                    elif symmetry == 'symmetric':
+                        R = P.T            
+                        Ac = R*Ac*P
+                    elif symmetry == 'nonsymmetric':
+                        R = csr_matrix( (Bhc[0:n,0], (col_inds,row_inds)), shape=(Nc,n) )
+                        Ac = R*Ac*P
+                        AcH = Ac.H.asformat(Ac.format)
+                        Bhc = np.ones((Nc,1))
 
+                    Bc = np.ones((Nc,1))
+                    AggOp2 = deepcopy(AggOp)
+            # Pairwise iterations between 
+            elif i < (matchings+diff-1):
+                P = csr_matrix( (Bc[0:n,0], (row_inds,col_inds)), shape=(n,Nc) )
+                if symmetry == 'hermitian':
+                    R = P.H
+                    Ac = R*Ac*P
+                elif symmetry == 'symmetric':
+                    R = P.T            
+                    Ac = R*Ac*P
+                elif symmetry == 'nonsymmetric':
+                    R = csr_matrix( (Bhc[0:n,0], (col_inds,row_inds)), shape=(Nc,n) )
+                    Ac = R*Ac*P
+                    AcH = Ac.H.asformat(Ac.format)
+                    Bhc = np.ones((Nc,1))
+
+                AggOp2 = csr_matrix(AggOp2 * P, dtype=bool)
+                Bc = np.ones((Nc,1))
+            # Final matching for SOC matrix. Construct SOC as AggOp*AggOp^T.
+            elif i == (matchings+diff-1):
+                P = csr_matrix( (np.ones((n,), dtype=bool), (row_inds,col_inds)), shape=(n,Nc) )
+                AggOp2 = csr_matrix(AggOp2 * P, dtype=bool)
+                AggOp2 = csr_matrix(AggOp2*AggOp2.T, dtype=strength[1])
+
+    if strength is None:
         return AggOp, Cpts
-
-        # Can get SOC through C = csr_matrix(AggOp*AggOp, dtype=int)
-
+    else:
+        return AggOp, Cpts, AggOp2
 
 
 
