@@ -9,6 +9,7 @@ import numpy as np
 import scipy as sp
 from scipy.linalg import norm
 from scipy.sparse import isspmatrix, spdiags, isspmatrix_csr
+from copy import deepcopy
 
 from ..relaxation.relaxation import gauss_seidel, gauss_seidel_indexed
 
@@ -164,7 +165,7 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
         Findex = np.where(splitting == 0)[0]
         rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
 
-        print "Iteration ",it,", CF = ",rho
+        print("Iteration ",it,", CF = ",rho)
         if rho < thetacr:
             break
 
@@ -219,7 +220,7 @@ def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
 
         # 3.1g - Call CR smoothing iteration
         rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
-        print "Iteration ",it,", CF = ",rho
+        print("Iteration ",it,", CF = ",rho)
         if rho < thetacr:
             break
 
