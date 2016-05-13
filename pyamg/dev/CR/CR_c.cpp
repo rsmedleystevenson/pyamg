@@ -15,13 +15,18 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
 {
 
 	// Steps 3.1d, 3.1e in Falgout / Brannick (2010)
+
+	// Get WHAT NORM OF TARGET VECTOR AND RELAXED VECTOR?
+	for (   ) {
+
+		
+	}
+
 	// Compute candidate set measure, pick coarse grid candidates
-
-//----> NEED TO UPDATE TO GENERAL INIDICES ARRAY PASSED IN
-
+	I &num_Fpts = indices[0];
 	vector<I> Uindex;
-	for (I ind=0; ind<Findex_size; ind++) {
-		I pt = Findex[ind];
+	for (I ind=1; ind<(num_Fpts+1); ind++) {
+		I pt = indices[ind];
 		gamma[pt] = abs(    ) / // ----> FILL THIS IN
 		if (gamma[pt] > thetacs) {
 			Uindex.push_back(pt);
@@ -94,26 +99,21 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
 
 	// Reorder indices array, with the first element giving the number
 	// of F indices, nf, followed by F indices in elements 1:nf, and 
-	// C indices in (nf+1):n
-	vector<I> Cpts;
-	I &num_Fpts = indices[0];
+	// C indices in (nf+1):n. Note, C indices sorted largest to smallest.
 	num_Fpts = 0;
-	I next_ind = 1;
+	I next_Find = 1;
+	I next_Cind = n;
 	for (I i=0; i<n; i++) {
 		if (splitting[i] == 0) {
-			indices[next_ind] = i;
-			next_ind += 1;
+			indices[next_Find] = i;
+			next_Find += 1;
 			num_Fpts += 1;
 		}
 		else {
-			Cpts.push_back(i);
+			indices[next_Cind] = i;
+			next_Cind -= 1;
 		}
 	}
-	I num_Cpts = Cpts.size()
-	for (I i=0; i<num_Cpts; i++) {
-		indices[num_Fpts + i + 1] = Cpts[i];
-	}
-
 }
 
 

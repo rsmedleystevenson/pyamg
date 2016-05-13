@@ -41,8 +41,7 @@ def _CRsweep(A, B, Findex, Cindex, nu, thetacr, method):
         elif method == 'concurrent':
             gauss_seidel_indexed(A, e, z, indices=Findex, iterations=1)
         else:
-            raise NotImplementedError('method not recognized: need \
-                                       habituated or concurrent')
+            raise NotImplementedError('method not recognized: need habituated or concurrent')
 
         enorm_old = enorm
         enorm = norm(e)
@@ -191,8 +190,11 @@ def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
     gamma = np.zeros((n,))
 
     # 3.1b
+    indices = np.zeros((n+1,), dtype='intc')
+    indices[0] = n
+    indices[1:] = np.arange(0,n, dtype='intc')
+    Findex = indices[1:]
     Cindex = np.empty((0,), dtype='intc')
-    Findex = np.arange(0,n, dtype='intc')
     rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
 
     # 3.1c
@@ -202,8 +204,16 @@ def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
         if len(thetacs) > 1:
             thetacs.pop()
 
-        # C-call to amg_core goes here. 
 
+        # ------> C-call to amg_core goes here.
+
+
+        # Separate F indices and C indices
+        num_F = indices[0] 
+        Findex = indices[1:(num_F+1)]
+        Cindex = indices[(num_F+1):]
+
+        # Call CR smoothing iteration
         rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
         print "Iteration ",it,", CF = ",rho
         if rho < thetacr:
