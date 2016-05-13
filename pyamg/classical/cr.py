@@ -123,12 +123,12 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     # 3.1c
     for it in range(0, maxiter):
 
-        print(it)
         # 3.1d (assuming constant initial e in _CRsweep)
         # should already be zero at C pts (Cindex)
+        # ---> NEED TO GENERALIZE THIS TO NOT CONSTANT INITIAL GUESS
         gamma[Findex] = np.abs(e[Findex]) / np.abs(e[Findex]).max()
 
-        # 3.1e
+        # 3.1e --- DON'T FORGET TO KEEP THE THETA POP HERE
         Uindex = np.where(gamma > thetacs[0])[0]
         if len(thetacs) > 1:
             thetacs.pop()
@@ -166,11 +166,53 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
         Findex = np.where(splitting == 0)[0]
         rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
 
-        print(rho)
+        print "Iteration ",it,", CF = ",rho
         if rho < thetacr:
             break
 
     return splitting
+
+
+def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
+        thetacs=[0.3, 0.5], maxiter=20):
+
+    n = A.shape[0]    # problem size
+    thetacs = list(thetacs)
+    thetacs.reverse()
+
+    if not isspmatrix_csr(A):
+        raise TypeError('expecting csr sparse matrix A')
+
+    if A.dtype == complex:
+        raise NotImplementedError('complex A not implemented')
+
+    # 3.1a
+    splitting = np.zeros((n,), dtype='intc')
+    gamma = np.zeros((n,))
+
+    # 3.1b
+    Cindex = np.empty((0,), dtype='intc')
+    Findex = np.arange(0,n, dtype='intc')
+    rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
+
+    # 3.1c
+    for it in range(0, maxiter):
+        # 3.1e --- DON'T FORGET TO KEEP THE THETA POP HERE
+        Uindex = np.where(gamma > thetacs[0])[0]
+        if len(thetacs) > 1:
+            thetacs.pop()
+
+        # C-call to amg_core goes here. 
+
+        rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
+        print "Iteration ",it,", CF = ",rho
+        if rho < thetacr:
+            break
+
+    return splitting
+
+
+
 
 
 def binormalize(A, tol=1e-5, maxiter=10):
