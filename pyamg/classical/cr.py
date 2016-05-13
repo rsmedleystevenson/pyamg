@@ -12,8 +12,9 @@ from scipy.sparse import isspmatrix, spdiags, isspmatrix_csr
 from copy import deepcopy
 
 from ..relaxation.relaxation import gauss_seidel, gauss_seidel_indexed
+from ..amg_core.ruge_stuben import cr_helper
 
-__all__ = ['CR', 'binormalize']
+__all__ = ['CR', 'CR_c_code', 'binormalize']
 
 
 def _CRsweep(A, B, Findex, Cindex, nu, thetacr, method):
@@ -200,8 +201,8 @@ def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
     # 3.1c
     for it in range(0, maxiter):
 
-        # 3.1d - 3.1f, see amg_core. 
-        fn = amg_core.cr_helper
+        # 3.1d - 3.1f, see amg_core.ruge_stuben
+        fn = cr_helper
         fn(A.indptr,
            A.colinds,
            target,
