@@ -487,6 +487,13 @@ def rs_direct_interpolation_pass2(*args):
     """
     return _amg_core.rs_direct_interpolation_pass2(*args)
 
+def cr_helper(*args):
+    """
+    cr_helper(int const [] A_rowptr, int const [] A_colinds, float const [] B, float [] e, int [] indices, int [] splitting, float [] gamma, float const thetacs)
+    cr_helper(int const [] A_rowptr, int const [] A_colinds, double const [] B, double [] e, int [] indices, int [] splitting, double [] gamma, double const thetacs)
+    """
+    return _amg_core.cr_helper(*args)
+
 def apply_distance_filter(*args):
     """
     apply_distance_filter(int const n_row, float const epsilon, int const [] Sp, int const [] Sj, float [] Sx)

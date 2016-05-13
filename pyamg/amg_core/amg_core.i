@@ -52,9 +52,8 @@
     (      ctype agg2 [], const int agg2_size),
     (      ctype M1 [], const int M1_size),
     (      ctype M2 [], const int M2_size),
-    (      ctype S [], const int S_size)
-    (      ctype gamma [], const int gamma_size),
-    (      ctype indices [], const int indices_size),
+    (      ctype S [], const int S_size),
+    (      ctype indices [], const int indices_size)
 };
 %enddef
 
@@ -81,6 +80,7 @@
     (      ctype AA [], const int AA_size),
     (      ctype  R [], const int  R_size),
     (      ctype temp [], const int temp_size),
+    (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
     (const ctype A_data [], const int A_data_size)
 };

@@ -611,17 +611,23 @@ void rs_standard_interpolation(const I n_nodes,
 
 
 
+
+
+
+
+
 template<class I, class T>
-void cr_helper(const I A_rowptr, const int A_rowptr_size,
-               const I A_colinds, const int A_colinds_size, 
+void cr_helper(const I A_rowptr[], const int A_rowptr_size,
+               const I A_colinds[], const int A_colinds_size, 
                const T B[], const int B_size,
                T e[], const int e_size,
                I indices[], const int indices_size,
                I splitting[], const int splitting_size,
-               I gamma[], const int gamma_size,
+               T gamma[], const int gamma_size,
                const T thetacs  )
 {
     I n = splitting_size;
+    I &num_Fpts = indices[0];
 
     // Steps 3.1d, 3.1e in Falgout / Brannick (2010)
     // Divide each element in e by corresponding index in initial target vector.
@@ -629,15 +635,14 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
     T inf_norm = 0;
     for (I i=1; i<(num_Fpts+1); i++) {
         I pt = indices[i];
-        e[pt] = abs(e[pt] / B[pt]);
+        e[pt] = std::abs(e[pt] / B[pt]);
         if (e[pt] > inf_norm) {
             inf_norm = e[pt];
         }   
     }
 
     // Compute candidate set measure, pick coarse grid candidates.
-    I &num_Fpts = indices[0];
-    vector<I> Uindex;
+    std::vector<I> Uindex;
     for (I i=1; i<(num_Fpts+1); i++) {
         I pt = indices[i];
         gamma[pt] = e[pt] / inf_norm; 
@@ -649,10 +654,10 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
 
     // Step 3.1f in Falgout / Brannick (2010)
     // Find weights: omega_i = |N_i\C| + gamma_i
-    vector<T> omega(n,0);
+    std::vector<T> omega(n,0);
     for (I i=0; i<set_size; i++) {
         I pt = Uindex[i];
-        I num_neighbors = 0
+        I num_neighbors = 0;
         I A_ind0 = A_rowptr[pt];
         I A_ind1 = A_rowptr[pt+1];
         for (I j=A_ind0; j<A_ind1; j++) {
@@ -685,7 +690,7 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
 
         // 2. Remove from candidate set all nodes connected to 
         // new C-point by marking weight zero.
-        vector<I> neighbors;
+        std::vector<I> neighbors;
         I A_ind0 = A_rowptr[new_pt];
         I A_ind1 = A_rowptr[new_pt+1];
         for (I i=A_ind0; i<A_ind1; i++) {
@@ -728,9 +733,6 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
         }
     }
 }
-
-
-
 
 
 

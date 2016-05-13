@@ -12,9 +12,9 @@ from scipy.sparse import isspmatrix, spdiags, isspmatrix_csr
 from copy import deepcopy
 
 from ..relaxation.relaxation import gauss_seidel, gauss_seidel_indexed
-from ..amg_core.ruge_stuben import cr_helper
+from pyamg import amg_core
 
-__all__ = ['CR', 'CR_c_code', 'binormalize']
+__all__ = ['CR', 'binormalize']
 
 
 def _CRsweep(A, B, Findex, Cindex, nu, thetacr, method):
@@ -93,8 +93,8 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     >>> A = poisson((20,20),format='csr')
     >>> splitting = CR(A)
     """
-    n = A.shape[0]    # problem size
 
+    n = A.shape[0]    # problem size
     thetacs = list(thetacs)
     thetacs.reverse()
 
@@ -111,80 +111,7 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     elif (B.ndim == 1):
         B = B.reshape((len(B),1))
 
-    # 3.1a
-    splitting = np.zeros((n,), dtype='intc')
-    gamma = np.zeros((n,))
-
-    # 3.1b
-    Cindex = np.empty((0,), dtype='intc')
-    Findex = np.arange(0,n, dtype='intc')
-    rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
-
-    # 3.1c
-    for it in range(0, maxiter):
-
-        # 3.1d (assuming constant initial e in _CRsweep)
-        # should already be zero at C pts (Cindex)
-        # ---> NEED TO GENERALIZE THIS TO NOT CONSTANT INITIAL GUESS
-        gamma[Findex] = np.abs(e[Findex]) / np.abs(e[Findex]).max()
-
-        # 3.1e 
-        Uindex = np.where(gamma > thetacs[-1])[0]
-        if len(thetacs) > 1:
-            thetacs.pop()
-
-        # 3.1f
-        # first find the weights: omega_i = |N_i\C| + gamma_i
-        omega = -np.inf * np.ones((n,))
-        for i in Uindex:
-            J = A.indices[np.arange(A.indptr[i], A.indptr[i+1])]
-            J = np.where(splitting[J] == 0)[0]
-            omega[i] = len(J) + gamma[i]
-
-        # independent set
-        Usize = len(Uindex)
-        while Usize > 0:
-            # step 1
-            i = omega.argmax()
-            splitting[i] = 1
-            gamma[i] = 0.0
-            # step 2
-            J = A.indices[np.arange(A.indptr[i], A.indptr[i+1])]
-            J = np.intersect1d(J, Uindex, assume_unique=True)
-            omega[i] = -np.inf
-            omega[J] = -np.inf
-
-            # step 3
-            for j in J:
-                K = A.indices[np.arange(A.indptr[j], A.indptr[j+1])]
-                K = np.intersect1d(K, Uindex, assume_unique=True)
-                omega[K] = omega[K] + 1.0
-
-            Usize -= 1
-
-        Cindex = np.where(splitting == 1)[0]
-        Findex = np.where(splitting == 0)[0]
-        rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
-
-        print("Iteration ",it,", CF = ",rho)
-        if rho < thetacr:
-            break
-
-    return splitting
-
-
-def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
-        thetacs=[0.3, 0.5], maxiter=20):
-
-    n = A.shape[0]    # problem size
-    thetacs = list(thetacs)
-    thetacs.reverse()
-
-    if not isspmatrix_csr(A):
-        raise TypeError('expecting csr sparse matrix A')
-
-    if A.dtype == complex:
-        raise NotImplementedError('complex A not implemented')
+    target = B[:,0]
 
     # 3.1a - Initialize all nodes as F points
     splitting = np.zeros((n,), dtype='intc')
@@ -202,15 +129,16 @@ def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
     for it in range(0, maxiter):
 
         # 3.1d - 3.1f, see amg_core.ruge_stuben
-        fn = cr_helper
+        test = thetacs[-1]
+        fn = amg_core.cr_helper
         fn(A.indptr,
-           A.colinds,
+           A.indices,
            target,
            e,
            indices,
            splitting,
            gamma,
-           thetacs[-1] )
+           test )
 
         # Separate F indices and C indices
         num_F = indices[0] 
@@ -221,12 +149,11 @@ def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
 
         # 3.1g - Call CR smoothing iteration
         rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
-        print("Iteration ",it,", CF = ",rho)
+        print("Iteration ",it,", CF = ",rho, ", Num Fpts = ",indices[0])
         if rho < thetacr:
             break
 
     return splitting
-
 
 
 def binormalize(A, tol=1e-5, maxiter=10):
