@@ -20,15 +20,7 @@ def _CRsweep(A, B, Findex, Cindex, nu, thetacr, method):
     n = A.shape[0]    # problem size
     numax = nu
     z = np.zeros((n,))
-    # Set initial vector. If none provided, set default
-    # initial vector of ones
-    if B is None:
-        e = np.ones((n,))
-    elif (B.ndim == 2):
-        e = deepcopy(B[:,0])
-    else:
-        e = deepcopy(B)
-
+    e = deepcopy(B[:,0])
     e[Cindex] = 0.0
     enorm = norm(e)
     rhok = 1
@@ -110,6 +102,13 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     if A.dtype == complex:
         raise NotImplementedError('complex A not implemented')
 
+    # Set initial vector. If none provided, set default
+    # initial vector of ones
+    if B is None:
+        B = np.ones((n,1))
+    elif (B.ndim == 1):
+        B = B.reshape((len(B),1))
+
     # 3.1a
     splitting = np.zeros((n,), dtype='intc')
     gamma = np.zeros((n,))
@@ -127,8 +126,8 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
         # ---> NEED TO GENERALIZE THIS TO NOT CONSTANT INITIAL GUESS
         gamma[Findex] = np.abs(e[Findex]) / np.abs(e[Findex]).max()
 
-        # 3.1e --- DON'T FORGET TO KEEP THE THETA POP HERE
-        Uindex = np.where(gamma > thetacs[0])[0]
+        # 3.1e 
+        Uindex = np.where(gamma > thetacs[-1])[0]
         if len(thetacs) > 1:
             thetacs.pop()
 
@@ -185,43 +184,46 @@ def CR_c_code(A, method='habituated', B=None, nu=3, thetacr=0.7,
     if A.dtype == complex:
         raise NotImplementedError('complex A not implemented')
 
-    # 3.1a
+    # 3.1a - Initialize all nodes as F points
     splitting = np.zeros((n,), dtype='intc')
-    gamma = np.zeros((n,))
-
-    # 3.1b
     indices = np.zeros((n+1,), dtype='intc')
     indices[0] = n
     indices[1:] = np.arange(0,n, dtype='intc')
     Findex = indices[1:]
     Cindex = np.empty((0,), dtype='intc')
+    gamma = np.zeros((n,))
+
+    # 3.1b - Run initial smoothing sweep
     rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
 
     # 3.1c
     for it in range(0, maxiter):
-        # 3.1e --- DON'T FORGET TO KEEP THE THETA POP HERE
-        Uindex = np.where(gamma > thetacs[0])[0]
-        if len(thetacs) > 1:
-            thetacs.pop()
 
-
-        # ------> C-call to amg_core goes here.
-
+        # 3.1d - 3.1f, see amg_core. 
+        fn = amg_core.cr_helper
+        fn(A.indptr,
+           A.colinds,
+           target,
+           e,
+           indices,
+           splitting,
+           gamma,
+           thetacs[-1] )
 
         # Separate F indices and C indices
         num_F = indices[0] 
         Findex = indices[1:(num_F+1)]
         Cindex = indices[(num_F+1):]
+        if len(thetacs) > 1:
+            thetacs.pop()
 
-        # Call CR smoothing iteration
+        # 3.1g - Call CR smoothing iteration
         rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
         print "Iteration ",it,", CF = ",rho
         if rho < thetacr:
             break
 
     return splitting
-
-
 
 
 

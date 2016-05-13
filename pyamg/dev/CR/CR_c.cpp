@@ -5,29 +5,33 @@
 template<class I, class T>
 void cr_helper(const I A_rowptr, const int A_rowptr_size,
 			   const I A_colinds, const int A_colinds_size, 
-			   const T initial_target[], const int initial_target_size,
-			   const T relaxed_vec[], const int relaxed_vec_size,
+			   const T target[], const int target_size,
+			   T e[], const int e_size,
 			   I indices[], const int indices_size,
 			   I splitting[], const int splitting_size,
 			   I gamma[], const int gamma_size,
-			   const I n,
 			   const T thetacs  )
 {
+	I n = splitting_size;
 
 	// Steps 3.1d, 3.1e in Falgout / Brannick (2010)
-
-	// Get WHAT NORM OF TARGET VECTOR AND RELAXED VECTOR?
-	for (   ) {
-
-		
+	// Divide each element in e by corresponding index in initial target vector.
+	// Get inf norm of new e.
+	T inf_norm = 0;
+	for (I i=1; i<(num_Fpts+1); i++) {
+		I pt = indices[i];
+		e[pt] = abs(e[pt] / target[pt]);
+		if (e[pt] > inf_norm) {
+			inf_norm = e[pt];
+		}	
 	}
 
-	// Compute candidate set measure, pick coarse grid candidates
+	// Compute candidate set measure, pick coarse grid candidates.
 	I &num_Fpts = indices[0];
 	vector<I> Uindex;
-	for (I ind=1; ind<(num_Fpts+1); ind++) {
-		I pt = indices[ind];
-		gamma[pt] = abs(    ) / // ----> FILL THIS IN
+	for (I i=1; i<(num_Fpts+1); i++) {
+		I pt = indices[i];
+		gamma[pt] = e[pt] / inf_norm; 
 		if (gamma[pt] > thetacs) {
 			Uindex.push_back(pt);
 		}
@@ -37,8 +41,8 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
 	// Step 3.1f in Falgout / Brannick (2010)
 	// Find weights: omega_i = |N_i\C| + gamma_i
 	vector<T> omega(n,0);
-	for (I ind=0; ind<set_size; ind++) {
-		I pt = Uindex[ind];
+	for (I i=0; i<set_size; i++) {
+		I pt = Uindex[i];
 		I num_neighbors = 0
 		I A_ind0 = A_rowptr[pt];
 		I A_ind1 = A_rowptr[pt+1];
@@ -56,8 +60,8 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
 		// 1. Add point i in U with maximal weight to C 
 		T max_weight = 0;
 		I new_pt = -1;
-		for (I ind=0; ind<set_size; i++) {
-			I pt = Uindex[ind];
+		for (I i=0; i<set_size; i++) {
+			I pt = Uindex[i];
 			if (omega[pt] > max_weight) {
 				max_weight = omega[pt];
 				new_pt = pt;
@@ -75,8 +79,8 @@ void cr_helper(const I A_rowptr, const int A_rowptr_size,
 		vector<I> neighbors;
 		I A_ind0 = A_rowptr[new_pt];
 		I A_ind1 = A_rowptr[new_pt+1];
-		for (I j=A_ind0; j<A_ind1; j++) {
-			I temp = A_colinds[j];
+		for (I i=A_ind0; i<A_ind1; i++) {
+			I temp = A_colinds[i];
 			neighbors.push_back(temp);
 			omega[temp] = 0;
 		}
