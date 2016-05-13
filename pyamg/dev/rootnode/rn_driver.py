@@ -41,16 +41,6 @@ diagonal_dominance = False		# Avoid coarsening diagonally dominant rows
 coarse_solver = 'pinv'
 accel = None
 
-# AMG CF-splitting 
-# ----------------
-#
-#
-#
-#
-#
-#
-# CF = 
-
 # Strength of connection 
 # ----------------------
 #	- symmetric, strong connection if |A[i,j]| >= theta * sqrt( |A[i,i]| * |A[j,j]| )
@@ -85,6 +75,7 @@ strength_connection =  ('evolution', {'k': 2, 'epsilon': 4.0, 'symmetrize_measur
 #	        ~ same - G[i,j] = C[i,j]
 #	        ~ sub  - G[i,j] = C[i,j] - min(C)
 aggregation = ('standard')
+aggregation = ('pairwise', {'matchings': 3, 'algorithm': 'drake_C'})
 
 
 # Interpolation smooother (Jacobi seems slow...)
@@ -113,9 +104,9 @@ aggregation = ('standard')
 #			~ local - local row-wise weight, avoids under-damping 
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
-interp_smooth2 = ('jacobi', {'omega': 4.0/3.0 } )
+# interp_smooth2 = ('jacobi', {'omega': 4.0/3.0 } )
 # interp_smooth2 = ('richardson', {'omega': 3.0/2.0} )
-interp_smooth1 = ('energy', {'krylov': 'cg', 'degree': 2, 'maxiter': 8, 'weighting': 'diagonal'})	# only used in rn, not in nii  
+interp_smooth1 = ('energy', {'krylov': 'cg', 'degree': 4, 'maxiter': 8, 'weighting': 'diagonal'})	# only used in rn, not in nii  
 # interp_smooth2 = interp_smooth1
 
 # Relaxation
@@ -220,31 +211,6 @@ nii_residuals = []
 rn_residuals = []
 sa_residuals = []
 
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-
-# Classical SA solver
-# -------------------
-
-# Form classical smoothed aggregation multilevel solver object
-# start = time.clock()
-# ml_sa = smoothed_aggregation_solver(A, B=None, strength=strength_connection, aggregate=aggregation,
-# 						 			smooth=interp_smooth2, max_levels=max_levels, max_coarse=max_coarse,
-# 						 			presmoother=relaxation,
-#                     	 			postsmoother=relaxation, improve_candidates=improve_candidates, keep=1 )
-# P = ml_sa.levels[0].P
-# # plt.spy(P)
-# # plt.show()
-# sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals)
-
-# end = time.clock()
-# sa_time = end-start
-# sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
-# for i in range(0,len(sa_residuals)-1):
-# 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
-
-# print "Smoothed aggregation - ", sa_time, " seconds"
-# print np.mean(sa_conv_factors[1:])
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -275,45 +241,4 @@ print np.mean(rn_conv_factors[1:])
 
 
 
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-
-# New ideal solver
-# ----------------
-
-# Form new ideal interpolation multilevel solver object
-start = time.clock()
-ml_nii = newideal_solver(A, B=None, strength=strength_connection, aggregate=aggregation,
-						 smooth=interp_smooth2, max_levels=max_levels, max_coarse=max_coarse,
-						 presmoother=relaxation,
-                    	 postsmoother=relaxation, improve_candidates=improve_candidates, test_ind=0)
-
-P2 = ml_nii.levels[0].P
-# plt.spy(P2)
-# plt.show()
-
-ml_nii.solve(b, x0, tol, residuals=nii_residuals)
-
-end = time.clock()
-nii_time = end-start
-nii_conv_factors = np.zeros((len(nii_residuals)-1,1))
-for i in range(0,len(nii_residuals)-1):
-	nii_conv_factors[i] = nii_residuals[i]/nii_residuals[i-1]
-
-print "New ideal - ", nii_time, " seconds"
-print np.mean(nii_conv_factors[1:])
-
-
-# Z = sol.reshape((N,N))
-# X = np.linspace(0,1,N)
-# Y = np.linspace(0,1,N)
-# X, Y = np.meshgrid(X, Y)
-
-# fig = plt.figure()
-# ax = fig.add_subplot(111, frame_on=True, aspect='equal',xticks=[],yticks=[])
-# ax.contour(X,Y,Z, linewidths=(2.5,),colors='k',locator=plt.MaxNLocator(10))
-# ax.pcolor(X,Y,Z)
-# plt.show()
-
-# pdb.set_trace()
 
