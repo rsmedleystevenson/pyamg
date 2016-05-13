@@ -609,13 +609,34 @@ void rs_standard_interpolation(const I n_nodes,
 }
 
 
-
-
-
-
-
-
-
+/* Helper function for compatible relaxation to perform steps 3.1d - 3.1f
+ * in Falgout / Brannick (2010).  
+ *
+ * Input:
+ * ------
+ * A_rowptr : const {int array}
+ *      Row pointer for sparse matrix in CSR format.
+ * A_colinds : const {int array}
+ *      Column indices for sparse matrix in CSR format.
+ * B : const {float array}
+ *      Target near null space vector for computing candidate set measure. 
+ * e : {float array}
+ *      Relaxed vector for computing candidate set measure.
+ * indices : {int array}
+ *      Array of indices, where indices[0] = the number of F indices, nf,
+ *      followed by F indices in elements 1:nf, and C indices in (nf+1):n.
+ * splitting : {int array}
+ *      Integer array with current C/F splitting of nodes, 0 = C-point,
+ *      1 = F-point. 
+ * gamma : {float array}
+ *      Preallocated vector to store candidate set measure.  
+ * thetacs : const {float}
+ *      Threshold for coarse grid candidates from set measure. 
+ *
+ * Returns:
+ * --------  
+ * Nothing, updated C/F-splitting and corresponding indices modified in place. 
+ */
 template<class I, class T>
 void cr_helper(const I A_rowptr[], const int A_rowptr_size,
                const I A_colinds[], const int A_colinds_size, 

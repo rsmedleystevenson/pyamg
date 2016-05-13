@@ -61,20 +61,24 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     ----------
     S : csr_matrix
         sparse matrix (n x n) usually matrix A of Ax=b
-    method : {'habituated','concurrent'}
+    method : {'habituated','concurrent'}, Default 'habituated'
         Method used during relaxation:
             - concurrent: GS relaxation on F-points, leaving e_c = 0
             - habituated: full relaxation, setting e_c = 0
-    B : 
+    B : {array like} : Default None
+        Target algebraically smooth vector used in CR. If multiple
+        vectors passed in, only first one is used. If B=None, the
+        constant vector is used.
+    nu : {int} : Default 3
+        Number of smoothing iterations to apply each CR sweep.
+    thetacr : {float} : Default [0.7]
+        Desired convergence factor of relaxations, 0 < thetacs < 1.  
+    thetacs : {list float} : Default [0.3, 0.5]
+        
 
-    nu : 
-
-    thetacr :
-
-    thetacs : 
-    
-    maxiter : int
-        maximum number of outer iterations (lambda)
+    maxiter : {int} : Default 20
+        Maximum number of CR iterations (updating of C/F splitting)
+        to do. 
 
     Returns
     -------
@@ -84,6 +88,13 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     References
     ----------
 
+
+
+    Notes 
+    -----
+        - Need to run tests with the various setting of thetacs,
+        including thetacs = 1-rho. This would remove a parameter,
+        should maybe set as default if it works reasonably well. 
 
 
     Examples 
@@ -97,6 +108,12 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     n = A.shape[0]    # problem size
     thetacs = list(thetacs)
     thetacs.reverse()
+
+    if (thetacr >= 1) or (thetacr <= 0):
+        raise ValueError("Must have 0 < thetacr < 1")
+
+    if (np.max(thetacs) >= 1) or (np.min(thetacs) <= 0):
+        raise ValueError("Must have 0 < thetacs < 1")
 
     if not isspmatrix_csr(A):
         raise TypeError('expecting csr sparse matrix A')
@@ -125,7 +142,7 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     # 3.1b - Run initial smoothing sweep
     rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
 
-    # 3.1c
+    # 3.1c - Loop until desired convergence or maximum iterations reached
     for it in range(0, maxiter):
 
         # 3.1d - 3.1f, see amg_core.ruge_stuben
@@ -149,7 +166,7 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
 
         # 3.1g - Call CR smoothing iteration
         rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
-        print("Iteration ",it,", CF = ",rho, ", Num Fpts = ",indices[0])
+        print("CR Iteration ",it,", CF = ", rho,", Coarsening factor = ", float(n-indices[0]))/n
         if rho < thetacr:
             break
 
