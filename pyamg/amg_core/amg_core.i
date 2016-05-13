@@ -53,6 +53,8 @@
     (      ctype M1 [], const int M1_size),
     (      ctype M2 [], const int M2_size),
     (      ctype S [], const int S_size)
+    (      ctype gamma [], const int gamma_size),
+    (      ctype indices [], const int indices_size),
 };
 %enddef
 
@@ -60,6 +62,7 @@
 %apply (ctype* INPLACE_ARRAY1, int DIM1) {
     (const ctype  B [], const int  B_size),
     (const ctype  b [], const int  b_size),
+    (      ctype  e [], const int  e_size),
     (      ctype  w [], const int  w_size),
     (const ctype  x [], const int  x_size),
     (      ctype  x [], const int  x_size),
@@ -221,6 +224,7 @@ INSTANTIATE_INDEX_ONLY(rs_cf_splitting)
 INSTANTIATE_INDEX_ONLY(cljp_naive_splitting)
 INSTANTIATE_INDEX_ONLY(rs_direct_interpolation_pass1)
 INSTANTIATE_INDEXDATA(rs_direct_interpolation_pass2)
+INSTANTIATE_INDEXDATA(cr_helper)
 
 /*----------------------------------------------------------------------------
   evolution_strength.h
