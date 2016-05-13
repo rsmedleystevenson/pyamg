@@ -4,7 +4,7 @@ from scipy.sparse import csr_matrix, lil_matrix, isspmatrix_csr, isspmatrix_bsr
 from pyamg import amg_core
 
 
-__all__ = ['preis_matching_1999', 'drake_matching_2003','drake_C','notay_matching_2010']
+__all__ = ['preis_matching_1999','drake_matching','notay_matching_2010']
 
 
 def preis_try_match(a0, b0, w_ab, W, M, M_ind, G, aggregated, recurse = False):
@@ -148,7 +148,7 @@ def preis_matching_1999(G, order='forward', **kwargs):
 # at the last DOF, and it has a handful of equal strength connections, ths C-implenetation
 # will chose the highest number DOF, which works well for looping through DOFs backwards. 
 # Note, may be better way to pre-allocate singletons, but hard to say. 
-def drake_C(G, order='backward', **kwargs):
+def drake_matching(G, order='backward', **kwargs):
 
     # Get off-diagonal of A in linked list form
     n = int(G.shape[0])
@@ -167,7 +167,7 @@ def drake_C(G, order='backward', **kwargs):
     agg2 = np.zeros((n,), dtype=np.int32)
     M2 = np.zeros(((n+2),), dtype=np.int32)
 
-    # Singleton nodes -- assume sqrt(n) is enough to store singletons
+    # Singleton nodes 
     S = np.zeros((n+2,), dtype=np.int32)
 
     match = amg_core.drake_matching
@@ -182,7 +182,6 @@ def drake_C(G, order='backward', **kwargs):
            S )
 
     if M1[1] >= M2[1]:
-        # print 'Drake - aggregated = ', 2*M1[0], ' / ', n
         num_pairs = M1[0]
         upper_ind_M = 2*(num_pairs+1) 
         M1 = M1[2:upper_ind_M].reshape((num_pairs,2), order='C')
@@ -190,7 +189,6 @@ def drake_C(G, order='backward', **kwargs):
         S = S[1:upper_ind_S]
         return [M1, S]
     else:
-        # print 'Drake - aggregated = ', 2*M2[0], ' / ', n
         num_pairs = M2[0]
         upper_ind_M = 2*(num_pairs+1) 
         M2 = M2[2:upper_ind_M].reshape((num_pairs,2), order='C')
@@ -198,98 +196,6 @@ def drake_C(G, order='backward', **kwargs):
         S = S[1:upper_ind_S]
         return [M2, S]
 
-
-def drake_matching_2003(G, order='forward', **kwargs):
-
-    # Get off-diagonal of A in linked list form
-    n = G.shape[0]
-    V = np.arange(0,n)
-    if not isspmatrix_csr(G):
-        try:
-            G = G.tocsr()
-        except:
-            raise TypeError("Couldn't convert to csr.")
-
-    G.setdiag(np.zeros((n,1)),k=0)
-    G.eliminate_zeros()
-    G = G.tolil()
-
-    # Nodes aggregated in matching 1
-    M1 = np.empty([n/2,2], dtype=int)
-    ind1 = 0
-    W1 = 0.0
-    aggregated1 = np.zeros((n,2))
-    aggregated1[:,0] = V
-
-    # Nodes aggregated in matching 2
-    M2 = np.empty([n/2,2], dtype=int)
-    ind2 = 0
-    W2 = 0.0
-    aggregated2 = np.zeros((n,2))
-    aggregated2[:,0] = V
-
-    # Order of nodes on which we grow path
-    if order=='forward':
-        bottom_loop = 0
-        top_loop = n
-        step = 1   
-    elif order=='backward':
-        bottom_loop = n-1
-        top_loop = -1 
-        step = -1
-
-    # Path-growing algorithm 
-    for i in range(bottom_loop,top_loop,step):
-        x = i
-        while True:
-            if len(G.rows[x]) == 0:
-                break
-
-            # Add edge to matching M1
-            ind = np.argmax( np.abs( G.data[x] ) )	# find largest edge
-            W1 += (G.data[x][ind])			# add weight to matching 1
-            y = G.rows[x][ind]     					# get index of neighbor node   	  
-            M1[ind1,:] = [x,y]           			# add edge to matching
-            ind1 += 1
-            aggregated1[x,1] = 1        			# mark node as aggregated
-            aggregated1[y,1] = 1
-            # Remove all edges connected to source node
-            for neighbor in G.rows[x]:
-                del_ind = G.rows[neighbor].index(x)
-                del G.rows[neighbor][del_ind]
-                del G.data[neighbor][del_ind]
-
-            G.rows[x] = []			
-            G.data[x] = []
-
-            if len(G.rows[y]) == 0:
-                break
-
-            # Add edge to matching M2
-            ind = np.argmax( np.abs( G.data[y] ) )	# find largest edge
-            W2 += (G.data[y][ind])			# add weight to matching 1
-            x = G.rows[y][ind]     					# get index of neighbor node  
-            M2[ind2,:] = [x,y]                      # add edge to matching
-            ind2 += 1
-            aggregated2[x,1] = 1        			# mark node as aggregated
-            aggregated2[y,1] = 1
-            # Remove all edges connected to source node
-            for neighbor in G.rows[y]:
-                del_ind = G.rows[neighbor].index(y)
-                del G.rows[neighbor][del_ind]
-                del G.data[neighbor][del_ind]
-
-            G.rows[y] = []
-            G.data[y] = []
-
-    # print 'Drake - W1 = ',W1,', aggregated = ',np.sum(aggregated1[:,1]),' / ',n
-    # print 'Drake - W2 = ',W2,', aggregated = ',np.sum(aggregated2[:,1]),' / ',n
-    if W1 > W2: 
-        S = np.where(aggregated1[:,1]==0)[0]       # Get singletons (not aggregated nodes)
-    	return [ M1[0:ind1,:], S ]
-    else:
-        S = np.where(aggregated2[:,1]==0)[0]       # Get singletons (not aggregated nodes)
-    	return [ M2[0:ind2,:], S ]
 
 
 # Notay's algorithm 2.1 from 2010 paper, "An aggregation-based algebraic multigrid method."

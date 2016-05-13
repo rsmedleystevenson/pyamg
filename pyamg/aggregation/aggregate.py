@@ -383,8 +383,7 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
 
     # Dictionary of function names for matching algorithms 
     get_matching = {
-        'drake': drake_matching_2003,
-        'drake_C': drake_C,
+        'drake': drake_matching,
         'preis': preis_matching_1999,
         'notay': notay_matching_2010
     }
