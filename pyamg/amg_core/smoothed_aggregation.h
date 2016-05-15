@@ -1558,7 +1558,7 @@ I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
     // Find maximum edge attached to node 'row'
     for (I i=data_ind0; i<data_ind1; i++) {
         I temp_node = A_colinds[i];
-        // Check for self-loops and if node has been aggregated 
+        // Check for self-loops and make sure node has not been aggregated 
         if ( (temp_node != row) && (is_agg[temp_node] == 0) ) {
             if (is_larger(i, new_ind, A_data)) {
                 new_node = temp_node;

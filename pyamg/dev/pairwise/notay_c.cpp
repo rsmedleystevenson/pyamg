@@ -55,6 +55,7 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
 	// Loop until all nodes have been aggregated 
 	I Nc = 0;
 	I num_aggregated = 0;
+	Agg_rowptr[0] = 0;
 	while (num_aggregated < n) {
 
 		// Find unaggregated neighbor with strongest (negative) connection
@@ -83,7 +84,7 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
 		// For each node in aggregate
 		for (auto it=new_agg.begin(); it!=new_agg.end(); it++) {
 
-			// For each node strongly connected to aggregate node
+			// For each node strongly connected to current node
 			for (I j=rowptr[*it]; j<rowptr[(*it)+1]; j++) {
 				I &neighborhood = m[colinds[j]];
 			
@@ -101,8 +102,8 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
 			}
 		}
 
-		// If no start node was chosen, find unaggregated node
-		// with least connections.
+		// If no start node was found, find unaggregated node
+		// with least connections out of all nodes.
 		if (start_ind == -1) {
 			for (I i=0; i<n; i++) {
 				if ( (m[i] >= 0) && (m[i] < min_neighbor) ) {
@@ -113,11 +114,15 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
 		}
 
 		// Update sparse structure for aggregation matrix with new aggregate.
-		Agg_rowptr[Nc+1] = Agg_rowptr[Nc] + new_agg.size();
 		for (auto it=new_agg.begin(); it!=new_agg.end(); it++) {
-			Agg_colinds[num_aggregated] = (*it);
+			// Set all nodes in this aggregate to share column Nc
+			Agg_colinds[*it] = Nc;
+			// Increase row pointer by one for each node aggregated
+			Agg_rowptr[num_aggregated+1] = num_aggregated+1; 
+			// Increase count of aggregated nodes
 			num_aggregated += 1;
 		}
+		// Increase coarse grid count
 		Nc += 1;
 	}
 
@@ -128,7 +133,7 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
 
 
 
-
-
+// HOW DOES NOTAY DEAL WITH BAD GUYS? NORMALIZED OVER EACH AGGREGATE?
+// --> It looks like he just uses a constant vector in P...
 
 

@@ -53,8 +53,8 @@ def _CRsweep(A, B, Findex, Cindex, nu, thetacr, method):
     return rhok, e
 
 
-def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
-        thetacs=[0.3, 0.5], maxiter=20):
+def CR(A, method='habituated', B=None, nu=3, thetacr=0.5,
+        thetacs='auto', maxiter=20, verbose=False):
     """Use Compatible Relaxation to compute a C/F splitting
 
     Parameters
@@ -71,14 +71,22 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
         constant vector is used.
     nu : {int} : Default 3
         Number of smoothing iterations to apply each CR sweep.
-    thetacr : {float} : Default [0.7]
+    thetacr : {float} : Default [0.5]
         Desired convergence factor of relaxations, 0 < thetacs < 1.  
-    thetacs : {list float} : Default [0.3, 0.5]
-        
-
+    thetacs : {list, float, 'auto'} : Default 'auto'
+        Threshold value, 0 < thetacs < 1, to consider nodes from
+        candidate set for coarse grid. If e[i] > thetacs for relaxed
+        error vector, e, node i is considered for the coarse grid. 
+        Can be passed in as float to be used for every iteration, 
+        list of floats to be used on progressive iterations, or as
+        string 'auto,' wherein each iteration thetacs = 1 - rho, for
+        convergence factor rho from most recent smoothing. 
     maxiter : {int} : Default 20
         Maximum number of CR iterations (updating of C/F splitting)
         to do. 
+    verbose : {bool} : Default False
+        If true, print iteration number, convergence factor and 
+        coarsening factor after each iteration. 
 
     Returns
     -------
@@ -87,15 +95,9 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
 
     References
     ----------
-
-
-
-    Notes 
-    -----
-        - Need to run tests with the various setting of thetacs,
-        including thetacs = 1-rho. This would remove a parameter,
-        should maybe set as default if it works reasonably well. 
-
+    [1] Brannick, James J., and Robert D. Falgout. "Compatible
+    relaxation and coarsening in algebraic multigrid." SIAM Journal
+    on Scientific Computing 32.3 (2010): 1393-1416.
 
     Examples 
     --------
@@ -106,14 +108,21 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     """
 
     n = A.shape[0]    # problem size
-    thetacs = list(thetacs)
-    thetacs.reverse()
+
+    if thetacs == 'auto':
+        pass
+    else:
+        if isinstance(thetacs,list):
+            thetacs.reverse()
+        elif isinstance(thetacs,float):
+            thetacs = list(thetacs)
+
+        if (np.max(thetacs) >= 1) or (np.min(thetacs) <= 0):
+            raise ValueError("Must have 0 < thetacs < 1")
+    
 
     if (thetacr >= 1) or (thetacr <= 0):
         raise ValueError("Must have 0 < thetacr < 1")
-
-    if (np.max(thetacs) >= 1) or (np.min(thetacs) <= 0):
-        raise ValueError("Must have 0 < thetacs < 1")
 
     if not isspmatrix_csr(A):
         raise TypeError('expecting csr sparse matrix A')
@@ -145,8 +154,15 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     # 3.1c - Loop until desired convergence or maximum iterations reached
     for it in range(0, maxiter):
 
+        # Set thetacs value
+        if thetacs == 'auto':
+            tcs = 1-rho
+        else:
+            tcs = thetacs[-1]
+            if len(thetacs) > 1:
+                thetacs.pop()
+
         # 3.1d - 3.1f, see amg_core.ruge_stuben
-        test = thetacs[-1]
         fn = amg_core.cr_helper
         fn(A.indptr,
            A.indices,
@@ -155,18 +171,21 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
            indices,
            splitting,
            gamma,
-           test )
+           tcs )
 
         # Separate F indices and C indices
         num_F = indices[0] 
         Findex = indices[1:(num_F+1)]
         Cindex = indices[(num_F+1):]
-        if len(thetacs) > 1:
-            thetacs.pop()
 
         # 3.1g - Call CR smoothing iteration
         rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method=method)
-        print("CR Iteration ",it,", CF = ", rho,", Coarsening factor = ", float(n-indices[0]))/n
+
+        # Print details on current iteration
+        if verbose:
+            print("CR Iteration ",it,", CF = ", rho,", Coarsening factor = ", float(n-indices[0]))/n
+
+        # If convergence factor satisfactory, break loop
         if rho < thetacr:
             break
 
