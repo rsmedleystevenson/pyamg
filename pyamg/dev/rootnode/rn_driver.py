@@ -23,6 +23,8 @@ from pyamg.aggregation.aggregation import smoothed_aggregation_solver
 from pyamg.aggregation.rootnode_nii import newideal_solver
 from pyamg.util.utils import symmetric_rescaling
 from pyamg.gallery import poisson
+from pyamg.Jacob_complexity import *
+
 
 from scipy import sparse
 from scipy.sparse import csr_matrix
@@ -32,14 +34,15 @@ from scipy.sparse import csr_matrix
 
 # General multilevel parameters
 # -----------------------------
-max_levels 		   = 2			# Max levels in hierarchy
-max_coarse 		   = 30 		# Max points allowed on coarse grid
+max_levels 		   = 20			# Max levels in hierarchy
+max_coarse 		   = 100 		# Max points allowed on coarse grid
 tol 			   = 1e-8		# Residual convergence tolerance
 is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
 accel = None
+keep = False
 
 # Strength of connection 
 # ----------------------
@@ -75,7 +78,7 @@ strength_connection =  ('evolution', {'k': 2, 'epsilon': 4.0, 'symmetrize_measur
 #	        ~ same - G[i,j] = C[i,j]
 #	        ~ sub  - G[i,j] = C[i,j] - min(C)
 aggregation = ('standard')
-aggregation = ('pairwise', {'matchings': 3, 'algorithm': 'drake_C'})
+# aggregation = ('pairwise', {'matchings': 3, 'algorithm': 'drake'})
 
 
 # Interpolation smooother (Jacobi seems slow...)
@@ -106,7 +109,12 @@ aggregation = ('pairwise', {'matchings': 3, 'algorithm': 'drake_C'})
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
 # interp_smooth2 = ('jacobi', {'omega': 4.0/3.0 } )
 # interp_smooth2 = ('richardson', {'omega': 3.0/2.0} )
-interp_smooth1 = ('energy', {'krylov': 'cg', 'degree': 4, 'maxiter': 8, 'weighting': 'diagonal'})	# only used in rn, not in nii  
+interp_smooth1 = ('energy', {'krylov': 'cg', \
+							'degree': 6, \
+							'maxiter': 8, \
+							'weighting': 'diagonal', \
+							'prefilter' : ('rowwise', {'theta' : 0.0}), \
+							'Pfilter' : ('rowwise', {'theta' : 0.0}) })	# only used in rn, not in nii  
 # interp_smooth2 = interp_smooth1
 
 # Relaxation
@@ -166,8 +174,8 @@ improve_candidates = [('gauss_seidel', {'sweep': 'symmetric', 'iterations': 4})]
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 150
-epsilon 	= 0.0001				# 'Strength' of aniostropy (only for 2d)
+N 			= 1000
+epsilon 	= 0.0				# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
@@ -223,12 +231,18 @@ sa_residuals = []
 start = time.clock()
 ml_rn = rootnode_solver(A, B=None, strength=strength_connection, aggregate=aggregation,
 						 smooth=interp_smooth1, max_levels=max_levels, max_coarse=max_coarse,
-						 presmoother=relaxation,
-                    	 postsmoother=relaxation, improve_candidates=improve_candidates, keep=1 )
-P = ml_rn.levels[0].P
-# plt.spy(P)
-# plt.show()
+						 presmoother=relaxation, postsmoother=relaxation,
+						 improve_candidates=improve_candidates, keep=keep )
+
 sol = ml_rn.solve(b, x0, tol, residuals=rn_residuals)
+setup = setup_complexity(sa=ml_rn, strength=strength_connection, smooth=interp_smooth1,
+						improve_candidates=improve_candidates, aggregate=aggregation,
+						presmoother=relaxation, postsmoother=relaxation, keep=keep,
+						max_levels=max_levels, max_coarse=max_coarse, coarse_solver=coarse_solver,
+						symmetry='symmetric')
+cycle = cycle_complexity(solver=ml_rn, presmoothing=relaxation, postsmoothing=relaxation, cycle='V')
+
+
 
 end = time.clock()
 nii_time = end-start
@@ -236,9 +250,12 @@ rn_conv_factors = np.zeros((len(rn_residuals)-1,1))
 for i in range(0,len(rn_residuals)-1):
 	rn_conv_factors[i] = rn_residuals[i]/rn_residuals[i-1]
 
+CF = np.mean(rn_conv_factors[1:])
 print "Root node - ", nii_time, " seconds"
-print np.mean(rn_conv_factors[1:])
-
+print " CF - ",CF
+print " Setup complexity - ",setup
+print " Cycle complexity - ",cycle
+print " Effectve CF - ", CF**(1.0/cycle)
 
 
 

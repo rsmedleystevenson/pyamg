@@ -92,16 +92,17 @@ I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
 
 
 template<class I, class T>
-void drake_matching(const I A_rowptr[], const int A_rowptr_size,
-                    const I A_colinds[], const int A_colinds_size,
-                    const T A_data[], const int A_data_size,
-                    I Agg_rowptr[], const int Agg_rowptr_size,
-                    I Agg_colinds[], const int Agg_colinds_size,
-                    I Agg_shape[], const int Agg_shape )
+void drake_matching_common(const I A_rowptr[],
+                           const I A_colinds[], 
+                           const T A_data[],
+                           I Agg_rowptr[],
+                           I Agg_colinds[],
+                           T Agg_data[], 
+                           I Agg_shape[],
+                           const I &n, 
+                           const T B[] = NULL)
 {
-    
-    I n = A_rowptr_size-1;
-    
+        
     // Plan - store M1, M2 as all -a to start, when nodes are aggregated, 
     // say x and y, set M1[x] = y and M1[y] = x. 
     std::vector<I> M1(n,-1);     
@@ -216,6 +217,37 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
 
 
 
+template<class I, class T>
+void drake_matching(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    const T B[], const int B_size,
+                    I Agg_rowptr[], const int Agg_rowptr_size,
+                    I Agg_colinds[], const int Agg_colinds_size,
+                    T Agg_data[], const int Agg_data_size,
+                    I Agg_shape[], const int Agg_shape_size)
+{
+    I n = A_rowptr_size-1;
+    drake_matching_common(A_rowptr, A_colinds, A_data, Agg_rowptr, Agg_colinds, Agg_data, Agg_shape, n, B);
+}
+
+template<class I, class T>
+void drake_matching(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    I Agg_rowptr[], const int Agg_rowptr_size,
+                    I Agg_colinds[], const int Agg_colinds_size,
+                    T Agg_data[], const int Agg_data_size,
+                    I Agg_shape[], const int Agg_shape_size )
+{
+    I n = A_rowptr_size-1;
+    drake_matching_common(A_rowptr, A_colinds, A_data, Agg_rowptr, Agg_colinds, Agg_data, Agg_shape, n);
+}
+
+
+
+
+
 // DIFFERENCE BETWEEN NORMALIZING SINGLETONS AND SETTING TO ONE?
 
 // SHOULD FORM P HERE TOO IF DATA PROVIDED? 
@@ -223,4 +255,18 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
 // DEFINITELY NEED THIS TO BE AN OPTION.
 
 // Somehow need to pick a set of C-points as well for Notay and Drake... 
+
+// HOW DOES NOTAY DEAL WITH BAD GUYS? NORMALIZED OVER EACH AGGREGATE?
+// --> It looks like he just uses a constant vector in P...
+
+
+
+
+
+
+
+
+
+
+
 

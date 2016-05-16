@@ -2,13 +2,16 @@
 
 // Must have beta < 1
 template<class I, class T>
-void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
-			   		const I A_colinds[], const int A_colinds_size, 
-			   		const T A_data[], const int A_data_size, 
-			   		I Agg_rowptr[], const int Agg_rowptr_size,
-			   		I Agg_colinds[], const int Agg_colinds_size,
-			   		I Agg_shape[], const int Agg_shape,
-			   		const T beta )
+void notay_pairwise_common(const I A_rowptr[],
+			   		const I A_colinds[],
+			   		const T A_data[],
+			   		I Agg_rowptr[],
+			   		I Agg_colinds[],
+			   		T Agg_data[],
+			   		I Agg_shape[],
+			   		const T &beta,
+			   		const I &n,
+			   		T B[] )
 {
 	I n = A_rowptr_size - 1;
 
@@ -132,8 +135,33 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
 }
 
 
+template<class I, class T>
+void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    const T B[], const int B_size,
+                    I Agg_rowptr[], const int Agg_rowptr_size,
+                    I Agg_colinds[], const int Agg_colinds_size,
+                    T Agg_data[], const int Agg_data_size,
+                    I Agg_shape[], const int Agg_shape_size,
+                    const T beta)
+{
+    I n = A_rowptr_size-1;
+    notay_pairwise_common(A_rowptr, A_colinds, A_data, Agg_rowptr, Agg_colinds, Agg_data, Agg_shape, beta, n, B);
+}
 
-// HOW DOES NOTAY DEAL WITH BAD GUYS? NORMALIZED OVER EACH AGGREGATE?
-// --> It looks like he just uses a constant vector in P...
+template<class I, class T>
+void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    I Agg_rowptr[], const int Agg_rowptr_size,
+                    I Agg_colinds[], const int Agg_colinds_size,
+                    T Agg_data[], const int Agg_data_size,
+                    I Agg_shape[], const int Agg_shape_size,
+                    const T beta)
+{
+    I n = A_rowptr_size-1;
+    notay_pairwise_common(A_rowptr, A_colinds, A_data, Agg_rowptr, Agg_colinds, Agg_data, Agg_shape, beta, n);
+}
 
 

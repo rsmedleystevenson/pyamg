@@ -350,7 +350,7 @@ B = np.ones((N*N,1))
 
 
 AggOp, Cpts, C = pairwise_aggregation(A, B=B, strength=strength,
-                                            algorithm='drake_C', matchings=matchings)
+                                            algorithm='drake', matchings=matchings)
 
 fig = plt.figure()
 ax1 = fig.add_subplot(1,2,1)
