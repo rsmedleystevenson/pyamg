@@ -47,7 +47,10 @@
     (const ctype splitting [], const int splitting_size),
     (      ctype splitting [], const int splitting_size),
     (const ctype A_rowptr [], const int A_rowptr_size),
+    (      ctype Agg_rowptr [], const int Agg_rowptr_size),
     (const ctype A_colinds [], const int A_colinds_size),
+    (      ctype Agg_colinds [], const int Agg_colinds_size),
+    (      ctype Agg_shape [], const int Agg_shape_size),
     (      ctype agg1 [], const int agg1_size),
     (      ctype agg2 [], const int agg2_size),
     (      ctype M1 [], const int M1_size),
@@ -82,7 +85,8 @@
     (      ctype temp [], const int temp_size),
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
-    (const ctype A_data [], const int A_data_size)
+    (const ctype A_data [], const int A_data_size),
+    (      ctype Agg_data [], const int Agg_data_size)
 };
 %enddef
 
@@ -198,6 +202,7 @@ INSTANTIATE_INDEXDATA_COMPLEX(symmetric_strength_of_connection)
 INSTANTIATE_INDEX_ONLY(naive_aggregation)
 INSTANTIATE_INDEX_ONLY(standard_aggregation)
 INSTANTIATE_INDEXDATA(drake_matching)
+INSTANTIATE_INDEXDATA(notay_pairwise)
 
 %template(fit_candidates)   fit_candidates_real<int,float>;
 %template(fit_candidates)   fit_candidates_real<int,double>;

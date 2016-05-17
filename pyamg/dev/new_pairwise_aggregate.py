@@ -1,5 +1,7 @@
+import amg_core
+
 def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
-                        algorithm='drake_C', matchings=1,
+                        algorithm='drake', matchings=1,
                         weights=None, improve_candidates=None,
                         strength=None, **kwargs):
     """ Pairwise aggregation of nodes. 
@@ -16,8 +18,8 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
         The default value B=None is equivalent to BH=B.copy()
     algorithm : string : default 'drake'
         Algorithm to perform pairwise matching. Current options are 
-        'drake', 'preis', 'notay', referring to the Drake (2003), 
-        Preis (1999), and Notay (2010), respectively. 
+        'drake', 'notay', referring to the Drake (2003), and Notay (2010),
+        respectively. 
     matchings : int : default 1
         Number of pairwise matchings to do. k matchings will lead to 
         a coarsening factor of under 2^k.
@@ -35,16 +37,19 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
         to use to construct a SOC matrix, and string b with data type.
         E.g. strength = (4,'bool'). 
 
-    THINGS TO NOTE
-    --------------
+    NOTES
+    -----
         - Not implemented for non-symmetric and/or block systems
             + Need to set up pairwise aggregation to be applicable for 
               nonsymmetric matrices (think it actually is...) 
             + Need to define how a matching is done nodally.
             + Also must consider what targets are used to form coarse grid'
               in nodal approach...
-        - Once we are done w/ Python implementations of matching, we can remove 
-          the deepcopy of A to W --> Don't need it, waste of time/memory.  
+
+    REFERENCES
+    ----------
+
+  
 
     """
 
@@ -60,29 +65,16 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
     if matchings < 1:
         raise ValueError("Number of matchings must be > 0.")
 
-    if (algorithm is not 'drake') and (algorithm is not 'preis') and \
-       (algorithm is not 'notay') and (algorithm is not 'drake_C'):
-       raise ValueError("Only drake, notay and preis algorithms implemeted.")
-
     if (symmetry != 'symmetric') and (symmetry != 'hermitian') and \
             (symmetry != 'nonsymmetric'):
         raise ValueError('expected \'symmetric\', \'nonsymmetric\' or\
                          \'hermitian\' for the symmetry parameter ')
 
-    if strength is not None:
-        if strength[0] < matchings:
-            warn("Expect number of matchings for SOC >= matchings for aggregation.")
-            diff = 0
-        else:
-            diff = strength[0] - matchings  # How many more matchings to do for SOC
-    else:
-        diff = 0
-
     # Compute weights if function provided, otherwise let W = A
     if weights is not None:
         W = weights(A, **kwargs)
     else:
-        W = deepcopy(A)
+        W = A
 
     if not isspmatrix_csr(W):
         warn("Requires CSR matrix - trying to convert.", SparseEfficiencyWarning)
@@ -97,21 +89,30 @@ def pairwise_aggregation(A, B, Bh=None, symmetry='hermitian',
         Copying right near null-space vector."
         Bh = deepcopy(B[0:n,0:1])
 
-    # Dictionary of function names for matching algorithms 
-    get_matching = {
-        'drake': drake_matching,
-        'preis': preis_matching_1999,
-        'notay': notay_matching_2010
-    }
+    if strength is not None:
+        if strength[0] < matchings:
+            warn("Expect number of matchings for SOC >= matchings for aggregation.")
+            diff = 0
+        else:
+            diff = strength[0] - matchings  # How many more matchings to do for SOC
+    else:
+        diff = 0
 
-    # Get initial matching
 
 
-    # Form sparse P from pairwise aggregation
+    # Get matching algorithm 
+    if algorithm == 'drake': 
+        fn = amg_core.drake_matching
+    elif algorithm == 'notay':
+        fn = amg_core.notay_pairwise
+    else:
+       raise ValueError("Only drake amd notay pairwise algorithms implemented.")
+
+    # Get initial matching, form sparse P from pairwise aggregation
     rowptr = np.empty(n, dtype='intc')
     colinds = np.empty(n, dtype='intc')
     data = np.empty(n, dtype=float)
-
+    
 
 
 

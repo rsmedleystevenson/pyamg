@@ -1,4 +1,7 @@
 #include <limits>
+#include <math.h>
+
+
 
 // Must have beta < 1
 template<class I, class T>
@@ -11,34 +14,42 @@ void notay_pairwise_common(const I A_rowptr[],
 			   		I Agg_shape[],
 			   		const T &beta,
 			   		const I &n,
-			   		T B[] )
+			   		T B[] = NULL )
 {
 	I n = A_rowptr_size - 1;
 
-	// Construct sparse, filtered matrix
-	std::vector<I> rowptr(n+1,0);
-	std::vector<I> colinds;
-	std::vector<T> data;
-	for (I i=0; i<n; i++) {
-		// Filtering threshold, -beta * max_{a_ij < 0} |a_ij|.
-		T row_thresh = 0;
-		for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
-			if (A_data[j] < row_thresh) {
-				row_thresh = A_data[j];
+	// Construct sparse, filtered matrix if beta != 0
+	if (beta != 0) {
+		std::vector<I> rowptr(n+1,0);
+		std::vector<I> colinds;
+		std::vector<T> data;
+		for (I i=0; i<n; i++) {
+			// Filtering threshold, -beta * max_{a_ij < 0} |a_ij|.
+			T row_thresh = 0;
+			for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
+				if (A_data[j] < row_thresh) {
+					row_thresh = A_data[j];
+				}
 			}
-		}
-		row_thresh *= beta;
+			row_thresh *= beta;
 
-		// Construct sparse row of filtered matrix
-		I row_size = 0;
-		for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
-			if (A_data[j] < row_thresh) {
-				colinds.push_back(A_colinds[j]);
-				data.push_back(A_data[j]);
-				row_size += 1;
+			// Construct sparse row of filtered matrix
+			I row_size = 0;
+			for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
+				if (A_data[j] < row_thresh) {
+					colinds.push_back(A_colinds[j]);
+					data.push_back(A_data[j]);
+					row_size += 1;
+				}
 			}
+			rowptr[i+1] = rowptr[i]+row_size;
 		}
-		rowptr[i+1] = rowptr[i]+row_size;
+	}
+	// Otherwise, just use A for pairwise aggregation
+	else {
+		const I *rowptr = &A_rowptr[0];
+		const I *colinds = &A_colinds[0];
+		const I *data = &A_data[0];
 	}
 
 	// Construct vector, m, to track if each node has been aggregated (-1),
@@ -65,9 +76,13 @@ void notay_pairwise_common(const I A_rowptr[],
 		I neighbor = -1;
 		T min_val = 0;
 		for (I j=rowptr[start_ind]; j<rowptr[start_ind+1]; j++) {
-			if ( (start_ind != colinds[j] ) && (m[colinds[j]] >= 0) && (data[j] < min_val) ) {
-				neighbor = colinds[j];
-				min_val = data[j];
+			// Check for self loop, make sure node is unaggregated 
+			if ( (start_ind != colinds[j] ) && (m[colinds[j]] >= 0) )
+				// Find hard minimum weight of neighbor nodes 
+				if (data[j] < min_val) {
+					neighbor = colinds[j];
+					min_val = data[j];
+				}
 			}
 		}
 
@@ -96,7 +111,7 @@ void notay_pairwise_common(const I A_rowptr[],
 					// Decrease neighborhood size by one
 					neighborhood -= 1;
 
-					// Look for node with smallest neighborhood 
+					// Find neighboring node with smallest neighborhood 
 					if (neighborhood < min_neighbor) {
 						min_neighbor = neighborhood;
 						start_ind = j;
@@ -116,15 +131,33 @@ void notay_pairwise_common(const I A_rowptr[],
 			}
 		}
 
+		// If target B provided, get norm restricted to this aggregate
+		T agg_norm = 0;
+		if (B != NULL && new_agg.size() > 1) {
+			for (auto it=new_agg.begin(); it!=new_agg.end(); it++) {
+				agg_norm += B[*it] * B[*it];
+			}
+			agg_norm = sqrt(agg_norm);
+		}
+
 		// Update sparse structure for aggregation matrix with new aggregate.
 		for (auto it=new_agg.begin(); it!=new_agg.end(); it++) {
-			// Set all nodes in this aggregate to share column Nc
+			// Set all nodes in this aggregate to column Nc
 			Agg_colinds[*it] = Nc;
+			// Set corresponding data value, normalize if B provided.
+			// If B is not provided, set constant vector. 
+			if (B == NULL || new_agg.size() == 1) {
+				Agg_data[*it] = 1.0;
+			}
+			else {
+				Agg_data[*it] = B[*it] / agg_norm;
+			}
 			// Increase row pointer by one for each node aggregated
 			Agg_rowptr[num_aggregated+1] = num_aggregated+1; 
 			// Increase count of aggregated nodes
 			num_aggregated += 1;
 		}
+
 		// Increase coarse grid count
 		Nc += 1;
 	}
@@ -147,7 +180,9 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
                     const T beta)
 {
     I n = A_rowptr_size-1;
-    notay_pairwise_common(A_rowptr, A_colinds, A_data, Agg_rowptr, Agg_colinds, Agg_data, Agg_shape, beta, n, B);
+    notay_pairwise_common(A_rowptr, A_colinds, A_data,
+    					  Agg_rowptr, Agg_colinds, Agg_data,
+    					  Agg_shape, beta, n, B);
 }
 
 template<class I, class T>
@@ -161,7 +196,9 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
                     const T beta)
 {
     I n = A_rowptr_size-1;
-    notay_pairwise_common(A_rowptr, A_colinds, A_data, Agg_rowptr, Agg_colinds, Agg_data, Agg_shape, beta, n);
+    notay_pairwise_common(A_rowptr, A_colinds, A_data,
+    					  Agg_rowptr, Agg_colinds, Agg_data,
+    					  Agg_shape, beta, n);
 }
 
 

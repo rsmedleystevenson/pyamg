@@ -6,6 +6,7 @@
 #include <iterator>
 #include <algorithm>
 #include <set>
+#include <limits>
 
 #include <assert.h>
 #include <cmath>
@@ -1482,8 +1483,6 @@ void unconstrained_new_ideal(I YRowPtr[], const int YRowPtr_size,
 }
 
 
-
-
 /* Function determining which of two elements in the A.data structure is
  * larger. Allows for easy changing between, e.g., absolute value, hard   
  * minimum, etc.                       
@@ -1526,18 +1525,12 @@ bool is_larger(const I &ind0, const I &ind1, const T A_data[])
  *      Column indices for sparse array in CSR format.
  * A_data : const {float array}
  *      Data values for sparse array in CSR format.
- * is_agg : {int array}
- *      Integer array marking if a node in the graph has been aggregated.
- *      If new pair is formed, nodes are marked as aggregated. 
  * M : {int array}
  *      Approximate matching stored in 1d array, with indices for a pair
  *      as consecutive elements. If new pair is formed, it is added to M[].
  * W : {float}
  *      Additive weight of current matching. If new pair is formed,
  *      corresponding weight is added to W.
- * ind : {int}
- *      Index of next pair to be found in matching. If new pair is found, 
- *      ind += 1.
  * row : const {int}
  *      Index of base node to form pair for matching. 
  *
@@ -1548,7 +1541,7 @@ bool is_larger(const I &ind0, const I &ind1, const T A_data[])
  */
 template<class I, class T>
 I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
-           I is_agg[], I M[], T &W, I &ind, const I &row)
+           std::vector<I> &M, T &W, const I &row)
 {
     I data_ind0 = A_rowptr[row];
     I data_ind1 = A_rowptr[row+1];
@@ -1559,7 +1552,7 @@ I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
     for (I i=data_ind0; i<data_ind1; i++) {
         I temp_node = A_colinds[i];
         // Check for self-loops and make sure node has not been aggregated 
-        if ( (temp_node != row) && (is_agg[temp_node] == 0) ) {
+        if ( (temp_node != row) && (M[temp_node] == -1) ) {
             if (is_larger(i, new_ind, A_data)) {
                 new_node = temp_node;
                 new_ind = i;
@@ -1572,48 +1565,64 @@ I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
     // of pairs added to the matching, and M[1] the total weight. 
     // Mark each node in pair as aggregated. 
     if (new_node != -1) {
-        W += A_data[new_ind];
-        M[2*(ind+1)] = row;
-        M[2*(ind+1)+1] = new_node;
-        is_agg[row] = 1;
-        is_agg[new_node] = 1;
-        ind += 1;        
+        W += std::abs(A_data[new_ind]);
+        M[row] = new_node;
+        M[new_node] = row;
     }
 
     // Return node index in new edge
     return new_node;
 }
 
-
-template<class I>
-void get_singletons(const I agg[], I S[], const I &n)
-{
-    I ind = 1;
-    for (I i=0; i<n; i++) {
-        if (agg[i] == 0) {
-            S[ind] = i;
-            S[0] += 1;
-            ind += 1;
-        }
-    }
-}
-
-
+/* Function to approximate a graph matching, and use the matching for 
+ * a pairwise aggregation of matrix A. If a target near null space 
+ * vector is provided, a tentative prolongator is constructed. If no
+ * target provided, the constant vector is used to construct a tentative
+ * prolongator. Matching done via Drake's 2003 1/2-matching algorithm.  
+ *
+ * Input:
+ * ------
+ * A_rowptr : const {int array}
+ *      Row pointer for sparse array in CSR format.
+ * A_colinds : const {int array}
+ *      Column indices for sparse array in CSR format.
+ * A_data : const {float array}
+ *      Data values for sparse array in CSR format.
+ * Agg_rowptr : {int array}
+ *      Empty length(n+1) row pointer for sparse array in CSR format.
+ * Agg_colinds : {int array}
+ *      Empty length(n) column indices for sparse array in CSR format.
+ * Agg_data : {float array}
+ *      Empty length(n) data values for sparse array in CSR format.
+ * Agg_shape : {int array, size 2} 
+ *      Shape array for sparse matrix constructed in function.
+ * n : const {int} 
+ *      Problem size
+ * B : const {float array}
+ *      Optional target near null space components provided by user.
+ *
+ * Returns
+ * -------
+ * Nothing, sparse prolongation / aggregation matrix modified in place.
+ *
+ */
 template<class I, class T>
-void drake_matching(const I A_rowptr[], const int A_rowptr_size,
-                    const I A_colinds[], const int A_colinds_size,
-                    const T A_data[], const int A_data_size,
-                    const I n,
-                    I agg1[], const int agg1_size,
-                    I M1[], const int M1_size,
-                    I agg2[], const int agg2_size,
-                    I M2[], const int M2_size,
-                    I S[], const int S_size)
+void drake_matching_common(const I A_rowptr[],
+                           const I A_colinds[], 
+                           const T A_data[],
+                           I Agg_rowptr[],
+                           I Agg_colinds[],
+                           T Agg_data[], 
+                           I Agg_shape[],
+                           const I &n, 
+                           const T B[] = NULL)
 {
-    // First element in M1, M2 counts how many pairs have been formed.
-    // Updated by reference variables for readability. 
-    I &ind1 = M1[0];
-    I &ind2 = M2[0];
+        
+    // Plan - store M1, M2 as all -a to start, when nodes are aggregated, 
+    // say x and y, set M1[x] = y and M1[y] = x. 
+    std::vector<I> M1(n,-1);     
+    std::vector<I> M2(n,-1);
+
     // Empty initial weights.
     T W1 = 0;
     T W2 = 0;
@@ -1624,21 +1633,20 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
         while (true) {       
             // Get new edge in matching, M1. Break loop if node x has no
             // edges to unaggregated nodes.
-            // --> In case of symmetric matrix, could add to singleton list... 
-            if (agg1[x] == 1) {
+            if (M1[x] != -1) {
                 break;
             }    
-            I y = add_edge(A_rowptr, A_colinds, A_data, agg1, M1, W1, ind1, x);
+            I y = add_edge(A_rowptr, A_colinds, A_data, M1, W1, x);
             if (y == -1) {
                 break;
             }
 
             // Get new edge in matching, M2. Break loop if node y has no
             // edges to unaggregated nodes.
-            if (agg2[y] == 1) {
+            if (M2[y] != -1) {
                 break;
             }
-            x = add_edge(A_rowptr, A_colinds, A_data, agg2, M2, W2, ind2, y);
+            x = add_edge(A_rowptr, A_colinds, A_data, M2, W2, y);
             if (x == -1) {
                 break;
             }
@@ -1647,27 +1655,428 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
 
     // std::cout << "W1 = " << W1 << ", W2 = " << W2 << std::endl;
 
-    // Get singletons from better matching
+    int *M = NULL; 
     if (std::abs(W1) >= std::abs(W2)) {
-        M1[1] = 1;
-        M2[1] = 0;
-        get_singletons(agg1, S, n);
-        if ( (n-S[0]) != 2*M1[0] ) {
-            std::cout << "Error - number of pairs, " << 2*M1[0] << 
-                ", and singletons, " << S[0] << ", does not add up to n, " << n << ".\n";
-        }
+        M = &M1[0];
     }
     else {
-        M1[1] = 0;
-        M2[1] = 1;
-        get_singletons(agg2, S, n);
-        if ( (n-S[0]) != 2*M2[0] ) {
-            std::cout << "Error - number of pairs, " << 2*M2[0] << 
-                ", and singletons, " << S[0] << ", does not add up to n, " << n << ".\n";
+        M = &M2[0];
+    }
+
+    // Form sparse structure of aggregation matrix 
+    I Nc = 0;
+    T max_single = 0.0;
+    Agg_rowptr[0] = 0;
+    std::vector<I> singletons;
+    for (I i=0; i<n; i++) {
+
+        // Set row pointer value for next row
+        Agg_rowptr[i+1] = i+1;
+
+        // Node has not been aggregated --> singleton
+        if (M[i] == -1) {
+
+            // Add singleton to sparse structure
+            Agg_colinds[i] = Nc;
+            if (B == NULL) {
+                Agg_data[i] = 1.0;
+            }
+            else {
+                Agg_data[i] = B[i];
+                singletons.push_back(i);
+                // Find largest singleton to normalize all singletons by
+                if (std::abs(B[i]) > max_single) {
+                    max_single = std::abs(B[i]);
+                }                
+            }
+
+            // Mark node as stored (-2), increase coarse grid count
+            M[i] = -2;
+            Nc += 1;
         }
+        // Node has been aggregated, mark pair in aggregation matrix
+        else if (M[i] > -1) {
+
+            // Reference to each node in pair for ease of notation
+            const I &p1 = i;
+            const I &p2 = M[i];
+
+            // Set rows p1, p2 to have column Nc
+            Agg_colinds[p1] = Nc;
+            Agg_colinds[p2] = Nc;
+
+            // Normalize bad guy over aggregate, store in data vector
+            if (B == NULL) {
+                Agg_data[p1] = 1.0;
+                Agg_data[p2] = 1.0;
+            }
+            else {
+                T norm_b = std::sqrt( B[p1]*B[p1] + B[p2]*B[p2] );
+                Agg_data[p1] = B[p1] / norm_b;
+                Agg_data[p2] = B[p2] / norm_b;
+            }
+
+            // Mark both nodes as stored (-2), and increase coarse grid count
+            M[p1] = -2;
+            M[p2] = -2;
+            Nc += 1;
+        }
+        // Node has already been added to sparse aggregation matrix
+        else { 
+            continue;
+        }
+    }
+
+    // Normalize singleton data value, s_k <-- s_k / max_k |s_k|.
+    if ( (B != NULL) && (max_single > 0) ) {
+        for (auto it=singletons.begin(); it!=singletons.end(); it++) {
+            Agg_data[*it] /= max_single;
+        }
+    }
+
+    // Save shape of aggregation matrix
+    Agg_shape[0] = n;
+    Agg_shape[1] = Nc;
+}
+
+
+template<class I, class T>
+void drake_matching(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    const T B[], const int B_size,
+                    I Agg_rowptr[], const int Agg_rowptr_size,
+                    I Agg_colinds[], const int Agg_colinds_size,
+                    T Agg_data[], const int Agg_data_size,
+                    I Agg_shape[], const int Agg_shape_size,
+                    const T dummy = 0)
+{
+    I n = A_rowptr_size-1;
+    drake_matching_common(A_rowptr, A_colinds, A_data,
+                          Agg_rowptr, Agg_colinds, Agg_data,
+                          Agg_shape, n, B);
+}
+
+
+template<class I, class T>
+void drake_matching(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    I Agg_rowptr[], const int Agg_rowptr_size,
+                    I Agg_colinds[], const int Agg_colinds_size,
+                    T Agg_data[], const int Agg_data_size,
+                    I Agg_shape[], const int Agg_shape_size,
+                    const T dummy = 0)
+{
+    I n = A_rowptr_size-1;
+    drake_matching_common(A_rowptr, A_colinds, A_data,
+                          Agg_rowptr, Agg_colinds, Agg_data,
+                          Agg_shape, n);
+}
+
+
+/* Function to filter matrix A using the hard minimum approach in
+ * Notay (2010). Filters matrix and stores result in sparse CSR 
+ * format in input reference vectors. 
+ * 
+ * Input:
+ * ------
+ * A_rowptr : const {int array}
+ *      Row pointer for sparse array in CSR format.
+ * A_colinds : const {int array}
+ *      Column indices for sparse array in CSR format.
+ * A_data : const {float array}
+ *      Data values for sparse array in CSR format.
+ * Agg_rowptr : {int array}
+ *      Empty length(n+1) row pointer for sparse array in CSR format.
+ * Agg_colinds : {int array}
+ *      Empty length(n) column indices for sparse array in CSR format.
+ * Agg_data : {float array}
+ *      Empty length(n) data values for sparse array in CSR format.
+ * Agg_shape : {int array, size 2} 
+ *      Shape array for sparse matrix constructed in function.
+ * beta : const {float}
+ *      Threshold for filtering out 'strong' connections  
+ *          a_ij < -beta * max_{a_ij < 0} |a_ij|
+ * n : const {int} 
+ *      Problem size
+ *
+ * Returns
+ * -------
+ * Nothing, sparse prolongation / aggregation matrix modified in place.
+ *
+ */
+template<class I, class T>
+void notay_filter(const I A_rowptr[],
+                  const I A_colinds[],
+                  const T A_data[],
+                  std::vector<I> &rowptr,
+                  std::vector<I> &colinds,
+                  std::vector<T> &data,
+                  const T &beta,
+                  const I &n)
+{
+    rowptr.push_back(0);
+    for (I i=0; i<n; i++) {
+        // Filtering threshold, -beta * max_{a_ij < 0} |a_ij|.
+        T row_thresh = 0;
+        for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
+            if (A_data[j] < row_thresh) {
+                row_thresh = A_data[j];
+            }
+        }
+        row_thresh *= beta;
+
+        // Construct sparse row of filtered matrix
+        I row_size = 0;
+        for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
+            if (A_data[j] < row_thresh) {
+                colinds.push_back(A_colinds[j]);
+                data.push_back(A_data[j]);
+                row_size += 1;
+            }
+        }
+        rowptr.push_back(rowptr[i]+row_size);
     }
 }
 
+
+/* Function to approximate to perform pairwise aggregation on matrix A,
+ * as in Notay (2010). If a target near null space vector is provided,
+ * a tentative prolongator is constructed. If no target provided, the
+ * constant vector is used to construct a tentative prolongator. 
+ *
+ * Notes: 
+ * ------
+ *      - Not implemented for complex matrices due to Notay's use of
+ *        a hard minimum (not absolute value) for strong connections.
+ *      - Threshold beta must be 0 <= beta < 1
+ *
+ * Input:
+ * ------
+ * A_rowptr : const {int array}
+ *      Row pointer for sparse array in CSR format.
+ * A_colinds : const {int array}
+ *      Column indices for sparse array in CSR format.
+ * A_data : const {float array}
+ *      Data values for sparse array in CSR format.
+ * Agg_rowptr : {int array}
+ *      Empty length(n+1) row pointer for sparse array in CSR format.
+ * Agg_colinds : {int array}
+ *      Empty length(n) column indices for sparse array in CSR format.
+ * Agg_data : {float array}
+ *      Empty length(n) data values for sparse array in CSR format.
+ * Agg_shape : {int array, size 2} 
+ *      Shape array for sparse matrix constructed in function.
+ * beta : const {float}
+ *      Threshold for filtering out 'strong' connections  
+ *          a_ij < -beta * max_{a_ij < 0} |a_ij|
+ * n : const {int} 
+ *      Problem size
+ * B : const {float array}
+ *      Optional target near null space components provided by user.
+ *
+ * Returns
+ * -------
+ * Nothing, sparse prolongation / aggregation matrix modified in place.
+ *
+ */
+template<class I, class T>
+void notay_pairwise_common(const I A_rowptr[],
+                           const I A_colinds[],
+                           const T A_data[],
+                           I Agg_rowptr[],
+                           I Agg_colinds[],
+                           T Agg_data[],
+                           I Agg_shape[],
+                           const I &n,
+                           const T B[] = NULL )
+{
+    // Construct vector, m, to track if each node has been aggregated (-1),
+    // and its number of unaggregated neighbors otherwise. Save node with
+    // minimum number of neighbors as starting node. 
+    std::vector<I> m(n);
+    I start_ind = -1;
+    I min_neighbor = std::numeric_limits<int>::max();
+    for (I i=0; i<n; i++) {
+        m[i] = A_rowptr[i+1] - A_rowptr[i];
+        if (m[i] < min_neighbor) {
+            min_neighbor = m[i];
+            start_ind = i;
+        }
+    }
+
+    // Loop until all nodes have been aggregated 
+    I Nc = 0;
+    I num_aggregated = 0;
+    Agg_rowptr[0] = 0;
+    while (num_aggregated < n) {
+
+        // Find unaggregated neighbor with strongest (negative) connection
+        I neighbor = -1;
+        T min_val = 0;
+        for (I j=A_rowptr[start_ind]; j<A_rowptr[start_ind+1]; j++) {
+            // Check for self loop, make sure node is unaggregated 
+            if ( (start_ind != A_colinds[j] ) && (m[A_colinds[j]] >= 0) ) {
+                // Find hard minimum weight of neighbor nodes 
+                if (A_data[j] < min_val) {
+                    neighbor = A_colinds[j];
+                    min_val = A_data[j];
+                }
+            }
+        }
+
+        // Form new aggregate as vector of length 1 or 2 and mark
+        // nodes as aggregated. 
+        std::vector<I> new_agg;
+        new_agg.push_back(start_ind);
+        m[start_ind] = -1;
+        if (neighbor >= 0) {
+            new_agg.push_back(neighbor);
+            m[neighbor] = -1;
+        }
+
+        // Find new starting node
+        start_ind = -1;
+        min_neighbor = std::numeric_limits<int>::max();
+        // For each node in aggregate
+        for (auto it=new_agg.begin(); it!=new_agg.end(); it++) {
+
+            // For each node strongly connected to current node
+            for (I j=A_rowptr[*it]; j<A_rowptr[(*it)+1]; j++) {
+                I &neighborhood = m[A_colinds[j]];
+            
+                // Check if node has not been aggregated
+                if (neighborhood >= 0) {
+                    // Decrease neighborhood size by one
+                    neighborhood -= 1;
+
+                    // Find neighboring node with smallest neighborhood 
+                    if (neighborhood < min_neighbor) {
+                        min_neighbor = neighborhood;
+                        start_ind = j;
+                    }
+                }
+            }
+        }
+
+        // If no start node was found, find unaggregated node
+        // with least connections out of all nodes.
+        if (start_ind == -1) {
+            for (I i=0; i<n; i++) {
+                if ( (m[i] >= 0) && (m[i] < min_neighbor) ) {
+                    min_neighbor = m[i];
+                    start_ind = i;
+                }
+            }
+        }
+
+        // If target B provided, get norm restricted to this aggregate
+        T agg_norm = 0;
+        if (B != NULL && new_agg.size() > 1) {
+            for (auto it=new_agg.begin(); it!=new_agg.end(); it++) {
+                agg_norm += B[*it] * B[*it];
+            }
+            agg_norm = std::sqrt(agg_norm);
+        }
+
+        // Update sparse structure for aggregation matrix with new aggregate.
+        for (auto it=new_agg.begin(); it!=new_agg.end(); it++) {
+            // Set all nodes in this aggregate to column Nc
+            Agg_colinds[*it] = Nc;
+            // Set corresponding data value, normalize if B provided.
+            // If B is not provided, set constant vector. 
+            if (B == NULL || new_agg.size() == 1) {
+                Agg_data[*it] = 1.0;
+            }
+            else {
+                Agg_data[*it] = B[*it] / agg_norm;
+            }
+            // Increase row pointer by one for each node aggregated
+            Agg_rowptr[num_aggregated+1] = num_aggregated+1; 
+            // Increase count of aggregated nodes
+            num_aggregated += 1;
+        }
+
+        // Increase coarse grid count
+        Nc += 1;
+    }
+
+    // Save shape of aggregation matrix
+    Agg_shape[0] = n;
+    Agg_shape[1] = Nc;
+}
+
+
+template<class I, class T>
+void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    const T B[], const int B_size,
+                    I Agg_rowptr[], const int Agg_rowptr_size,
+                    I Agg_colinds[], const int Agg_colinds_size,
+                    T Agg_data[], const int Agg_data_size,
+                    I Agg_shape[], const int Agg_shape_size,
+                    const T beta = 0)
+{
+    I n = A_rowptr_size-1;
+    // If filtering threshold != 0
+    if (beta != 0) {
+        // Preallocate storage - at least n entries in each vector
+        std::vector<I> rowptr(n+1);   
+        std::vector<I> colinds(n);   
+        std::vector<T> data(n);
+        // Filter matrix
+        notay_filter(A_rowptr, A_colinds, A_data,
+                     rowptr, colinds, data, beta, n);
+
+        // Pairwise matching on filtered matrix
+        notay_pairwise_common(&rowptr[0], &colinds[0], &data[0],
+                              Agg_rowptr, Agg_colinds, Agg_data,
+                              Agg_shape, n, B);
+    }
+    // If filtering threshold = 0, do pairwise aggregation on A
+    else {
+        notay_pairwise_common(A_rowptr, A_colinds, A_data,
+                              Agg_rowptr, Agg_colinds, Agg_data,
+                              Agg_shape, n, B);
+    }
+}
+
+
+template<class I, class T>
+void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
+                    const I A_colinds[], const int A_colinds_size,
+                    const T A_data[], const int A_data_size,
+                    I Agg_rowptr[], const int Agg_rowptr_size,
+                    I Agg_colinds[], const int Agg_colinds_size,
+                    T Agg_data[], const int Agg_data_size,
+                    I Agg_shape[], const int Agg_shape_size,
+                    const T beta = 0)
+{
+    I n = A_rowptr_size-1;
+    // If filtering threshold != 0
+    if (beta != 0) {
+        // Preallocate storage - at least n entries in each vector
+        std::vector<I> rowptr(n+1);   
+        std::vector<I> colinds(n);   
+        std::vector<T> data(n);
+        // Filter matrix
+        notay_filter(A_rowptr, A_colinds, A_data,
+                     rowptr, colinds, data, beta, n);
+
+        // Pairwise matching on filtered matrix
+        notay_pairwise_common(&rowptr[0], &colinds[0], &data[0],
+                              Agg_rowptr, Agg_colinds, Agg_data,
+                              Agg_shape, n);
+    }
+    // If filtering threshold = 0, do pairwise aggregation on A
+    else {
+        notay_pairwise_common(A_rowptr, A_colinds, A_data,
+                              Agg_rowptr, Agg_colinds, Agg_data,
+                              Agg_shape, n);
+    } 
+}
 
 
 #endif

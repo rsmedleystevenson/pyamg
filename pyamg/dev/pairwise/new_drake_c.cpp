@@ -55,9 +55,9 @@ bool is_larger(const I &ind0, const I &ind1, const T A_data[])
  * Integer index of node connected to input node as a pair in matching. If
  * no unaggregated nodes are connected to input node, -1 is returned. 
  */
-template<class I, class T>
+template<class I, class T, class F>
 I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
-           std::vector<I> &M, T &W, I &ind, const I &row)
+           std::vector<I> &M, F &W, I &ind, const I &row)
 {
     I data_ind0 = A_rowptr[row];
     I data_ind1 = A_rowptr[row+1];
@@ -81,7 +81,7 @@ I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
     // of pairs added to the matching, and M[1] the total weight. 
     // Mark each node in pair as aggregated. 
     if (new_node != -1) {
-        W += A_data[new_ind];
+        W += std::abs(A_data[new_ind]);
         M[row] = new_node;
         M[new_node] = row;
     }
@@ -91,7 +91,7 @@ I add_edge(const I A_rowptr[], const I A_colinds[], const T A_data[],
 }
 
 
-template<class I, class T>
+template<class I, class T, class F>
 void drake_matching_common(const I A_rowptr[],
                            const I A_colinds[], 
                            const T A_data[],
@@ -109,8 +109,8 @@ void drake_matching_common(const I A_rowptr[],
     std::vector<I> M2(n,-1);
 
     // Empty initial weights.
-    T W1 = 0;
-    T W2 = 0;
+    F W1 = 0;
+    F W2 = 0;
 
     // Form two matchings, M1, M2, starting from last node in DOFs. 
     for (I row=(n-1); row>=0; row--) {
@@ -148,11 +148,9 @@ void drake_matching_common(const I A_rowptr[],
         M = &M2[0];
     }
 
-
     // Form sparse structure of aggregation matrix 
-    // THIS SECTION DIFFERS FOR AGG_OP VS. BAD GUY
     I Nc = 0;
-    T max_single = 0.0;
+    F max_single = 0.0;
     Agg_rowptr[0] = 0;
     std::vector<I> singletons;
     for (I i=0; i<n; i++) {
@@ -165,15 +163,19 @@ void drake_matching_common(const I A_rowptr[],
 
             // Add singleton to sparse structure
             Agg_colinds[i] = Nc;
-            Agg_data[i] = B[i];
-
-            // Find largest singleton to normalize all singletons by
-            if (abs(B[i] > max_single) {
-                max_single = abs(B[i]);
+            if (B == NULL) {
+                Agg_data[i] = 1.0;
             }
-            // Save index to normalize later, mark node as stored (-2),
-            // increase coarse grid count
-            singletons.push_back(i);
+            else {
+                Agg_data[i] = B[i];
+                singletons.push_back(i);
+                // Find largest singleton to normalize all singletons by
+                if (std::abs(B[i] > max_single) {
+                    max_single = std::abs(B[i]);
+                }                
+            }
+
+            // Mark node as stored (-2), increase coarse grid count
             M[i] = -2;
             Nc += 1;
         }
@@ -189,22 +191,29 @@ void drake_matching_common(const I A_rowptr[],
             Agg_colinds[p2] = Nc;
 
             // Normalize bad guy over aggregate, store in data vector
-            T norm_b = sqrt( B[p1]*B[p1] + B[p2]*B[p2] );
-            Agg_data[p1] = B[p1] / norm_b;
-            Agg_data[p2] = B[p2] / norm_b;
+            if (B == NULL) {
+                Agg_data[p1] = 1.0;
+                Agg_data[p2] = 1.0;
+            }
+            else {
+                T norm_b = sqrt( B[p1]*B[p1] + B[p2]*B[p2] );
+                Agg_data[p1] = B[p1] / norm_b;
+                Agg_data[p2] = B[p2] / norm_b;
+            }
 
             // Mark both nodes as stored (-2), and increase coarse grid count
             M[p1] = -2;
             M[p2] = -2;
             Nc += 1;
         }
+        // Node has already been added to sparse aggregation matrix
         else { 
             continue;
         }
     }
 
     // Normalize singleton data value, s_k <-- s_k / max_k |s_k|.
-    if (max_single > 0) {
+    if ( (B != NULL) && (max_single > 0) ) {
         for (auto it=singletons.begin(); it!=singletons.end(); it++) {
             Agg_data[*it] /= max_single;
         }
@@ -217,7 +226,7 @@ void drake_matching_common(const I A_rowptr[],
 
 
 
-template<class I, class T>
+template<class I, class T, class F>
 void drake_matching(const I A_rowptr[], const int A_rowptr_size,
                     const I A_colinds[], const int A_colinds_size,
                     const T A_data[], const int A_data_size,
@@ -225,23 +234,29 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
                     I Agg_rowptr[], const int Agg_rowptr_size,
                     I Agg_colinds[], const int Agg_colinds_size,
                     T Agg_data[], const int Agg_data_size,
-                    I Agg_shape[], const int Agg_shape_size)
+                    I Agg_shape[], const int Agg_shape_size,
+                    const T dummy )
 {
     I n = A_rowptr_size-1;
-    drake_matching_common(A_rowptr, A_colinds, A_data, Agg_rowptr, Agg_colinds, Agg_data, Agg_shape, n, B);
+    drake_matching_common(A_rowptr, A_colinds, A_data,
+                          Agg_rowptr, Agg_colinds, Agg_data,
+                          Agg_shape, n, B);
 }
 
-template<class I, class T>
+template<class I, class T, class F>
 void drake_matching(const I A_rowptr[], const int A_rowptr_size,
                     const I A_colinds[], const int A_colinds_size,
                     const T A_data[], const int A_data_size,
                     I Agg_rowptr[], const int Agg_rowptr_size,
                     I Agg_colinds[], const int Agg_colinds_size,
                     T Agg_data[], const int Agg_data_size,
-                    I Agg_shape[], const int Agg_shape_size )
+                    I Agg_shape[], const int Agg_shape_size,
+                    const T dummy )
 {
     I n = A_rowptr_size-1;
-    drake_matching_common(A_rowptr, A_colinds, A_data, Agg_rowptr, Agg_colinds, Agg_data, Agg_shape, n);
+    drake_matching_common(A_rowptr, A_colinds, A_data,
+                          Agg_rowptr, Agg_colinds, Agg_data,
+                          Agg_shape, n);
 }
 
 
@@ -250,16 +265,14 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
 
 // DIFFERENCE BETWEEN NORMALIZING SINGLETONS AND SETTING TO ONE?
 
-// SHOULD FORM P HERE TOO IF DATA PROVIDED? 
-// THEN I CAN NORMALIZE OVER EACH AGGREGATE.
-// DEFINITELY NEED THIS TO BE AN OPTION.
+// Somehow need to pick a set of C-points as well for Notay and Drake...
 
-// Somehow need to pick a set of C-points as well for Notay and Drake... 
+// Notay not implemented for complex because of his use of a hard minimum for strong connections. 
 
-// HOW DOES NOTAY DEAL WITH BAD GUYS? NORMALIZED OVER EACH AGGREGATE?
-// --> It looks like he just uses a constant vector in P...
+// Create implementation for integer data array to, in the case of the final coarsening
+//      and we just want a boolean AggOp matrix?
 
-
+// Notay - Must have beta < 1
 
 
 
