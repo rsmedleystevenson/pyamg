@@ -45,7 +45,12 @@
     (      ctype components [], const int components_size),
     (const ctype Id [], const int Id_size),
     (const ctype splitting [], const int splitting_size),
-    (      ctype splitting [], const int splitting_size)
+    (      ctype splitting [], const int splitting_size),
+    (const ctype A_rowptr [], const int A_rowptr_size),
+    (      ctype Agg_rowptr [], const int Agg_rowptr_size),
+    (const ctype A_colinds [], const int A_colinds_size),
+    (      ctype Agg_colinds [], const int Agg_colinds_size),
+    (      ctype Agg_shape [], const int Agg_shape_size)
 };
 %enddef
 
@@ -71,7 +76,9 @@
     (      ctype AA [], const int AA_size),
     (      ctype  R [], const int  R_size),
     (      ctype temp [], const int temp_size),
-    (const ctype omega [], const int omega_size)
+    (const ctype omega [], const int omega_size),
+    (const ctype A_data [], const int A_data_size),
+    (      ctype Agg_data [], const int Agg_data_size)
 };
 %enddef
 
