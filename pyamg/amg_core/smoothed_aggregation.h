@@ -1135,8 +1135,6 @@ void drake_matching_data(const I A_rowptr[],
         }
     }
 
-    // std::cout << "W1 = " << W1 << ", W2 = " << W2 << std::endl;
-
     int *M = NULL; 
     if (std::abs(W1) >= std::abs(W2)) {
         M = &M1[0];
@@ -1189,8 +1187,10 @@ void drake_matching_data(const I A_rowptr[],
             Agg_data[p2] = B[p2] / norm_b;
 
             // Mark both nodes as stored (-2), and increase coarse grid count
-            M[p1] = -2;
+            // Order is important, must modify M[p2] before M[p1], because 
+            // p2 is a reference to M[p1].
             M[p2] = -2;
+            M[p1] = -2;
             Nc += 1;
         }
         // Node has already been added to sparse aggregation matrix
@@ -1317,16 +1317,18 @@ void drake_matching_nodata(const I A_rowptr[],
         else if (M[i] > -1) {
 
             // Reference to each node in pair for ease of notation
-            const I &p1 = i;
             const I &p2 = M[i];
+            const I &p1 = i;
 
             // Set rows p1, p2 to have column Nc
             Agg_colinds[p1] = Nc;
             Agg_colinds[p2] = Nc;
 
             // Mark both nodes as stored (-2), and increase coarse grid count
-            M[p1] = -2;
+            // Order is important, must modify M[p2] before M[p1], because 
+            // p2 is a reference to M[p1].
             M[p2] = -2;
+            M[p1] = -2;
             Nc += 1;
         }
         // Node has already been added to sparse aggregation matrix
@@ -1537,7 +1539,6 @@ void notay_pairwise_data(const I A_rowptr[],
         // If target bad guy provided, check for largest singleton entry 
         singletons.push_back(start_ind);
         if (std::abs(B[start_ind]) > max_single) {
-            std::cout << "test";
             max_single = std::abs(B[start_ind]);
         }
 
@@ -1559,15 +1560,15 @@ void notay_pairwise_data(const I A_rowptr[],
                     // Find neighboring node with smallest neighborhood 
                     if (neighborhood < min_neighbor) {
                         min_neighbor = neighborhood;
-                        start_ind = j;
+                        start_ind = A_colinds[j];
                     }
                 }
             }
         }
 
-        // If no start node was found, find unaggregated node
-        // with least connections out of all nodes.
-        if (start_ind == -1) {
+        // If no start node was found and there are nodes left, find
+        // unaggregated node with least connections out of all nodes.
+        if ( (start_ind == -1) && (num_aggregated < (n-new_agg.size())) ) {
             for (I i=0; i<n; i++) {
                 if ( (m[i] >= 0) && (m[i] < min_neighbor) ) {
                     min_neighbor = m[i];
@@ -1602,13 +1603,13 @@ void notay_pairwise_data(const I A_rowptr[],
         Nc += 1;
     }
 
-    // // Normalize singleton data value, s_k <-- s_k / max_k |s_k|.
-    // if (max_single > 0) {
-    //     for (auto it=singletons.begin(); it!=singletons.end(); it++) {
-    //         Agg_data[*it] /= max_single;
-    //     }
-    // }
-    
+    // Normalize singleton data value, s_k <-- s_k / max_k |s_k|.
+    if (max_single > 0) {
+        for (auto it=singletons.begin(); it!=singletons.end(); it++) {
+            Agg_data[*it] /= max_single;
+        }
+    }
+
     // Save shape of aggregation matrix
     Agg_shape[0] = n;
     Agg_shape[1] = Nc;
@@ -1685,7 +1686,7 @@ void notay_pairwise_nodata(const I A_rowptr[],
         for (I j=A_rowptr[start_ind]; j<A_rowptr[start_ind+1]; j++) {
             // Check for self loop, make sure node is unaggregated 
             if ( (start_ind != A_colinds[j] ) && (m[A_colinds[j]] >= 0) ) {
-                // Find hard minimum weight of neighbor nodes 
+                // Find hard minimum weight (<0) of neighbor nodes 
                 if (A_data[j] < min_val) {
                     neighbor = A_colinds[j];
                     min_val = A_data[j];
@@ -1721,16 +1722,16 @@ void notay_pairwise_nodata(const I A_rowptr[],
                     // Find neighboring node with smallest neighborhood 
                     if (neighborhood < min_neighbor) {
                         min_neighbor = neighborhood;
-                        start_ind = j;
+                        start_ind = A_colinds[j];
                     }
                 }
             }
         }
 
-        // If no start node was found, find unaggregated node
-        // with least connections out of all nodes.
-        if (start_ind == -1) {
-            for (I i=0; i<n; i++) {
+        // If no start node was found and there are nodes left, find
+        // unaggregated node with least connections out of all nodes.
+        if ( (start_ind == -1) && (num_aggregated < (n-new_agg.size())) ) {
+             for (I i=0; i<n; i++) {
                 if ( (m[i] >= 0) && (m[i] < min_neighbor) ) {
                     min_neighbor = m[i];
                     start_ind = i;

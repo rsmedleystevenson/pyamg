@@ -131,7 +131,7 @@ def get_geometric_weights_d2(A, theta, Nx, Ny):
 
 
 # Optional input, figure and subplot indices [num_plots, i, j]
-def plot_poisson_matching(AggOp, Cpts, N, fig=None, subplot=None, label=None):
+def plot_poisson_matching(AggOp, N, Cpts=None, fig=None, subplot=None, label=None):
 
     # AggOplot nodes in grid
     if fig == None:
@@ -146,7 +146,8 @@ def plot_poisson_matching(AggOp, Cpts, N, fig=None, subplot=None, label=None):
         node_locations[i,:] = ind_to_coordinates(i=i, Nx=N, Ny=N)
 
     ax.scatter(node_locations[:,0],node_locations[:,1], color='darkred')
-    ax.scatter(node_locations[Cpts,0],node_locations[Cpts,1], color='black')
+    if Cpts is not None:
+        ax.scatter(node_locations[Cpts,0],node_locations[Cpts,1], color='black')
 
     # Plot pairwise aggregates
     AggOp = AggOp.tocsc()
@@ -272,29 +273,49 @@ def plot_poisson_matching(AggOp, Cpts, N, fig=None, subplot=None, label=None):
     ax.set_title(label)
 
 
-def plot_multiple_poisson(aggregations, labels, N):
+def plot_multiple_poisson(aggregations, labels, N, Cpts=True):
 
     num_plots = len(aggregations)
-    if num_plots == 1:
-        plot_poisson_matching(aggregations[0], N)
-    elif num_plots == 2:
-        fig = plt.figure()
-        plot_poisson_matching(AggOp=aggregations[0][0], Cpts=aggregations[0][1], N=N, fig=fig, subplot=[1,2,1], label=labels[0])
-        plot_poisson_matching(AggOp=aggregations[1][0], Cpts=aggregations[1][1], N=N, fig=fig, subplot=[1,2,2], label=labels[1])
-    elif num_plots == 3:
-        fig = plt.figure()
-        plot_poisson_matching(AggOp=aggregations[0][0], Cpts=aggregations[0][1], N=N, fig=fig, subplot=[1,3,1], label=labels[0])
-        plot_poisson_matching(AggOp=aggregations[1][0], Cpts=aggregations[1][1], N=N, fig=fig, subplot=[1,3,2], label=labels[1])
-        plot_poisson_matching(AggOp=aggregations[2][0], Cpts=aggregations[2][1], N=N, fig=fig, subplot=[1,3,3], label=labels[2])
-    elif num_plots == 4:
-        fig = plt.figure()
-        plot_poisson_matching(AggOp=aggregations[0][0], Cpts=aggregations[0][1], N=N, fig=fig, subplot=[2,2,1], label=labels[0])
-        plot_poisson_matching(AggOp=aggregations[1][0], Cpts=aggregations[1][1], N=N, fig=fig, subplot=[2,2,2], label=labels[1])
-        plot_poisson_matching(AggOp=aggregations[2][0], Cpts=aggregations[2][1], N=N, fig=fig, subplot=[2,2,3], label=labels[2])
-        plot_poisson_matching(AggOp=aggregations[3][0], Cpts=aggregations[3][1], N=N, fig=fig, subplot=[2,2,4], label=labels[3])
+    if Cpts == True:
+        if num_plots == 1:
+            plot_poisson_matching(aggregations[0], N)
+        elif num_plots == 2:
+            fig = plt.figure()
+            plot_poisson_matching(AggOp=aggregations[0][0], N=N, Cpts=aggregations[0][1], fig=fig, subplot=[1,2,1], label=labels[0])
+            plot_poisson_matching(AggOp=aggregations[1][0], N=N, Cpts=aggregations[1][1], fig=fig, subplot=[1,2,2], label=labels[1])
+        elif num_plots == 3:
+            fig = plt.figure()
+            plot_poisson_matching(AggOp=aggregations[0][0], N=N, Cpts=aggregations[0][1], fig=fig, subplot=[1,3,1], label=labels[0])
+            plot_poisson_matching(AggOp=aggregations[1][0], N=N, Cpts=aggregations[1][1], fig=fig, subplot=[1,3,2], label=labels[1])
+            plot_poisson_matching(AggOp=aggregations[2][0], N=N, Cpts=aggregations[2][1], fig=fig, subplot=[1,3,3], label=labels[2])
+        elif num_plots == 4:
+            fig = plt.figure()
+            plot_poisson_matching(AggOp=aggregations[0][0], N=N, Cpts=aggregations[0][1], fig=fig, subplot=[2,2,1], label=labels[0])
+            plot_poisson_matching(AggOp=aggregations[1][0], N=N, Cpts=aggregations[1][1], fig=fig, subplot=[2,2,2], label=labels[1])
+            plot_poisson_matching(AggOp=aggregations[2][0], N=N, Cpts=aggregations[2][1], fig=fig, subplot=[2,2,3], label=labels[2])
+            plot_poisson_matching(AggOp=aggregations[3][0], N=N, Cpts=aggregations[3][1], fig=fig, subplot=[2,2,4], label=labels[3])
+        else:
+            raise ValueError('Too many plots.')
     else:
-        raise ValueError('Too many plots.')
-
+        if num_plots == 1:
+            plot_poisson_matching(aggregations[0], N)
+        elif num_plots == 2:
+            fig = plt.figure()
+            plot_poisson_matching(AggOp=aggregations[0], N=N, fig=fig, subplot=[1,2,1], label=labels[0])
+            plot_poisson_matching(AggOp=aggregations[1], N=N, fig=fig, subplot=[1,2,2], label=labels[1])
+        elif num_plots == 3:
+            fig = plt.figure()
+            plot_poisson_matching(AggOp=aggregations[0], N=N, fig=fig, subplot=[1,3,1], label=labels[0])
+            plot_poisson_matching(AggOp=aggregations[1], N=N, fig=fig, subplot=[1,3,2], label=labels[1])
+            plot_poisson_matching(AggOp=aggregations[2], N=N, fig=fig, subplot=[1,3,3], label=labels[2])
+        elif num_plots == 4:
+            fig = plt.figure()
+            plot_poisson_matching(AggOp=aggregations[0], N=N, fig=fig, subplot=[2,2,1], label=labels[0])
+            plot_poisson_matching(AggOp=aggregations[1], N=N, fig=fig, subplot=[2,2,2], label=labels[1])
+            plot_poisson_matching(AggOp=aggregations[2], N=N, fig=fig, subplot=[2,2,3], label=labels[2])
+            plot_poisson_matching(AggOp=aggregations[3], N=N, fig=fig, subplot=[2,2,4], label=labels[3])
+        else:
+            raise ValueError('Too many plots.')
     plt.show()
 
 
@@ -306,10 +327,10 @@ def plot_multiple_poisson(aggregations, labels, N):
 # ------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------------#
 
-N 			= 10
+N 			= 30
 problem_dim = 2
-epsilon 	= 0.00
-theta 		= 3.0*np.pi/16
+epsilon 	= 0.0
+theta 		= 1.0*np.pi/3
 
 # 1d Poisson 
 if problem_dim == 1:
@@ -341,25 +362,10 @@ elif problem_dim == -1:
 
 
 # ------------------------------------------------------------------------------#
-matchings = 2
-strength = [matchings+1,'int']
+matchings = 3
 
-B = np.ones((N*N,1))
-# preis_matching = pairwise_aggregation(A, algorithm='preis', num_matchings=num_matchings)
-# notay_matching, notay_Cpts = pairwise_aggregation(W, algorithm='notay', num_matchings=num_matchings)
-
-
-AggOp, Cpts, C = pairwise_aggregation(A, B=B, strength=strength,
-                                            algorithm='drake', matchings=matchings)
-
-fig = plt.figure()
-ax1 = fig.add_subplot(1,2,1)
-ax2 = fig.add_subplot(1,2,2)
-ax1.spy(A)
-ax2.spy(C)
-plt.show()
-
-pdb.set_trace()
+drake = pairwise_aggregation(A, matchings=matchings, algorithm='drake', initial_target='ones', improve_candidates=None)
+notay = pairwise_aggregation(A, matchings=matchings, algorithm=('notay', {'beta':0.25}), initial_target='ones', improve_candidates=None)
 
 
 # ------------------------------------------------------------------------------#
@@ -369,12 +375,12 @@ pdb.set_trace()
 # labels = ['Classical SOC/aggregation','Notay pairwise (e=%1.2f,n=%i)'%(0.25,num_matchings),'Drake pairwise (n=%i)'%(num_matchings)]
 # matchings = [ [AggOp,Cpts], [notay_matching, notay_Cpts] , [drake_matching, drake_Cpts] ]
 
-# labels = ['Drake pairwise', 'C-Drake pairwise']
-# matchings = [ [drake_matching,drake_Cpts], [new_drake, new_Cpts] ]
+labels = ['Drake pairwise', 'Notay pairwise']
+matchings = [ drake, notay ]
 
-# plot_multiple_poisson(matchings,labels,N)
+plot_multiple_poisson(matchings,labels,N, Cpts=False)
 
-
+# pdb.set_trace()
 
 
 
