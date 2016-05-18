@@ -351,7 +351,8 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
 
     # Aggregation process on the finest level is the same each iteration.
     # To prevent repeating processes, we compute it here and provide it to the 
-    # sovler construction. 
+    # solver construction. 
+    # ---> NOTE THIS IS ONLY TRUE IN CASE OF SINGLE PAIRWISE AGGREGATION...
     AggOp = get_aggregate(A, strength=strength, aggregate=aggregate,
                           diagonal_dominance=diagonal_dominance, B=initial_targets)
     if isinstance(aggregate,tuple):
