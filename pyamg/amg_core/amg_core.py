@@ -373,19 +373,27 @@ def standard_aggregation(n_row, Ap, Aj, x, y):
 
 def drake_matching(*args):
     """
-    drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float const [] B, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape, float const dummy)
-    drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape, float const dummy)
-    drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double const [] B, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape, double const dummy)
-    drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape, double const dummy)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float const [] B, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape, float const dummy=0)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float const [] B, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape, float const dummy=0)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double const [] B, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape, double const dummy=0)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double const [] B, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape, double const dummy=0)
+    drake_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape)
     """
     return _amg_core.drake_matching(*args)
 
 def notay_pairwise(*args):
     """
-    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float const [] B, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape, float const beta)
-    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape, float const beta)
-    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double const [] B, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape, double const beta)
-    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape, double const beta)
+    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float const [] B, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape, float const beta=0)
+    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float const [] B, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape)
+    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape, float const beta=0)
+    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, float [] Agg_data, int [] Agg_shape)
+    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double const [] B, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape, double const beta=0)
+    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double const [] B, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape)
+    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape, double const beta=0)
+    notay_pairwise(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] Agg_rowptr, int [] Agg_colinds, double [] Agg_data, int [] Agg_shape)
     """
     return _amg_core.notay_pairwise(*args)
 

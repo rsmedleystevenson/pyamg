@@ -87,6 +87,7 @@
     (const ctype omega [], const int omega_size),
     (const ctype A_data [], const int A_data_size),
     (      ctype Agg_data [], const int Agg_data_size)
+    (const ctype omega [], const int omega_size)
 };
 %enddef
 
