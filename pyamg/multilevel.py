@@ -6,9 +6,9 @@ from warnings import warn
 
 import scipy as sp
 import numpy as np
+from copy import deepcopy
 
-
-__all__ = ['multilevel_solver', 'coarse_grid_solver']
+__all__ = ['multilevel_solver', 'coarse_grid_solver', 'multilevel_solver_set']
 
 
 class multilevel_solver:
@@ -296,9 +296,9 @@ class multilevel_solver:
         >>> from pyamg.aggregation import smoothed_aggregation_solver
         >>> from pyamg.gallery import poisson
         >>> from scipy.sparse.linalg import cg
-        >>> import scipy as sp
+        >>> from scipy import rand
         >>> A = poisson((100, 100), format='csr')          # matrix
-        >>> b = sp.rand(A.shape[0])                        # random RHS
+        >>> b = rand(A.shape[0])                           # random RHS
         >>> ml = smoothed_aggregation_solver(A)            # AMG solver
         >>> M = ml.aspreconditioner(cycle='V')             # preconditioner
         >>> x, info = cg(A, b, tol=1e-8, maxiter=30, M=M)  # solve with CG
@@ -385,16 +385,11 @@ class multilevel_solver:
                 raise ValueError('AMLI cycles require acceleration (accel) \
                         to be fgmres, or no acceleration')
 
-            # py23 compatibility:
-            try:
-                basestring
-            except NameError:
-                basestring = str
-
             # Acceleration is being used
             if isinstance(accel, basestring):
                 from pyamg import krylov
                 from scipy.sparse.linalg import isolve
+
                 if hasattr(krylov, accel):
                     accel = getattr(krylov, accel)
                 else:
@@ -547,8 +542,13 @@ class multilevel_solver:
                 raise TypeError('Unrecognized cycle type (%s)' % cycle)
 
         x += self.levels[lvl].P * coarse_x   # coarse grid correction
-
         self.levels[lvl].postsmoother(A, x, b)
+        
+        # Only used in experimental additive cycle in multilevel_solver_set
+        return self.levels[lvl].P * coarse_x
+
+    def test_solve(self, lvl, x, b, cycle, additive=False):
+        return self.__solve(lvl=lvl, x=x, b=b, cycle=cycle)
 
 
 def coarse_grid_solver(solver):
@@ -587,12 +587,12 @@ def coarse_grid_solver(solver):
 
     Examples
     --------
-    >>> import numpy as np
+    >>> from numpy import ones
     >>> from scipy.sparse import spdiags
     >>> from pyamg.gallery import poisson
     >>> from pyamg import coarse_grid_solver
     >>> A = poisson((10, 10), format='csr')
-    >>> b = A * np.ones(A.shape[0])
+    >>> b = A * ones(A.shape[0])
     >>> cgs = coarse_grid_solver('lu')
     >>> x = cgs(A, b)
     """
@@ -718,3 +718,210 @@ def coarse_grid_solver(solver):
             return repr(solver)
 
     return generic_solver()
+
+
+class multilevel_solver_set: 
+
+    # Constructor to initialize an empty list of multilevel solver objects
+    def __init__(self, hierarchy_set=None):
+        self.num_hierarchies = 0
+        self.hierarchy_set = []
+        if hierarchy_set is not None:
+            for h in hierarchy_set:
+                if isinstance(h, multilevel_solver):
+                    self.hierarchy_set.append(h)
+                    self.num_hierarchies += 1
+                else:
+                    raise TypeError("Can only construct from list of multilevel_solver objects.")
+
+
+    def add_hierarchy(self, hierarchy):
+        if isinstance(hierarchy, multilevel_solver):
+            self.hierarchy_set.append(hierarchy)
+            self.num_hierarchies += 1
+        else:
+            raise TypeError("Can only add multilevel_solver objects to hierarchy.")
+
+
+    def remove_hierarchy(self, ind):
+        if ind < self.num_hierarchies:
+            del self.hierarchy_set[ind]
+            self.num_hierarchies -= 1
+        else:
+            raise ValueError("Hierarchy only contains %i sets, cannot remove set %i."%(self.num_hierarchies,ind))
+
+
+    def replace_hierarchy(self, hierarchy, ind):
+        if not isinstance(hierarchy, multilevel_solver):
+            raise TypeError("Can only add multilevel_solver objects to hierarchy.")
+
+        if ind < self.num_hierarchies:
+            self.hierarchy_set[ind] = hierarchy
+        else:
+            raise ValueError("Hierarchy only contains %i sets, cannot remove set %i."%(self.num_hierarchies,ind))
+
+
+    def cycle_complexity(self, cycle='V'):
+        complexity = 0.0
+        for h in self.hierarchy_set:
+            complexity += h.cycle_complexity(cycle=cycle)
+
+        return complexity
+    
+
+    def operator_complexity(self):
+        operator_complexity = 0.0
+        for h in self.hierarchy_set:
+            operator_complexity += h.operator_complexity()
+
+        return operator_complexity
+    
+
+    def grid_complexity(self):
+        grid_complexity = 0.0
+        for h in self.hierarchy_set:
+            grid_complexity += h.grid_complexity(cycle=cycle)
+
+        return grid_complexity
+
+
+    def aspreconditioner(self, cycle='V'):
+        from scipy.sparse.linalg import LinearOperator
+        shape = self.hierarchy_set[0].levels[0].A.shape
+        dtype = self.hierarchy_set[0].levels[0].A.dtype
+        def matvec(b):
+            return self.solve(b, maxiter=1, cycle=cycle, tol=1e-12, accel=None)
+
+        return LinearOperator(shape, matvec, dtype=dtype)
+
+
+    def solve(self, b, x0=None, tol=1e-5, maxiter=100, cycle='V', accel=None,
+              callback=None, residuals=None, return_residuals=False, additive=False):
+
+        if self.num_hierarchies == 0:
+            raise ValueError("Cannot solve - zero hierarchies stored.")
+
+        from pyamg.util.linalg import residual_norm, norm
+
+        if x0 is None:
+            x = np.zeros_like(b)
+        else:
+            x = np.array(x0)  # copy
+
+        cycle = str(cycle).upper()
+
+        # AMLI cycles require hermitian matrix
+        if (cycle == 'AMLI') and hasattr(self.levels[0].A, 'symmetry'):
+            if self.levels[0].A.symmetry != 'hermitian':
+                raise ValueError('AMLI cycles require \
+                    symmetry to be hermitian')
+
+        # Create uniform types for A, x and b
+        # Clearly, this logic doesn't handle the case of real A and complex b
+        from scipy.sparse.sputils import upcast
+        from pyamg.util.utils import to_type
+
+        A = self.hierarchy_set[0].levels[0].A
+        tp = upcast(b.dtype, x.dtype, A.dtype)
+        [b, x] = to_type(tp, [b, x])
+        b = np.ravel(b)
+        x = np.ravel(x)
+
+        if accel is not None:
+
+            # Check for AMLI compatability
+            if (accel != 'fgmres') and (cycle == 'AMLI'):
+                raise ValueError('AMLI cycles require acceleration (accel) \
+                        to be fgmres, or no acceleration')
+
+            # Acceleration is being used
+            if isinstance(accel, basestring):
+                from pyamg import krylov
+                from scipy.sparse.linalg import isolve
+
+                if hasattr(krylov, accel):
+                    accel = getattr(krylov, accel)
+                else:
+                    accel = getattr(isolve, accel)
+
+            M = self.aspreconditioner(cycle=cycle)
+
+            n = x.shape[0] 
+            try:  # try PyAMG style interface which has a residuals parameter
+                return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,
+                             callback=callback, residuals=residuals)[0].reshape((n,1))
+            except:
+                # try the scipy.sparse.linalg.isolve style interface,
+                # which requires a call back function if a residual
+                # history is desired
+
+                cb = callback
+                if residuals is not None:
+                    residuals[:] = [residual_norm(A, x, b)]
+
+                    def callback(x):
+                        if sp.isscalar(x):
+                            residuals.append(x)
+                        else:
+                            residuals.append(residual_norm(A, x, b))
+                        if cb is not None:
+                            cb(x)
+
+                return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,
+                             callback=callback)[0].reshape((n,1))
+
+        else:
+            # Scale tol by normb
+            # Don't scale tol earlier. The accel routine should also scale tol
+            normb = norm(b)
+            if normb != 0:
+                tol = tol * normb
+
+        if return_residuals:
+            warn('return_residuals is deprecated.  Use residuals instead')
+            residuals = []
+        if residuals is None:
+            residuals = []
+        else:
+            residuals[:] = []
+
+        residuals.append(residual_norm(A, x, b))
+        iter_num = 0
+
+        while iter_num < maxiter and residuals[-1] > tol:
+            # ----------- Additive solve ----------- #
+            # ------ This doesn't really work ------ #
+            if additive:
+               x_copy = deepcopy(x)
+               for hierarchy in self.hierarchy_set:
+                    this_x = deepcopy(x_copy)
+                    if len(hierarchy.levels) == 1:
+                        this_x = hierarchy.coarse_solver(A, b)
+                    else:
+                        temp = hierarchy.test_solve(0, this_x, b, cycle)
+
+                    x += temp
+            # ----------- Normal solve ----------- #
+            else:
+                # One solve for each hierarchy in set
+                for hierarchy in self.hierarchy_set:
+                    # hierarchy has only 1 level
+                    if len(hierarchy.levels) == 1:
+                        x = hierarchy.coarse_solver(A, b)
+                    else:
+                        hierarchy.test_solve(0, x, b, cycle)
+
+            residuals.append(residual_norm(A, x, b))
+            iter_num += 1
+
+            if callback is not None:
+                callback(x)
+
+        n = x.shape[0] 
+        if return_residuals:
+            return x.reshape((n,1)), residuals
+        else:
+            return x.reshape((n,1))
+
+
+
