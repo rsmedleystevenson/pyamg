@@ -273,7 +273,7 @@ def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
                       diagonal_dominance=False,
                       coarse_solver='pinv', keep=False,
                       additive=False, reconstruct=False,
-                      max_hierarchies=10, use_ritz=False,
+                      max_hierarchies=4, use_ritz=False,
                       improve_candidates=[('block_gauss_seidel',
                                          {'sweep': 'symmetric',
                                          'iterations': 4})],
@@ -362,9 +362,12 @@ def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
     # Continue adding hierarchies until desired convergence factor achieved,
     # or maximum number of hierarchies constructed
     it = 0
+
+
     while (cf > desired_convergence) and (it < max_hierarchies):
 
-        # pdb.set_trace()
+        pdb.set_trace()
+
         # Make target vector orthogonal and energy orthonormal and reconstruct hierarchy
         if use_ritz and it>0:
             B = global_ritz_process(A, B, weak_tol=100)
@@ -378,7 +381,7 @@ def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
             print "Hierarchy reconstructed."          
         # Otherwise just add new hierarchy to solver set.
         else:
-            solvers.add_hierarchy( smoothed_aggregation_solver(A, B=B[:,-1], symmetry=symmetry,
+            solvers.add_hierarchy( smoothed_aggregation_solver(A, B=B[:,0:1], symmetry=symmetry,
                                                                aggregate=aggregate,
                                                                presmoother=presmoother,
                                                                postsmoother=postsmoother,
@@ -396,7 +399,7 @@ def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
                                cycle=test_cycle, accel=test_accel, residuals=residuals,
                                additive=additive)
         cf = residuals[-1]/residuals[-2]
-        B = np.hstack((B,target))  
+        B = np.hstack((target,B))  
         it += 1
         print "Added new hierarchy, convergence factor = ",cf
 

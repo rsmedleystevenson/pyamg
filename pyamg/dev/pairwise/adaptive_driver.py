@@ -127,7 +127,7 @@ def get_geometric_weights_d2(A, theta, Nx, Ny):
 
 N 			= 200
 problem_dim = 2
-epsilon 	= 0.01
+epsilon 	= 1.0
 theta 		= 3.0*np.pi/16
 zero_rhs    = True
 rand_guess  = True
@@ -147,8 +147,6 @@ elif problem_dim == 2:
 vec_size  = A.shape[0]
 # W = get_geometric_weights(A, theta, N, N)
 # W.eliminate_zeros()
-
-pdb.set_trace()
 
 # Zero right hand side or sin(pi x)
 if zero_rhs:
@@ -181,11 +179,11 @@ is_pdef            = True       # Assume matrix positive definite (only for aSA)
 keep_levels        = False      # Also store SOC, aggregation, and tentative P operators
 diagonal_dominance = False      # Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
-accel = 'cg'
+accel = None
 
-aggregate = ('pairwise', {'matchings': 2, 'algorithm': 'drake'})
-# interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree':1 } )
-interp_smooth = None
+aggregate = ('pairwise', {'matchings': 2, 'algorithm': 'drake', 'initial_target' : 'ones'})
+interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree':1 } )
+# interp_smooth = None
 relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # relaxation = ('jacobi', {'omega': 4.0/3.0} )
 improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 5})]
@@ -197,9 +195,9 @@ reconstruct = False
 use_ritz = False
 
 # ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
+# ------------------------------------------initial_targets----------------------------------- #
 
-ml_asa = adaptive_pairwise_solver(A, initial_targets = None, symmetry = 'symmetric',
+ml_asa = adaptive_pairwise_solver(A, B = None, symmetry = 'symmetric',
                                   desired_convergence = desired_convergence,
                                   test_iterations = test_iterations, 
                                   test_accel=accel,

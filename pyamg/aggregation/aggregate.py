@@ -281,7 +281,7 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
                         algorithm='drake', matchings=2, weights=None,
                         improve_candidates=('gauss_seidel',
                                             {'sweep': 'symmetric',
-                                             'iterations': 4}),
+                                             'iterations': 5}),
                         initial_target='rand', get_Cpts=False,
                         **kwargs):
     """ Pairwise aggregation of nodes. 
@@ -392,7 +392,6 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
     else:
         W = A
 
-
     if not isspmatrix_csr(W):
         warn("Only implemented for CSR matrix - trying to convert.", SparseEfficiencyWarning)
         try:
@@ -407,7 +406,7 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
     # If target vectors provided, take first. Note, no improvement is 
     # done on provided targets in the assumption that they are smooth.
     if B is not None:
-        if len(B.shape[1]) == 2:
+        if len(B.shape) == 2:
             target = B[:,0]
         else:
             target = B[:,]

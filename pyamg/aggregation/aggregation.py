@@ -3,6 +3,7 @@ from __future__ import absolute_import
 
 __docformat__ = "restructuredtext en"
 
+import pdb 
 from warnings import warn
 import numpy as np
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr,\
@@ -18,7 +19,7 @@ from pyamg.strength import classical_strength_of_connection,\
     energy_based_strength_of_connection, distance_strength_of_connection,\
     algebraic_distance, affinity_distance
 from .aggregate import standard_aggregation, naive_aggregation,\
-    lloyd_aggregation
+    lloyd_aggregation, pairwise_aggregation
 from .tentative import fit_candidates
 from .smooth import jacobi_prolongation_smoother,\
     richardson_prolongation_smoother, energy_prolongation_smoother
@@ -70,11 +71,12 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
         all nonzero entries of the matrix are considered strong.
         See notes below for varying this parameter on a per level basis.  Also,
         see notes below for using a predefined strength matrix on each level.
-    aggregate : {list} : default ['standard', 'lloyd', 'naive',
+    aggregate : {list} : default ['standard', 'lloyd', 'naive', 'pairwise',
                 ('predefined', {'AggOp' : csr_matrix})]
         Method used to aggregate nodes.  See notes below for varying this
         parameter on a per level basis.  Also, see notes below for using a
-        predefined aggregation on each level.
+        predefined aggregation on each level. Method-specific parameters may be
+        passed in using a tuple, e.g. aggregate=('pairwise',{'num_matchings': 2 })
     smooth : {list} : default ['jacobi', 'richardson', 'energy', None]
         Method used to smooth the tentative prolongator.  Method-specific
         parameters may be passed in using a tuple, e.g.  smooth=
@@ -227,11 +229,20 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
 
     if A.shape[0] != A.shape[1]:
         raise ValueError('expected square matrix')
+
     # Right near nullspace candidates
     if B is None:
-        B = np.ones((A.shape[0], 1), dtype=A.dtype)  # use constant vector
+        B = np.kron(np.ones((A.shape[0]/blocksize(A), 1), dtype=A.dtype),
+                    np.eye(blocksize(A)))
     else:
         B = np.asarray(B, dtype=A.dtype)
+        if len(B.shape) == 1:
+            B = B.reshape(-1, 1)
+        if B.shape[0] != A.shape[0]:
+            raise ValueError('The near null-space modes B have incorrect \
+                              dimensions for matrix A')
+        if B.shape[1] < blocksize(A):
+            raise ValueError('B.shape[1] must be >= the blocksize of A')
 
     # Left near nullspace candidates
     if A.symmetry == 'nonsymmetric':
@@ -239,6 +250,14 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
             BH = B.copy()
         else:
             BH = np.asarray(BH, dtype=A.dtype)
+            if len(BH.shape) == 1:
+                BH = BH.reshape(-1, 1)
+            if BH.shape[1] != B.shape[1]:
+                raise ValueError('The number of left and right near \
+                                  null-space modes B and BH, must be equal')
+            if BH.shape[0] != A.shape[0]:
+                raise ValueError('The near null-space modes BH have \
+                                  incorrect dimensions for matrix A')
 
     # Levelize the user parameters, so that they become lists describing the
     # desired user option on each level.
@@ -289,6 +308,16 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         AH = A.H.asformat(A.format)
         BH = levels[-1].BH
 
+    # Improve near nullspace candidates by relaxing on A B = 0
+    fn, kwargs = unpack_arg(improve_candidates[len(levels)-1])
+    if fn is not None:
+        b = np.zeros((A.shape[0], 1), dtype=A.dtype)
+        B = relaxation_as_linear_operator((fn, kwargs), A, b) * B
+        levels[-1].B = B
+        if A.symmetry == "nonsymmetric":
+            BH = relaxation_as_linear_operator((fn, kwargs), AH, b) * BH
+            levels[-1].BH = BH
+
     # Compute the strength-of-connection matrix C, where larger
     # C[i,j] denote stronger couplings between i and j.
     fn, kwargs = unpack_arg(strength[len(levels)-1])
@@ -332,20 +361,13 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         AggOp = naive_aggregation(C, **kwargs)[0]
     elif fn == 'lloyd':
         AggOp = lloyd_aggregation(C, **kwargs)[0]
+    elif fn == 'pairwise':
+        AggOp = pairwise_aggregation(C, B, symmetry=A.symmetry,
+                 improve_candidates=improve_candidates[len(levels)-1], **kwargs)[0]
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
-
-    # Improve near nullspace candidates by relaxing on A B = 0
-    fn, kwargs = unpack_arg(improve_candidates[len(levels)-1])
-    if fn is not None:
-        b = np.zeros((A.shape[0], 1), dtype=A.dtype)
-        B = relaxation_as_linear_operator((fn, kwargs), A, b) * B
-        levels[-1].B = B
-        if A.symmetry == "nonsymmetric":
-            BH = relaxation_as_linear_operator((fn, kwargs), AH, b) * BH
-            levels[-1].BH = BH
 
     # Compute the tentative prolongator, T, which is a tentative interpolation
     # matrix from the coarse-grid to the fine-grid.  T exactly interpolates
