@@ -183,12 +183,12 @@ diagonal_dominance = False      # Avoid coarsening diagonally dominant rows
 coarse_solver = 'pinv'
 accel = 'cg'
 
-aggregate = ('pairwise', {'matchings': 2, 'algorithm': 'drake_C'})
+aggregate = ('pairwise', {'matchings': 2, 'algorithm': 'drake'})
 # interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree':1 } )
 interp_smooth = None
 relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # relaxation = ('jacobi', {'omega': 4.0/3.0} )
-improve_candidates = [('gauss_seidel', {'sweep': 'symmetric', 'iterations': 5})]
+improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 5})]
 # improve_candidates = None
 test_iterations = 15
 desired_convergence = 0.7

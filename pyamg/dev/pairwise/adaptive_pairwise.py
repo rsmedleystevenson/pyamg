@@ -159,9 +159,6 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
     # ascending order.
     QtAQ = scipy.dot(Q.conjugate().T, A*Q)        # WAP  
     [E,V] = scipy.linalg.eigh(QtAQ)
-    # QtAAQ = A*Q
-    # QtAAQ = scipy.dot(QtAAQ.conjugate().T, QtAAQ)   # WAP_{A^2} = SAP
-    # [E,V] = scipy.linalg.eigh(QtAAQ)
 
     # Make sure eigenvectors are real. Eigenvalues must be already real.
     try:
@@ -260,8 +257,8 @@ def get_aggregate(A, strength, aggregate, diagonal_dominance, B, **kwargs):
     return AggOp
 
 
-def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
-					  desired_convergence=0.5,
+def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
+					  desired_convergence=0.7,
                       test_iterations = 10, 
                       test_cycle = 'V',
                       test_accel = None,
@@ -317,18 +314,18 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
 
     # SHOULD I START WITH CONSTANT VECTOR OR SMOOTHED RANDOM VECTOR?
     # Right near nullspace candidates
-    if initial_targets is None:
-        initial_targets = np.kron(np.ones((A.shape[0]/blocksize(A), 1), dtype=A.dtype),
+    if B is None:
+        B = np.kron(np.ones((A.shape[0]/blocksize(A), 1), dtype=A.dtype),
                     np.eye(blocksize(A)))
     else:
-        initial_targets = np.asarray(initial_targets, dtype=A.dtype)
-        if len(initial_targets.shape) == 1:
-            initial_targets = initial_targets.reshape(-1, 1)
-        if initial_targets.shape[0] != A.shape[0]:
-            raise ValueError('The near null-space modes initial_targets have incorrect \
+        B = np.asarray(B, dtype=A.dtype)
+        if len(B.shape) == 1:
+            B = B.reshape(-1, 1)
+        if B.shape[0] != A.shape[0]:
+            raise ValueError('The near null-space modes B have incorrect \
                               dimensions for matrix A')
-        if initial_targets.shape[1] < blocksize(A):
-            raise ValueError('initial_targets.shape[1] must be >= the blocksize of A')
+        if B.shape[1] < blocksize(A):
+            raise ValueError('B.shape[1] must be >= the blocksize of A')
 
     # Improve near nullspace candidates by relaxing on A B = 0
     if improve_candidates is not None:
@@ -338,15 +335,15 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
 
     if fn is not None:
         b = np.zeros((A.shape[0], 1), dtype=A.dtype)
-        initial_targets = relaxation_as_linear_operator((fn, temp_args), A, b) * initial_targets
+        B = relaxation_as_linear_operator((fn, temp_args), A, b) * B
         if A.symmetry == "nonsymmetric":
             AH = A.H.asformat(A.format)
             BH = relaxation_as_linear_operator((fn, temp_args), AH, b) * BH
 
     # Empty set of solver hierarchies 
     solvers = multilevel_solver_set()
-    target = initial_targets
-    B = initial_targets
+    target = B
+    B = B
     cf = 1.0
 
     # Aggregation process on the finest level is the same each iteration.
@@ -354,7 +351,7 @@ def adaptive_pairwise_solver(A, initial_targets=None, symmetry='hermitian',
     # solver construction. 
     # ---> NOTE THIS IS ONLY TRUE IN CASE OF SINGLE PAIRWISE AGGREGATION...
     AggOp = get_aggregate(A, strength=strength, aggregate=aggregate,
-                          diagonal_dominance=diagonal_dominance, B=initial_targets)
+                          diagonal_dominance=diagonal_dominance, B=B)
     if isinstance(aggregate,tuple):
         aggregate = [('predefined', {'AggOp': AggOp}), aggregate]
     elif isinstance(aggregate,list):
