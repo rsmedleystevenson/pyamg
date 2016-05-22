@@ -127,7 +127,7 @@ def get_geometric_weights_d2(A, theta, Nx, Ny):
 
 N 			= 200
 problem_dim = 2
-epsilon 	= 1.0
+epsilon 	= 0.01
 theta 		= 3.0*np.pi/16
 zero_rhs    = True
 rand_guess  = True
@@ -181,9 +181,9 @@ diagonal_dominance = False      # Avoid coarsening diagonally dominant rows
 coarse_solver = 'pinv'
 accel = None
 
-aggregate = ('pairwise', {'matchings': 2, 'algorithm': 'drake', 'initial_target' : 'ones'})
-interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree':1 } )
-# interp_smooth = None
+aggregate = ('pairwise', {'matchings': 1, 'algorithm': 'drake', 'initial_target' : 'ones'})
+# interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree':1 } )
+interp_smooth = None
 relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # relaxation = ('jacobi', {'omega': 4.0/3.0} )
 improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 5})]
@@ -202,6 +202,7 @@ ml_asa = adaptive_pairwise_solver(A, B = None, symmetry = 'symmetric',
                                   test_iterations = test_iterations, 
                                   test_accel=accel,
                                   strength = None,
+                                  smooth = interp_smooth,
                                   aggregate = aggregate,
                                   presmoother = relaxation,
                                   postsmoother = relaxation,

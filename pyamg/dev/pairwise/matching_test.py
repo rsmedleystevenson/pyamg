@@ -327,10 +327,10 @@ def plot_multiple_poisson(aggregations, labels, N, Cpts=True):
 # ------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------------#
 
-N 			= 30
+N 			= 10
 problem_dim = 2
-epsilon 	= 0.0
-theta 		= 1.0*np.pi/3
+epsilon 	= 0.01
+theta 		= 1.0*np.pi/4
 
 # 1d Poisson 
 if problem_dim == 1:
@@ -356,8 +356,8 @@ elif problem_dim == -1:
 
 # ------------------------------------------------------------------------------#
 # C = evolution_strength_of_connection(A, epsilon=4.0, k=2)
-# C = symmetric_strength_of_connection(W, theta=0.1)
-# AggOp, Cpts = standard_aggregation(C)
+C = symmetric_strength_of_connection(A, theta=0.0)
+AggOp, Cpts = standard_aggregation(C)
 
 
 
@@ -367,7 +367,6 @@ matchings = 3
 drake = pairwise_aggregation(A, matchings=matchings, algorithm='drake', initial_target='ones', improve_candidates=None)
 notay = pairwise_aggregation(A, matchings=matchings, algorithm=('notay', {'beta':0.25}), initial_target='ones', improve_candidates=None)
 
-
 # ------------------------------------------------------------------------------#
 # labels = ['Preis pairwise (n=%i)'%(num_matchings),'Notay pairwise (e=%1.2f,n=%i)'%(0.25,num_matchings),'Drake pairwise (n=%i)'%(num_matchings)]
 # matchings = [preis_matching,notay_matching,drake_matching]
@@ -375,12 +374,21 @@ notay = pairwise_aggregation(A, matchings=matchings, algorithm=('notay', {'beta'
 # labels = ['Classical SOC/aggregation','Notay pairwise (e=%1.2f,n=%i)'%(0.25,num_matchings),'Drake pairwise (n=%i)'%(num_matchings)]
 # matchings = [ [AggOp,Cpts], [notay_matching, notay_Cpts] , [drake_matching, drake_Cpts] ]
 
-labels = ['Drake pairwise', 'Notay pairwise']
-matchings = [ drake, notay ]
+labels = ['Standard','Drake pairwise', 'Notay pairwise']
+matchings = [ AggOp, drake, notay ]
 
 plot_multiple_poisson(matchings,labels,N, Cpts=False)
 
-# pdb.set_trace()
+
+
+fig = plt.figure()
+ax1 = fig.add_subplot(1,2,1);
+ax1.spy(AggOp.todense())
+ax2 = fig.add_subplot(1,2,2);
+ax2.spy(drake.todense())
+plt.show()
+
+pdb.set_trace()
 
 
 

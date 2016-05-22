@@ -41,7 +41,7 @@ keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operator
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
 accel = None
-keep = False
+keep = True
 
 # Strength of connection 
 # ----------------------
@@ -55,9 +55,9 @@ keep = False
 #		+ block_flag (F)- True / False for block matrices
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
-strength_connection = ('symmetric', {'theta': 0.1} )
+strength_connection = ('symmetric', {'theta': 0.0} )
 # strength_connection =  ('evolution', {'k': 2, 'epsilon': 4.0, 'symmetrize_measure':True})	# 'symmetric', 'classical', 'evolution'
-# strength_connection = None
+strength_connection = None
 
 
 # Aggregation 
@@ -78,7 +78,7 @@ strength_connection = ('symmetric', {'theta': 0.1} )
 #	        ~ same - G[i,j] = C[i,j]
 #	        ~ sub  - G[i,j] = C[i,j] - min(C)
 aggregation = ('standard')
-# aggregation = ('pairwise', {'matchings': 2, 'algorithm': 'drake'})
+aggregation = ('pairwise', {'matchings': 2, 'algorithm': 'drake', 'initial_target': 'rand'})
 
 
 # Interpolation smooother (Jacobi seems slow...)
@@ -107,8 +107,8 @@ aggregation = ('standard')
 #			~ local - local row-wise weight, avoids under-damping 
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
-# interp_smooth = ('jacobi', {'omega': 4.0/3.0 } )
-interp_smooth = ('richardson', {'omega': 3.0/2.0} )
+interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree': 1 })
+# interp_smooth = ('richardson', {'omega': 3.0/2.0} )
  
 # interp_smooth2 = interp_smooth1
 
@@ -169,8 +169,8 @@ improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 4})]
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 200
-epsilon 	= 1.0				# 'Strength' of aniostropy (only for 2d)
+N 			= 400
+epsilon 	= 0.0				# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
@@ -220,6 +220,8 @@ sa_residuals = []
 # Classical smoothed aggregation solver
 # --------------------------
 
+# pdb.set_trace()
+
 # Form classical smoothed aggregation multilevel solver object
 start = time.clock()
 ml_sa = smoothed_aggregation_solver(A, B=None, symmetry='symmetric', strength=strength_connection,
@@ -243,11 +245,11 @@ for i in range(0,len(sa_residuals)-1):
 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
 CF = np.mean(sa_conv_factors[1:])
-print "Root node - ", nii_time, " seconds"
+print "SA - ", nii_time, " seconds"
 print " CF - ",CF
 print " Setup complexity - ",setup
 print " Cycle complexity - ",cycle
-print " Effectve CF - ", CF**(1.0/cycle)
+# print " Effectve CF - ", CF**(1.0/cycle)
 
 
 

@@ -248,7 +248,7 @@ def get_aggregate(A, strength, aggregate, diagonal_dominance, B, **kwargs):
     elif fn == 'lloyd':
         AggOp = lloyd_aggregation(C, **kwargs)[0]
     elif fn == 'pairwise':
-        AggOp = pairwise_aggregation(A, B, **kwargs)[0]
+        AggOp = pairwise_aggregation(A, B, **kwargs)
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
     else:
@@ -273,7 +273,7 @@ def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
                       diagonal_dominance=False,
                       coarse_solver='pinv', keep=False,
                       additive=False, reconstruct=False,
-                      max_hierarchies=4, use_ritz=False,
+                      max_hierarchies=10, use_ritz=False,
                       improve_candidates=[('block_gauss_seidel',
                                          {'sweep': 'symmetric',
                                          'iterations': 4})],
@@ -350,23 +350,21 @@ def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
     # To prevent repeating processes, we compute it here and provide it to the 
     # solver construction. 
     # ---> NOTE THIS IS ONLY TRUE IN CASE OF SINGLE PAIRWISE AGGREGATION...
-    AggOp = get_aggregate(A, strength=strength, aggregate=aggregate,
-                          diagonal_dominance=diagonal_dominance, B=B)
-    if isinstance(aggregate,tuple):
-        aggregate = [('predefined', {'AggOp': AggOp}), aggregate]
-    elif isinstance(aggregate,list):
-        aggregate.insert(0, ('predefined', {'AggOp': AggOp}))
-    else:
-        raise TypeError("Aggregate variable must be list or tuple.")
+    # AggOp = get_aggregate(A, strength=strength, aggregate=aggregate,
+    #                       diagonal_dominance=diagonal_dominance, B=B)
+    # if isinstance(aggregate,tuple):
+    #     aggregate = [('predefined', {'AggOp': AggOp}), aggregate]
+    # elif isinstance(aggregate,list):
+    #     aggregate.insert(0, ('predefined', {'AggOp': AggOp}))
+    # else:
+    #     raise TypeError("Aggregate variable must be list or tuple.")
 
     # Continue adding hierarchies until desired convergence factor achieved,
     # or maximum number of hierarchies constructed
     it = 0
-
+    cfs = [1]
 
     while (cf > desired_convergence) and (it < max_hierarchies):
-
-        pdb.set_trace()
 
         # Make target vector orthogonal and energy orthonormal and reconstruct hierarchy
         if use_ritz and it>0:
@@ -381,6 +379,7 @@ def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
             print "Hierarchy reconstructed."          
         # Otherwise just add new hierarchy to solver set.
         else:
+            pdb.set_trace()
             solvers.add_hierarchy( smoothed_aggregation_solver(A, B=B[:,0:1], symmetry=symmetry,
                                                                aggregate=aggregate,
                                                                presmoother=presmoother,
@@ -399,9 +398,20 @@ def adaptive_pairwise_solver(A, B=None, symmetry='hermitian',
                                cycle=test_cycle, accel=test_accel, residuals=residuals,
                                additive=additive)
         cf = residuals[-1]/residuals[-2]
+        cfs.append(cf)
         B = np.hstack((target,B))  
+        # TEST IDEA TO REMOVE HIERARCHY IF IT DOESNT IMPROVE CONVERGENCE
+        # if cfs[-1] >= cfs[-2]:
+        #     solvers.remove_hierarchy(it)
+        #     print "Hierarchy not added, did not improve convergence factor."
+        # else:
+        #     print "Added new hierarchy, convergence factor = ",cf
+            # it += 1
+        print "Added new hierarchy, convergence factor = ",cf       
         it += 1
-        print "Added new hierarchy, convergence factor = ",cf
+
+
+
 
     B = B[:,:-1]
     # B2 = global_ritz_process(A, B, weak_tol=1.0)
