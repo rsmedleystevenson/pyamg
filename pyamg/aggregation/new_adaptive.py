@@ -23,7 +23,7 @@ from pyamg.strength import symmetric_strength_of_connection, ode_strength_of_con
 from pyamg.relaxation.smoothing import change_smoothers, rho_block_D_inv_A, rho_D_inv_A
 from pyamg.util.linalg import norm, approximate_spectral_radius
 from pyamg.util.utils import levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
-                            symmetric_rescaling
+                            symmetric_rescaling, relaxation_as_linear_operator
 from pyamg.aggregation.aggregation import smoothed_aggregation_solver
 from pyamg.aggregation.aggregate import standard_aggregation
 from pyamg.aggregation.smooth import jacobi_prolongation_smoother, energy_prolongation_smoother, \
@@ -31,7 +31,7 @@ from pyamg.aggregation.smooth import jacobi_prolongation_smoother, energy_prolon
 from pyamg.aggregation.tentative import fit_candidates
 
 
-__all__ = ['A_norm', 'my_rand', 'tl_sa_solver']
+__all__ = ['A_norm', 'my_rand', 'tl_sa_solver', 'asa_solver']
 
 def tabs(level):
     return '\t'*level
@@ -78,63 +78,63 @@ def find_slope(y):
     A[:,1] = x
     return scipy.linalg.lstsq(A,y)[0][1]
 
-def relaxation_as_linear_operator(A, smoother):
-    """
-    Input: relaxation descriptor in smoother and a sparse matrix A
+# def relaxation_as_linear_operator(A, smoother):
+#     """
+#     Input: relaxation descriptor in smoother and a sparse matrix A
 
-    Output: a linear operator that when applied to a vector x
-            carries out the relaxation method described by smoother.
-            In general, this operator will act like (I - M^{-1} A) x.
-    """
+#     Output: a linear operator that when applied to a vector x
+#             carries out the relaxation method described by smoother.
+#             In general, this operator will act like (I - M^{-1} A) x.
+#     """
 
-    # TODO: Currently there is some imitation, in the case of Richardson and
-    #       Jacobi, of the parameters that the multilevel solver routines
-    #       take. This is to make sure that the initial target is pinned
-    #       appropriately. This way (duplicating initialization) is very ugly
-    #       and error-prone. Needs to be done right as soon as possible!
+#     # TODO: Currently there is some imitation, in the case of Richardson and
+#     #       Jacobi, of the parameters that the multilevel solver routines
+#     #       take. This is to make sure that the initial target is pinned
+#     #       appropriately. This way (duplicating initialization) is very ugly
+#     #       and error-prone. Needs to be done right as soon as possible!
 
-    fn, kwargs = unpack_arg(smoother)
-    if fn == 'gauss_seidel':
-        def matvec(x):
-            xcopy = x.copy()
-            gauss_seidel(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
-            return xcopy
-    elif fn == 'gauss_seidel_ne':
-        def matvec(x):
-            xcopy = x.copy()
-            gauss_seidel_ne(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
-            return xcopy
-    elif fn == 'gauss_seidel_nr':
-        def matvec(x):
-            xcopy = x.copy()
-            gauss_seidel_nr(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
-            return xcopy
-    elif fn == 'jacobi':
-        withrho = True
-        omega = 1.0
-        if 'withrho' in kwargs:
-            withrho = kwargs['withrho']
-        if 'omega' in kwargs:
-            omega = kwargs['omega']
-        if withrho:
-            omega /= rho_D_inv_A(A)
-        def matvec(x):
-            xcopy = x.copy()
-            jacobi(A, xcopy, numpy.zeros_like(xcopy), iterations=2, omega=omega)
-            return xcopy
-    elif fn == 'richardson':
-        omega = 1.0
-        if 'omega' in kwargs:
-            omega = kwargs['omega']
-        omega /= approximate_spectral_radius(A)
-        def matvec(x):
-            xcopy=x.copy()
-            polynomial(A, xcopy, numpy.zeros_like(xcopy), iterations=2, coefficients=[omega])
-            return xcopy
-    else:
-        raise TypeError('Unrecognized smoother')
+#     fn, kwargs = unpack_arg(smoother)
+#     if fn == 'gauss_seidel':
+#         def matvec(x):
+#             xcopy = x.copy()
+#             gauss_seidel(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
+#             return xcopy
+#     elif fn == 'gauss_seidel_ne':
+#         def matvec(x):
+#             xcopy = x.copy()
+#             gauss_seidel_ne(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
+#             return xcopy
+#     elif fn == 'gauss_seidel_nr':
+#         def matvec(x):
+#             xcopy = x.copy()
+#             gauss_seidel_nr(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
+#             return xcopy
+#     elif fn == 'jacobi':
+#         withrho = True
+#         omega = 1.0
+#         if 'withrho' in kwargs:
+#             withrho = kwargs['withrho']
+#         if 'omega' in kwargs:
+#             omega = kwargs['omega']
+#         if withrho:
+#             omega /= rho_D_inv_A(A)
+#         def matvec(x):
+#             xcopy = x.copy()
+#             jacobi(A, xcopy, numpy.zeros_like(xcopy), iterations=2, omega=omega)
+#             return xcopy
+#     elif fn == 'richardson':
+#         omega = 1.0
+#         if 'omega' in kwargs:
+#             omega = kwargs['omega']
+#         omega /= approximate_spectral_radius(A)
+#         def matvec(x):
+#             xcopy=x.copy()
+#             polynomial(A, xcopy, numpy.zeros_like(xcopy), iterations=2, coefficients=[omega])
+#             return xcopy
+#     else:
+#         raise TypeError('Unrecognized smoother')
 
-    return LinearOperator(A.shape, matvec, dtype=A.dtype)
+#     return LinearOperator(A.shape, matvec, dtype=A.dtype)
 
 def solver_as_homogeneous_lin_op(solver):
     """ Return a linear operator based on solver that executes
@@ -340,8 +340,8 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
     # build csr matrix
     return csr_matrix((val_i, (row_i, col_i)), (B.shape[0], cur_col)), per_agg_count
 
-def asa_solver(A, initial_targets=None, max_targets=100, min_targets=0,
-        num_initial_targets=1, targets_iters=15, conv_tol=0.5, weak_tol=15.,
+def asa_solver(A, B=None, max_targets=100, min_targets=0,
+        num_targets=1, targets_iters=15, conv_tol=0.5, weak_tol=15.,
         local_weak_tol=15., max_coarse=1000, coarse_size=1000, max_levels=20,
         max_level_iterations=10, prepostsmoother='richardson', smooth='jacobi',
         strength='symmetric', aggregate='standard', coarse_solver='pinv2',
@@ -353,7 +353,7 @@ def asa_solver(A, initial_targets=None, max_targets=100, min_targets=0,
     ----------
     A : {csr_matrix, bsr_matrix}
         Square matrix in CSR or BSR format
-    initial_targets : {None, n x m dense matrix}
+    B : {None, n x m dense matrix}
         If a matrix, then this forms the basis for the first m targets.
         Also in this case, the initial setup stage is skipped, because this
         provides the first target(s).  If None, then a random initial guess
@@ -362,7 +362,7 @@ def asa_solver(A, initial_targets=None, max_targets=100, min_targets=0,
         Maximum number of near-nullspace targets to generate
     min_targets : {integer}
         Minimum number of near-nullspace targets to generate
-    num_initial_targets : {integer}
+    num_targets : {integer}
         Number of initial targets to generate
     targets_iters : {integer}
         Number of smoothing passes/multigrid cycles used in the adaptive
@@ -443,7 +443,7 @@ def asa_solver(A, initial_targets=None, max_targets=100, min_targets=0,
     # Initializations
     work = numpy.zeros((1,))
 
-    try_solve(A, levels, 0, max_targets, min_targets, num_initial_targets, targets_iters, conv_tol, weak_tol, local_weak_tol, max_coarse, coarse_size, smooth, max_levels, max_level_iterations, coarse_solver, work, verbose, prepostsmoother)
+    try_solve(A, levels, 0, max_targets, min_targets, num_targets, targets_iters, conv_tol, weak_tol, local_weak_tol, max_coarse, coarse_size, smooth, max_levels, max_level_iterations, coarse_solver, work, verbose, prepostsmoother)
 
     return [multilevel_solver(levels, coarse_solver=coarse_solver), work]
 
@@ -520,7 +520,7 @@ def add_target(A, AggOp, B, t, weak_tol, local_weak_tol, level, verbose):
     return B_new, T_new, per_agg
 
 # TODO: this needs to be refactored into a much cleaner recursive code
-def try_solve(A, levels, level, max_targets, min_targets, num_initial_targets,
+def try_solve(A, levels, level, max_targets, min_targets, num_targets,
         targets_iters, conv_tol, weak_tol, local_weak_tol, max_coarse,
         coarse_size, smooth, max_levels, max_level_iterations, coarse_solver,
         work, verbose, prepostsmoother):
@@ -557,7 +557,7 @@ def try_solve(A, levels, level, max_targets, min_targets, num_initial_targets,
         current.history['agg'] = []
 
         # generate initial targets
-        current.B, _ = tl_initial_target(current.A, num_initial_targets, \
+        current.B, _ = tl_initial_target(current.A, num_targets, \
                                                targets_iters, prepostsmoother, work)
 
         # find T and AggOp
@@ -601,7 +601,7 @@ def try_solve(A, levels, level, max_targets, min_targets, num_initial_targets,
 
             # recurse
             try_solve(Ac, levels, level+1, max_targets, min_targets, \
-                    num_initial_targets, targets_iters, conv_tol, weak_tol, \
+                    num_targets, targets_iters, conv_tol, weak_tol, \
                     local_weak_tol, max_coarse, coarse_size, smooth, \
                     max_levels, max_level_iterations, coarse_solver, work, \
                     verbose, prepostsmoother)
