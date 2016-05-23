@@ -1,6 +1,8 @@
 #include <vector>
 
 
+// Function to get list of F-points given C-points. 
+// --> Note, this assumes that C-points are sorted for efficiency.
 template<class I>
 void get_fpts(const I Cpts[], const int Cpts_size, vector<I> &Fpts)
 {
@@ -26,6 +28,33 @@ void get_fpts(const I Cpts[], const int Cpts_size, vector<I> &Fpts)
 		Fpts[temp_Find] = i;
 		temp_Find += 1;
 	}
+}
+
+
+// Note, column indices for A are sorted a-priori - this is yuuuge
+void get_submatrix(const I A_rowptr[],
+				   const I A_colinds[],
+				   const I A_data[],
+				   const I row_inds[],
+				   const I &row_inds_size,
+				   const I col_inds[],
+				   const I &col_inds_size,
+				   std::vector<I> &rowptr, 
+				   std::vector<I> &colinds,
+				   std::vector<I> &data )
+{
+
+	rowptr.push_back(0);
+	for (I i=0; i<row_inds_size; i++) {
+		I row = row_inds[i];
+		for (I j=A_rowptr[row]; j<A_rowptr[row+1]; j++) {
+
+		}
+	}
+
+
+
+
 }
 
 
@@ -94,6 +123,7 @@ void ben_ideal_interpolation(const I Acc_rowptr[], const int Acc_rowptr_size,
 				I temp_ind0 = Acc_rowptr[row_Acc];
 				I temp_ind1 = Acc_rowptr[row_Acc+1];
 				I temp_prod = 0;
+
 				// Loop over nonzero indices for this row of Acc and current vector \hat{w}_l.
 				for (I d_ind=temp_ind0; d_ind<temp_ind1; d_ind++) {
 					for (I v_ind=0; v_ind<vec_length; v_ind++) {

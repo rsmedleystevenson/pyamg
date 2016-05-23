@@ -222,6 +222,9 @@ def ben_ideal_interpolation(A, AggOp, Cnodes, B=None, SOC=None, weighting=10.0, 
     # ----------------------------------------------------------------------------- #
 
 
+    # Sort indices of A
+    A.sort_indices()
+
     # Unconstrained new ideal interpolation if no bad guys are provided
     if B is None:
         warnings.warn("No bad guys provided - using unconstrained minimization.")
