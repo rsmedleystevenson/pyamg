@@ -230,9 +230,9 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
     if A.shape[0] != A.shape[1]:
         raise ValueError('expected square matrix')
 
-    # Right near nullspace candidates
+    # Right near nullspace candidates use constant for each variable as default
     if B is None:
-        B = np.kron(np.ones((A.shape[0]/blocksize(A), 1), dtype=A.dtype),
+        B = np.kron(np.ones((int(A.shape[0]/blocksize(A)), 1), dtype=A.dtype),
                     np.eye(blocksize(A)))
     else:
         B = np.asarray(B, dtype=A.dtype)
@@ -242,7 +242,8 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
             raise ValueError('The near null-space modes B have incorrect \
                               dimensions for matrix A')
         if B.shape[1] < blocksize(A):
-            raise ValueError('B.shape[1] must be >= the blocksize of A')
+            warn('Having less target vectors, B.shape[1], than \
+                  blocksize of A can degrade convergence factors.')
 
     # Left near nullspace candidates
     if A.symmetry == 'nonsymmetric':

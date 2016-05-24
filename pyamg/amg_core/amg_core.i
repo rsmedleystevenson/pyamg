@@ -50,7 +50,8 @@
     (      ctype Agg_rowptr [], const int Agg_rowptr_size),
     (const ctype A_colinds [], const int A_colinds_size),
     (      ctype Agg_colinds [], const int Agg_colinds_size),
-    (      ctype Agg_shape [], const int Agg_shape_size)
+    (      ctype Agg_shape [], const int Agg_shape_size),
+    (      ctype indices [], const int indices_size)
 };
 %enddef
 
@@ -58,6 +59,7 @@
 %apply (ctype* INPLACE_ARRAY1, int DIM1) {
     (const ctype  B [], const int  B_size),
     (const ctype  b [], const int  b_size),
+    (      ctype  e [], const int  e_size),
     (      ctype  w [], const int  w_size),
     (const ctype  x [], const int  x_size),
     (      ctype  x [], const int  x_size),
@@ -78,7 +80,8 @@
     (      ctype temp [], const int temp_size),
     (const ctype omega [], const int omega_size),
     (const ctype A_data [], const int A_data_size),
-    (      ctype Agg_data [], const int Agg_data_size)
+    (      ctype Agg_data [], const int Agg_data_size),
+    (      ctype gamma [], const int gamma_size)
 };
 %enddef
 
@@ -219,6 +222,7 @@ INSTANTIATE_INDEX_ONLY(rs_cf_splitting)
 INSTANTIATE_INDEX_ONLY(cljp_naive_splitting)
 INSTANTIATE_INDEX_ONLY(rs_direct_interpolation_pass1)
 INSTANTIATE_INDEXDATA(rs_direct_interpolation_pass2)
+INSTANTIATE_INDEXDATA(cr_helper)
 
 /*----------------------------------------------------------------------------
   evolution_strength.h
