@@ -36,12 +36,6 @@ __all__ = ['A_norm', 'my_rand', 'tl_sa_solver', 'asa_solver']
 def tabs(level):
     return '\t'*level
 
-def unpack_arg(v):
-    """Helper function for local methods"""
-    if isinstance(v,tuple):
-        return v[0],v[1]
-    else:
-        return v,{}
 
 def A_norm(x, A):
     """
@@ -78,103 +72,6 @@ def find_slope(y):
     A[:,1] = x
     return scipy.linalg.lstsq(A,y)[0][1]
 
-# def relaxation_as_linear_operator(A, smoother):
-#     """
-#     Input: relaxation descriptor in smoother and a sparse matrix A
-
-#     Output: a linear operator that when applied to a vector x
-#             carries out the relaxation method described by smoother.
-#             In general, this operator will act like (I - M^{-1} A) x.
-#     """
-
-#     # TODO: Currently there is some imitation, in the case of Richardson and
-#     #       Jacobi, of the parameters that the multilevel solver routines
-#     #       take. This is to make sure that the initial target is pinned
-#     #       appropriately. This way (duplicating initialization) is very ugly
-#     #       and error-prone. Needs to be done right as soon as possible!
-
-#     fn, kwargs = unpack_arg(smoother)
-#     if fn == 'gauss_seidel':
-#         def matvec(x):
-#             xcopy = x.copy()
-#             gauss_seidel(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
-#             return xcopy
-#     elif fn == 'gauss_seidel_ne':
-#         def matvec(x):
-#             xcopy = x.copy()
-#             gauss_seidel_ne(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
-#             return xcopy
-#     elif fn == 'gauss_seidel_nr':
-#         def matvec(x):
-#             xcopy = x.copy()
-#             gauss_seidel_nr(A, xcopy, numpy.zeros_like(xcopy), iterations=2, sweep='symmetric')
-#             return xcopy
-#     elif fn == 'jacobi':
-#         withrho = True
-#         omega = 1.0
-#         if 'withrho' in kwargs:
-#             withrho = kwargs['withrho']
-#         if 'omega' in kwargs:
-#             omega = kwargs['omega']
-#         if withrho:
-#             omega /= rho_D_inv_A(A)
-#         def matvec(x):
-#             xcopy = x.copy()
-#             jacobi(A, xcopy, numpy.zeros_like(xcopy), iterations=2, omega=omega)
-#             return xcopy
-#     elif fn == 'richardson':
-#         omega = 1.0
-#         if 'omega' in kwargs:
-#             omega = kwargs['omega']
-#         omega /= approximate_spectral_radius(A)
-#         def matvec(x):
-#             xcopy=x.copy()
-#             polynomial(A, xcopy, numpy.zeros_like(xcopy), iterations=2, coefficients=[omega])
-#             return xcopy
-#     else:
-#         raise TypeError('Unrecognized smoother')
-
-#     return LinearOperator(A.shape, matvec, dtype=A.dtype)
-
-def solver_as_homogeneous_lin_op(solver):
-    """ Return a linear operator based on solver that executes
-        one iteration of solving A x = 0 """
-    A = solver.levels[0].A
-
-    def solver_matvec(vec):
-        vec = solver.solve(numpy.zeros_like(vec), x0=vec,
-                           tol=float(numpy.finfo(numpy.float).tiny), maxiter=1)
-        return vec
-
-    return LinearOperator(A.shape, solver_matvec, dtype=A.dtype)
-
-def relaxation_vectors(relax, x, num_iters, normalize=False):
-    """
-    Run relaxation num_iters times with initial guess x.
-
-    Parameters
-    ---------
-    relax : {linear operator}
-        Carries out relaxation for some  A x = 0
-    x : {array}
-        n x 1 with 1 initial guess
-    num_iters : {int}
-        Number of relaxation steps (i.e., vectors) to generate
-
-    Returns
-    -------
-    Set of num_iters+1 vectors, [x, relax x, relax^2 x, ...]
-    """
-    nvecs = x.shape[1]
-    if normalize:
-        x /= norm(x, 'inf')
-
-    for i in range(num_iters):
-        x = numpy.hstack((x, relax*x[:,-nvecs:]))
-        if normalize:
-            x[:,i+1] /= norm(x[:,i+1], 'inf')
-
-    return x
 
 def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
     """
@@ -340,12 +237,26 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
     # build csr matrix
     return csr_matrix((val_i, (row_i, col_i)), (B.shape[0], cur_col)), per_agg_count
 
-def asa_solver(A, B=None, max_targets=100, min_targets=0,
-        num_targets=1, targets_iters=15, conv_tol=0.5, weak_tol=15.,
-        local_weak_tol=15., max_coarse=1000, coarse_size=1000, max_levels=20,
-        max_level_iterations=10, prepostsmoother='richardson', smooth='jacobi',
-        strength='symmetric', aggregate='standard', coarse_solver='pinv2',
-        verbose=False, keep=True):
+def asa_solver(A, B=None,
+               symmetry='hermitian'
+               strength='symmetric',
+               aggregate='standard',
+               smooth='jacobi',
+               prepostsmoother='richardson',
+               conv_tol=0.5,
+               max_coarse=20,
+               max_levels=20,
+               max_targets=100,
+               min_targets=0,
+               num_targets=1,
+               targets_iters=15,
+               max_level_iterations=10,
+               weak_tol=15.,
+               local_weak_tol=15.,
+               coarse_solver='pinv2',
+               verbose=False,
+               keep=True,
+               **kwargs):
     """
     Create a two-level solver using Adaptive Smoothed Aggregation (aSA)
 
@@ -374,9 +285,7 @@ def asa_solver(A, B=None, max_targets=100, min_targets=0,
     local_weak_tol : {float}
         Weak approximation tolerance for dropping targets locally.
     max_coarse : {integer}
-        Maximum number of variables permitted on the coarse grid.
-    coarse_size : {integer}
-        Size below which a direct solver should be used.
+        Maximum number of variables permitted on the coarse grid. 
     max_levels : {integer}
         Maximum number of levels.
     max_level_iterations : {integer}
@@ -440,14 +349,29 @@ def asa_solver(A, B=None, max_targets=100, min_targets=0,
 
     levels = []
 
-    # Initializations
-    work = numpy.zeros((1,))
+    # I think this is where I should levelize all of the parameter 
+    # input, e.g. strength, smoothing, etc. 
+    # ==> Ideally make into levelized list of function handles
+    #     with arguments??
 
-    try_solve(A, levels, 0, max_targets, min_targets, num_targets, targets_iters, conv_tol, weak_tol, local_weak_tol, max_coarse, coarse_size, smooth, max_levels, max_level_iterations, coarse_solver, work, verbose, prepostsmoother)
+
+
+    # Call recursive adaptive process starting from finest grid, level 0,
+    # to construct adaptive hierarchy. 
+    try_solve(A=A, levels=levels, level=0, symmetry=symmetry,
+              strength=strength, aggregate=aggregate, smooth=smooth,
+              prepostsmoother=prepostsmoother, conv_tol=conv_tol,
+              max_coarse=max_coarse, max_levels=max_levels,
+              max_targets=max_targets, min_targets=min_targets,
+              num_targets=num_targets, targets_iters=targets_iters,
+              max_level_iterations=max_level_iterations, weak_tol=weak_tol,
+              local_weak_tol=local_weak_tol, coarse_solver=coarse_solver,
+              verbose=verbose, keep=keep)
+
 
     return [multilevel_solver(levels, coarse_solver=coarse_solver), work]
 
-def tl_initial_target(A, num_targets, targets_iters, prepostsmoother, work):
+def get_targets(A, num_targets, targets_iters, prepostsmoother):
     """
     Compute an initial target.
 
@@ -465,8 +389,6 @@ def tl_initial_target(A, num_targets, targets_iters, prepostsmoother, work):
     for i in range(num_targets):
         x = my_rand(A.shape[0], 1, A.dtype)
         relax = relaxation_as_linear_operator(A, prepostsmoother)
-        work[:] += A.nnz*targets_iters*2
-        X = relaxation_vectors(relax, x, targets_iters, normalize=False)
         conv_factor = A_norm(X[:, -1], A) / \
                       A_norm(X[:, -2], A)
         x = X[:, -1].reshape(-1, 1)
@@ -496,8 +418,13 @@ def rayleigh(A, x):
     return scipy.dot((A*x).conjugate(), x) / \
            (csr_matrix.sum(abs(A.getrow(1000)))*scipy.dot(x.conjugate(), x))
 
-# Approximate the convergence factor of a multilevel solver starting at a given level
-def test_level_conv(levels, level, cycle, iters, coarse_solver, prepostsmoother):
+
+def test_level_conv(levels, level, cycle, iters, coarse_solver, prepostsmoother):  
+    """
+    Approximate the convergence factor of a multilevel solver starting at a given level
+
+    """
+
     size = levels[level].A.shape[0]
     dtype = levels[level].A.dtype
     x = my_rand(size, 1, dtype)
@@ -513,128 +440,133 @@ def test_level_conv(levels, level, cycle, iters, coarse_solver, prepostsmoother)
     # TODO: be smarter about approximating the convergence factor
     return x, residuals[-1] / residuals[-2]
 
-# Adds a new target to the existing targets. Returns new targets, tentative prolongator
-def add_target(A, AggOp, B, t, weak_tol, local_weak_tol, level, verbose):
-    B_new = global_ritz_process(A, B, t, weak_tol, level, verbose)
-    T_new, per_agg = local_ritz_process(A, AggOp, B_new, local_weak_tol, level, verbose)
-    return B_new, T_new, per_agg
 
 # TODO: this needs to be refactored into a much cleaner recursive code
-def try_solve(A, levels, level, max_targets, min_targets, num_targets,
-        targets_iters, conv_tol, weak_tol, local_weak_tol, max_coarse,
-        coarse_size, smooth, max_levels, max_level_iterations, coarse_solver,
-        work, verbose, prepostsmoother):
-    # try:
-    #     smallest = linalg.eigsh(levels[level].A, k=1, which='SM')[0]
-    #     print smallest
-    #     largest = linalg.eigsh(levels[level].A, k=1, which='LM')[0]
-    #     print largest
-    #     print "------ Condition number",largest/smallest,"level", level
-    # except:
-    #     pass
+def try_solve(A, levels,
+              level,
+              symmetry,
+              strength,
+              aggregate,
+              smooth,
+              prepostsmoother,
+              conv_tol,
+              max_coarse,
+              max_levels,
+              max_targets,
+              min_targets,
+              num_targets,
+              targets_iters,
+              max_level_iterations,
+              weak_tol,
+              local_weak_tol,
+              coarse_solver,
+              verbose,
+              keep):
+
+    """
+    Needs some love.
+    """
+
     cycle = "V"
 
-    # initialize current level
-    if level >= len(levels):
-        levels.append(multilevel_solver.level())
-    else:
-        levels[level] = multilevel_solver.level()
-        # TODO: remove levels below us?
-        while len(levels) > level+1:
-            levels.pop()
+    # If coarserer hierarchies have already been defined, remove
+    # because they will be reconstructed
+    #
+    #   - Eventually may want to keep one multilevel solver
+    #     object and add / remove hierarchies instead of keeping
+    #     a list and reconstructing the hierarchy when necessary...
+    #
+    while len(levels) > level:
+        levels.pop()
+
+    # Add new level to hierarchy, define reference 'current' to current level
+    levels.append(multilevel_solver.level())
     current = levels[level]
     current.A = A
 
     # Test if we are at the coarsest level
-    if current.A.shape[0] <= coarse_size or level >= max_levels - 1:
-        # coarse solver should solve exactly i.e. conv factor = 0
+    #
+    #   - What do we do if we are? How does this play out in the recusive stuff?
+    #     ==> First time this happens, maybe construct/return multilevel object?
+    #
+    if current.A.shape[0] <= max_coarse or level >= max_levels - 1:
         return
-    else:
-        # initialize history
-        current.history = {}
-        current.history['B'] = []
-        current.history['conv'] = []
-        current.history['agg'] = []
 
-        # generate initial targets
-        current.B, _ = tl_initial_target(current.A, num_targets, \
-                                               targets_iters, prepostsmoother, work)
+    # initialize history
+    current.history = {}
+    current.history['B'] = []
+    current.history['conv'] = []
+    current.history['agg'] = []
 
-        # find T and AggOp
-        # TODO: this should use specified strength of connection, aggregation, and smoother
-        C = symmetric_strength_of_connection(current.A)
-        AggOp = standard_aggregation(C)[0]
-        current.B, current.T, per_agg = \
-                add_target(current.A, AggOp, current.B, None, \
-                           weak_tol, local_weak_tol, level, verbose)
-        current.AggOp = AggOp
+    # Generate initial targets
+    #
+    #   - Need to adress the possibility that relaxation is sufficient.
+    #     ==> What do we do then? Set relaxation as coarse solver?
+    #
+    current.B, relax_CF = get_targets(current.A, num_targets, \
+                               targets_iters, prepostsmoother )
+
+    # Get SOC matrix and aggregation
+    #
+    #   - Should probably pass a function handle to avoid 20 if-statements picking
+    #     the SOC and aggregation routine every recursive call. Looks bad.
+    #
+    C = symmetric_strength_of_connection(current.A)
+    current.AggOp = standard_aggregation(C)[0]
+
+    level_iter = 0
+    conv_factor = 1
+    target = None
+    while conv_factor > conv_tol and level_iter < max_level_iterations:
+
+        # Add new target. Orthogonalize using global / local Ritz and reconstruct T.  
+        current.B = global_ritz_process(A=current.A, B1=current.B, B2=target,
+                                        weak_tol=weak_tol, level=level,
+                                        verbose=verbose)
+        current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp,
+                                                B=current.B, weak_tol=local_weak_tol,
+                                                level=level, verbose=verbose)
         current.history['B'].append(current.B)
         current.history['agg'].append(per_agg)
 
-        # TODO: what happens if smoothing is good enough?
-        count = 0
-        factor = 1
-        while factor > conv_tol and count < max_level_iterations:
-            if count >= max_level_iterations:
-                if verbose:
-                    print tabs(level), "Too many aSA iterations on level", level, "Stopping"
-                return
+        # Smooth tentative prolongator
+        #
+        #   - Need to use arbitrary smoother here.
+        #     ==> again with possible pass in function handle to try_solve()?
+        #
+        current.P = richardson_prolongation_smoother(current.A, current.T, omega=1)
+        current.R = current.P.H
 
-            if current.B.shape[1] >= max_targets:
-                if verbose:
-                    print tabs(level), "Too many targets on level", level, "stopping"
-                return
+        # Construct coarse grid
+        Ac = (current.R * current.A * current.P).tocsr()
 
-            # smooth tentative prolongator
-            # TODO: use specified smoother
-            current.P = richardson_prolongation_smoother(current.A, current.T, omega=1)
-            current.R = current.P.H
+        # Symmetrically scale diagonal of A
+        #
+        #   - Make sure this is doing the right thing
+        #
+        [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
+        current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
+        current.R = current.P.H
 
-            # create coarse A
-            Ac = (current.R * current.A * current.P).tocsr()
+        # Recursively call try_solve() with coarse grid operator
+        try_solve(A=Ac, levels=levels, level=(level+1), symmetry=symmetry,
+                  strength=strength, aggregate=aggregate, smooth=smooth,
+                  prepostsmoother=prepostsmoother, conv_tol=conv_tol,
+                  max_coarse=max_coarse, max_levels=max_levels,
+                  max_targets=max_targets, min_targets=min_targets,
+                  num_targets=num_targets, targets_iters=targets_iters,
+                  max_level_iterations=max_level_iterations, weak_tol=weak_tol,
+                  local_weak_tol=local_weak_tol, coarse_solver=coarse_solver,
+                  verbose=verbose, keep=keep)
+        level_iter += 1
 
-            # Symmetrically scale out diagonal of A
-            # TODO: move out of loop?
-            [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
-            current.P = (current.P * diags(Dinv,offsets=0)).tocsr()
-            current.R = current.P.H
+        # Test convergence of new hierarchy
+        target, conv_factor = test_level_conv(levels, level, cycle, targets_iters, \
+                                        coarse_solver, prepostsmoother)
+        current.history['conv'].append(conv_factor)
 
-            # recurse
-            try_solve(Ac, levels, level+1, max_targets, min_targets, \
-                    num_targets, targets_iters, conv_tol, weak_tol, \
-                    local_weak_tol, max_coarse, coarse_size, smooth, \
-                    max_levels, max_level_iterations, coarse_solver, work, \
-                    verbose, prepostsmoother)
-            # see if new coarse level lets us converge fast enough
-            t, factor = test_level_conv(levels, level, cycle, targets_iters, \
-                    coarse_solver, prepostsmoother)
-            if verbose:
-                print
-                print tabs(level), "Convergence factor:", factor
+        if verbose:
+            print tabs(level), "Iter = ",level_iter,", num targets = ",num_targets,", CF = ", conv_factor
 
-            current.history['conv'].append(factor)
+    return
 
-            if factor < conv_tol:
-                # coarse grid is good, we are done
-                return
-
-            if verbose:
-                print tabs(level), "Convergence tolerance not reached, adding additional target"
-            # coarse grid is slow, add another target
-            current.B, current.T, per_agg = \
-                    add_target(current.A, current.AggOp, \
-                               current.B, t, weak_tol, local_weak_tol, level, verbose)
-            count += 1
-            current.history['B'].append(current.B)
-            current.history['agg'].append(per_agg)
-            # try coarse solve again
-
-# Approximate the convergence factor of using this solver
-def test_solver(solver):
-    relax = solver_as_homogeneous_lin_op(solver)
-    x = my_rand(solver.levels[0].A.shape[0], 1, solver.levels[0].A.dtype)
-    V = relaxation_vectors(relax, x, targets_iters, normalize=False)
-    # TODO: better estimate of convergence?
-    conv_factor = A_norm(V[:, -1], solver.levels[0].A) / \
-                  A_norm(V[:, -2], solver.levels[0].A)
-    return conv_factor
