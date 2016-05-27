@@ -20,7 +20,7 @@ from pyamg.util.linalg import residual_norm
 from pyamg.relaxation.relaxation import gauss_seidel, gauss_seidel_nr, gauss_seidel_ne, \
                                         gauss_seidel_indexed, jacobi, polynomial
 from pyamg.strength import symmetric_strength_of_connection, ode_strength_of_connection
-from pyamg.relaxation.smoothing import change_smoothers, rho_block_D_inv_A, rho_D_inv_A
+from pyamg.relaxation.smoothing import change_smoothers
 from pyamg.util.linalg import norm, approximate_spectral_radius
 from pyamg.util.utils import levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
                             symmetric_rescaling, relaxation_as_linear_operator
@@ -384,7 +384,15 @@ def get_targets(A, num_targets, targets_iters, prepostsmoother):
     The initial target and an estimate of the asymptotic convergence factor.
     """
 
-    ts = None
+# fn, kwargs = unpack_arg(improve_candidates[len(levels)-1])
+# if fn is not None:
+#     b = np.zeros((A.shape[0], 1), dtype=A.dtype)
+#     B = relaxation_as_linear_operator((fn, kwargs), A, b) * B
+
+# TODO --> This is slow. Preallocate np.array() of size for num_targets,
+# and fill in loop.
+
+    targets = None
     factors = []
     for i in range(num_targets):
         x = my_rand(A.shape[0], 1, A.dtype)
@@ -393,13 +401,13 @@ def get_targets(A, num_targets, targets_iters, prepostsmoother):
                       A_norm(X[:, -2], A)
         x = X[:, -1].reshape(-1, 1)
         del X
-        if ts is None:
-            ts = x
+        if targets is None:
+            targets = x
         else:
-            ts = numpy.hstack((ts, x))
+            targets = numpy.hstack((targets, x))
         factors.append(conv_factor)
 
-    return ts, sum(factors)/len(factors)
+    return targets, sum(factors)/len(factors)
 
 def rayleigh(A, x):
     """

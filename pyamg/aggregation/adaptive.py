@@ -226,8 +226,8 @@ def adaptive_sa_solver(A, initial_candidates=None, symmetry='hermitian',
             A = csr_matrix(A)
             warn("Implicit conversion of A to CSR", SparseEfficiencyWarning)
         except:
-            raise TypeError('Argument A must have type csr_matrix or\
-                            bsr_matrix, or be convertible to csr_matrix')
+            raise TypeError('Argument A must have type csr_matrix or'
+                            'bsr_matrix, or be convertible to csr_matrix')
 
     A = A.asfptype()
     if A.shape[0] != A.shape[1]:
