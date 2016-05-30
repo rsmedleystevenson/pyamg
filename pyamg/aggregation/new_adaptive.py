@@ -41,6 +41,7 @@ def A_norm(x, A):
     x = numpy.ravel(x)
     return numpy.sqrt(scipy.dot(x.conjugate(), A*x))
 
+
 def my_rand(d1, d2, zero_crossings=True):
     """
     Uniformly random vectors of size (d1,d2)
@@ -55,19 +56,6 @@ def my_rand(d1, d2, zero_crossings=True):
     # x = numpy.ones((d1,d2))
 
     return x
-
-def find_slope(y):
-    """
-    Assume that y are the y-values for a line, find its slope, assuming equal
-    spacing on the x-axis
-    """
-    y = numpy.ravel(y)
-    npts = y.shape[0]
-    x = numpy.arange(1, npts + 1)
-    A = numpy.zeros((npts, 2))
-    A[:,0] = 1.0
-    A[:,1] = x
-    return scipy.linalg.lstsq(A,y)[0][1]
 
 
 def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
@@ -144,6 +132,7 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
         print
 
     return V[:, :num_candidates]
+
 
 def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
     """
@@ -233,6 +222,7 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
 
     # build csr matrix
     return csr_matrix((val_i, (row_i, col_i)), (B.shape[0], cur_col)), per_agg_count
+
 
 def asa_solver(A, B=None,
                symmetry='hermitian'
@@ -363,7 +353,7 @@ def asa_solver(A, B=None,
 
         # TODO - Need to warn against no improve candidates / not let it happen
 
-
+    # TODO : Need to turn these levelized arguments into function handles
 
     # TODO : Should maybe levelize adaptive parameters level_iterations, max targets, etc.?
     #   - Assume tolerances fixed on all levels
