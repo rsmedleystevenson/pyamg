@@ -353,7 +353,33 @@ def asa_solver(A, B=None,
 
         # TODO - Need to warn against no improve candidates / not let it happen
 
+    strength_fn = []
+    aggregate_fn = []
+    improve_fn = []
+    smooth_fn = []
+    for i in range(0,max_levels):
+
+
+
+
+        # Prolongation smoothing
+        fn, kwargs = unpack_arg(smooth[i])
+        if fn == 'jacobi':
+            P = jacobi_prolongation_smoother(A, T, C, B, **kwargs)
+        elif fn == 'richardson':
+            P = richardson_prolongation_smoother(A, T, **kwargs)
+        elif fn == 'energy':
+            P = energy_prolongation_smoother(A, T, C, B, None, (False, {}),
+                                             **kwargs)
+        elif fn is None:
+            P = T
+        else:
+            raise ValueError('unrecognized prolongation smoother method %s' %
+                             str(fn))
+
     # TODO : Need to turn these levelized arguments into function handles
+    #       --> Is this really the best way to do this?? 
+
 
     # TODO : Should maybe levelize adaptive parameters level_iterations, max targets, etc.?
     #   - Assume tolerances fixed on all levels
