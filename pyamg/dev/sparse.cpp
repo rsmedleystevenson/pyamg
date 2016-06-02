@@ -3,7 +3,7 @@
 
 
 
-// Makes vector enumerating F-points using positive numbers and C-points using negative. 
+// Makes vector enumerating F-points using negative numbers and C-points using positive. 
 std::vector<int> get_ind_split(int Cpts[], const int & numCpts, const int &n)
 {
 	std::vector<int> ind_split(n,0);
@@ -14,11 +14,11 @@ std::vector<int> get_ind_split(int Cpts[], const int & numCpts, const int &n)
 	int cind = 1;
 	for (int i=0; i<n; i++) {
 		if (ind_split[i] == 0) {
-			ind_split[i] = find;
+			ind_split[i] = -find;
 			find += 1;
 		}
 		else {
-			ind_split[i ] = -cind;
+			ind_split[i] = cind;
 			cind += 1;
 		}
 	}
@@ -26,15 +26,12 @@ std::vector<int> get_ind_split(int Cpts[], const int & numCpts, const int &n)
 }
 
 
-// TODO : May need to bring back in row_scale so that I can use a single 
-// 		  vector for Acc anf Acf. This msy not be possible though...?
-
 void get_col_ptr(const int A_rowptr[],
 				 const int A_colinds[],
 				 const int &n,
 				 const int is_col_ind[],
 				 const int is_row_ind[],
-				 std::vector<int> &colptr, 
+				 int colptr[], 
 				 const int &num_cols,
 				 const int &row_scale = 1,
 				 const int &col_scale = 1 )
@@ -52,20 +49,16 @@ void get_col_ptr(const int A_rowptr[],
 		// 	- Note, is_col_ind[] is one-indexed, not zero.
 		for (int k=A_rowptr[i]; k<A_rowptr[i+1]; k++) {
 			int ind = col_scale * is_col_ind[A_colinds[k]];
-			// std::cout << "row = " << i << ", data_ind = " << k << ", A col = " << A_colinds[k] << "\n";
 			if ( ind > 0) {
-				// std::cout << "\t is_col_ind = " << is_col_ind[A_colinds[k]] << ", new col_ind = " << ind-1 << "\n";
 				colptr[ind] += 1;
 			}
 		}
 	}
 
 	// Cumulative sum column pointer to correspond with data entries
-	for (int i=1; i<(num_cols); i++) {
-		int temp = colptr[i];
-		colptr[i] = colptr[i-1] + temp;
+	for (int i=1; i<=(num_cols); i++) {
+		colptr[i] += colptr[i-1];
 	}
-	colptr[num_cols] += colptr[num_cols-1];
 }
 
 
@@ -75,9 +68,9 @@ void get_csc_submatrix(const int A_rowptr[],
 					   const int &n,
 					   const int is_col_ind[],
 					   const int is_row_ind[],
-					   std::vector<int> &colptr, 
-					   std::vector<int> &rowinds, 
-					   std::vector<int> &data,
+					   int colptr[], 
+					   int rowinds[], 
+					   double data[],
 					 const int &num_cols,
 	   				 const int &row_scale = 1,
 					 const int &col_scale = 1
@@ -127,31 +120,32 @@ int main(int argc, char *argv[])
 	std::vector<int> Cpts {0,2,4,6,8};
 	std::vector<int> Fpts {1,3,5,7};
 	// std::vector<int> Cpts {4,5,6,7,8};		// Scale with -1
-	// std::vector<int> Fpts {0,1,2,3};		// Scale with +1
+	// std::vector<int> Fpts {0,1,2,3};			// Scale with +1
 
 	int numCpts = Cpts.size();
 	int numFpts = Fpts.size();
 	int n = numFpts + numCpts;
 	int scale_row = -1;
 	int scale_col = 1;
-	int num_cols = numFpts;
+	int num_cols = numCpts;
+	int num_rows = numFpts;
 
 	// Get splitting of points in one vector
 	std::vector<int> splitting = get_ind_split(&Cpts[0],numCpts,n);
 
 	// Get sparse CSC column pointer for submatrix Acf
 	std::vector<int> colptr(num_cols+1,0);
-	get_col_ptr(&A_rowptr[0], &A_colinds[0], n, &splitting[0], &splitting[0], colptr, num_cols, scale_row, scale_col);
+	get_col_ptr(&A_rowptr[0], &A_colinds[0], n, &splitting[0], &splitting[0], &colptr[0], num_cols, scale_row, scale_col);
 
 	// Allocate row-ind and data arrays for sparse submatrix 
 	int nnz = colptr[num_cols];
 	std::vector<int> rowinds(nnz,0);
-	std::vector<int> data(nnz,0);
+	std::vector<double> data(nnz,0);
 
 	// Fill in sparse structure
 	get_csc_submatrix(&A_rowptr[0], &A_colinds[0], &A_data[0], n,
-					  &splitting[0], &splitting[0], colptr, rowinds,
-					  data, num_cols, scale_row, scale_col);
+					  &splitting[0], &splitting[0], &colptr[0], &rowinds[0],
+					  &data[0], num_cols, scale_row, scale_col);
 
 
 	std::cout << "spltting = \n\t";
@@ -177,16 +171,15 @@ int main(int argc, char *argv[])
 		std::cout << data[i] << ", ";
 	}
 	std::cout << "],dtype=int)" << std::endl;
+	std::cout << "test_return = csc_matrix((data0,rowinds,colptr))\n\n";
 
 
 
 }
 
 #if 0
-rows = [0,2,5,8,11,14,17,20,23,25]
-cols = [0,1,0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,7,8,7,8]
-rows = np.array(rows,dtype=int)
-cols = np.array(cols,dtype=int)
+rows = np.array([0,2,5,8,11,14,17,20,23,25],dtype=int)
+cols = np.array([0,1,0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,7,8,7,8],dtype=int)
 data = np.arange(0,len(cols),dtype=int)
 test = csr_matrix((data,cols,rows))
 #endif
