@@ -5,7 +5,7 @@ __docformat__ = "restructuredtext en"
 import pdb
 
 import time
-import numpy
+import numpy as np
 import scipy
 import scipy.sparse
 import scipy.sparse.linalg as linalg
@@ -38,8 +38,8 @@ def A_norm(x, A):
     """
     Calculate A-norm of x
     """
-    x = numpy.ravel(x)
-    return numpy.sqrt(scipy.dot(x.conjugate(), A*x))
+    x = np.ravel(x)
+    return np.sqrt(scipy.dot(x.conjugate(), A*x))
 
 
 def my_rand(d1, d2, zero_crossings=True):
@@ -53,7 +53,7 @@ def my_rand(d1, d2, zero_crossings=True):
     x = scipy.rand(d1,d2)
     if zero_crossings:
         x = (x - 0.5)*2.0
-    # x = numpy.ones((d1,d2))
+    # x = np.ones((d1,d2))
 
     return x
 
@@ -84,7 +84,7 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
 
     # TODO : hstack is slow as shit
     if B2 is not None:
-        B = numpy.hstack((B1, B2.reshape(-1,1)))
+        B = np.hstack((B1, B2.reshape(-1,1)))
     else:
         B = B1
 
@@ -101,39 +101,43 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
 
     # Make sure eigenvectors are real. Eigenvalues must be already real.
     try:
-        V = numpy.real(V)
+        V = np.real(V)
     except:
         import pdb; pdb.set_trace()
 
     # Compute Ritz vectors and normalize them in energy. Also, mark vectors
     # that trivially satisfy the weak approximation property.
     V = scipy.dot(Q, V)
-    num_candidates = -1
     entire_const = weak_tol / approximate_spectral_radius(A)
     if verbose:
         print
         print tabs(level), "WAP const", entire_const
+
+    num_candidates = 0
     for j in range(V.shape[1]):
-        V[:,j] /= numpy.sqrt(E[j])
-        # verify energy norm is 1
-        # print tabs(level), "&&&&&&&&&&&&&&&&&&&&", scipy.dot(A*V[:,j],V[:,j])
         if verbose:
             print tabs(level), "Vector 1/e", j, 1./E[j], "ELIMINATED" if 1./E[j] <= entire_const else ""
+        
         if 1./E[j] <= entire_const:
             num_candidates = j
             break
+        else:
+            V[:,j] /= np.sqrt(E[j])
+            num_candidates += 1
+            # verify energy norm is 1
+            # print tabs(level), "&&&&&&&&&&&&&&&&&&&&", scipy.dot(A*V[:,j],V[:,j])
 
-    # TODO : make candidate counting cleaner in loop. move scaling after if 1/E_j
+    # Make sure at least one candidate is kept
     if num_candidates == 0:
+        V[:,0] /= np.sqrt(E[0])
         num_candidates = 1
-    if num_candidates == -1:
-        num_candidates = V.shape[1]
+
 
     if verbose:
         # print tabs(level), "Finished global ritz process, eliminated", B.shape[1]-num_candidates, "candidates", num_candidates, ". candidates remaining"
         print
 
-    return V[:, :num_candidates]
+    return V[:, 0:num_candidates]
 
 
 # TODO : this has to be moved to C
@@ -172,44 +176,52 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
 
     # row, col, and val arrays to store entries of T
     max_size = B.shape[1]*AggOp.getnnz()
-    row_i = numpy.empty(max_size)
-    col_i = numpy.empty(max_size)
-    val_i = numpy.empty(max_size)
+    row_i = np.empty(max_size)
+    col_i = np.empty(max_size)
+    val_i = np.empty(max_size)
     cur_col = 0
     index = 0
 
     # store how many basis functions we keep per aggregate
-    per_agg_count = numpy.zeros((B.shape[0], 1))
+    per_agg_count = np.zeros((B.shape[0], 1))
 
     # iterate over aggregates
     for i in range(AggOpCsc.shape[1]):
+
         agg = AggOpCsc[:,i] # get the current aggregate
         rows = agg.nonzero()[0] # non zero rows of aggregate
         Ba = B[rows] # restrict B to aggregate
 
-        BatBa = numpy.dot(Ba.transpose(), Ba) # Ba^T*Ba
+        BatBa = np.dot(Ba.transpose(), Ba) # Ba^T*Ba
 
-        [E, V] = numpy.linalg.eigh(BatBa) # Eigen decomp of Ba^T*Ba
+        [E, V] = np.linalg.eigh(BatBa) # Eigen decomp of Ba^T*Ba
         E = E[::-1] # eigenvalues are ascending, we want them descending
-        V = numpy.fliplr(V) # flip eigenvectors to match new order of eigenvalues
+        V = np.fliplr(V) # flip eigenvectors to match new order of eigenvalues
 
+        local_const = agg.getnnz() * tol / AggOp.getnnz()
         num_targets = 0
+
         # iterate over eigenvectors
         for j in range(V.shape[1]):
-            local_const = agg.getnnz() * tol / AggOp.getnnz()
             if E[j] <= local_const: # local candidate trivially satisfies local WAP
                 break
-            num_targets += 1
+            else:
+                V[:,j] /= np.sqrt(E[j])
+                num_targets += 1
 
-        # having at least 1 target greatly improves performance
-        num_targets = min(max(1, num_targets), V.shape[1])
+ 
+        # Keeping at least one target greatly improves convergence
+        if num_targets == 0:
+            V[:,0] /= np.sqrt(E[0])
+            num_targets = 1
+
         per_agg_count[rows] = num_targets
 
-        basis = numpy.dot(Ba, V[:,0:num_targets]) # new local basis is Ba * V
+        # Define new local basis, Ba * V
+        basis = np.dot(Ba, V[:,0:num_targets]) 
 
-        # add 0 to num_targets-1 columns of U to T
+        # Add columns 0,...,(num_targets-1) of U to T
         for j in range(num_targets):
-            basis[:,j] /= numpy.sqrt(E[j])
             for x in range(rows.size):
                 row_i[index] = rows[x]
                 col_i[index] = cur_col
@@ -220,6 +232,9 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
     if verbose:
         print tabs(level), "Eliminated %d local vectors (%.2f%% remaining nonzeros)" % \
                 (B.shape[1]*AggOp.shape[1] - cur_col, index*100.0/max_size)
+    
+    # TODO : don't need this, can construct CSR w/ hanging zeros. 
+    #        Will move this function to C anyways.
     row_i.resize(index)
     col_i.resize(index)
     val_i.resize(index)
@@ -325,11 +340,11 @@ def asa_solver(A, B=None,
     --------
     >>> from pyamg.gallery import stencil_grid
     >>> from pyamg.aggregation import go_to_room_sa_solver
-    >>> import numpy
+    >>> import np
     >>> A=stencil_grid([[-1,-1,-1],[-1,8.0,-1],[-1,-1,-1]], (31,31),format='csr')
     >>> sa = tl_sa_solver(A,num_targets=1)
     >>> residuals=[]
-    >>> x=sa.solve(b=numpy.ones((A.shape[0],)),x0=numpy.ones((A.shape[0],)),residuals=residuals)
+    >>> x=sa.solve(b=np.ones((A.shape[0],)),x0=np.ones((A.shape[0],)),residuals=residuals)
     """
 
     if not (isspmatrix_csr(A) or isspmatrix_bsr(A)):
@@ -549,7 +564,7 @@ def try_solve(A, levels,
         # Construct coarse grid
         Ac = (current.R * current.A * current.P).tocsr()
 
-        # Symmetrically scale diagonal of A
+        # Symmetrically scale diagonal of Ac, modify R,P accodingly
         #
         #   - TODO : Make sure this is doing the right thing
         #     TODO : Do we need to do this? 

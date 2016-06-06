@@ -1,4 +1,3 @@
-
 def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
 
     # Orthonormalize the vectors.
@@ -11,76 +10,61 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
 
     # Compute Ritz vectors and normalize in energy. Mark vectors
     # that trivially satisfy weak approximation property.
-    V = Q*V
-    num_candidates = -1
     entire_const = weak_tol / approximate_spectral_radius(A)
-
+    V = Q*V
+    num_candidates = 0
     for j in num_eigenvectors:
-        V_j /= sqrt(E_j)
         if 1./E[j] <= entire_const:
-            num_candidates = j
             break
+        else:
+            V_j /= sqrt(E_j)
+            num_candidates += 1
 
+    # Make sure at least one candidate is kept
+    if num_candidates == 0:
+        V[:,0] /= np.sqrt(E[0])
+        num_candidates = 1
 
-    return V[:, :num_candidates]
+    return V[:, 0:num_candidates]
 
 
 def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
 
-    # scale the weak tolerence by the radius of A
+    # Scale weak tolerence by spectral radius of A
+    #   -> This is expensive, do we need approximate spectral radius?
     tol = weak_tol / approximate_spectral_radius(A)
 
-    # row, col, and val arrays to store entries of T
-    max_size = B.shape[1]*AggOp.getnnz()
-    row_i = numpy.empty(max_size)
-    col_i = numpy.empty(max_size)
-    val_i = numpy.empty(max_size)
-    cur_col = 0
-    index = 0
+    # Iterate over aggregates
+    for each aggregate:
 
-    # iterate over aggregates
-    for i in 0,...,num_aggregates:
-        agg = AggOpCsc[:,i] # get the current aggregate
-        rows = agg.nonzero()[0] # non zero rows of aggregate
-        Ba = B[rows] # restrict B to aggregate
+        Ba = B[aggregate]   # restrict B to aggregate
+        BatBa = Ba.T * Ba   # Form Ba^T*Ba
+        [E, V] = eig(BatBa) # Eigen decomposition of Ba^T*Ba in descending order
 
-        BatBa = numpy.dot(Ba.transpose(), Ba) # Ba^T*Ba
-
-        [E, V] = numpy.linalg.eigh(BatBa) # Eigen decomp of Ba^T*Ba
-        E = E[::-1] # eigenvalues are ascending, we want them descending
-        V = numpy.fliplr(V) # flip eigenvectors to match new order of eigenvalues
-
+        # Iterate over eigenvectors
+        local_const = tol * size(aggregate) / n
         num_targets = 0
-        # iterate over eigenvectors
-        for j in range(V.shape[1]):
-            local_const = agg.getnnz() * tol / AggOp.getnnz()
+        for j in num_eigenvectors:
             if E[j] <= local_const: # local candidate trivially satisfies local WAP
                 break
-            num_targets += 1
+            else:
+                V_j /= sqrt(E_j)
+                num_targets += 1
 
-        # having at least 1 target greatly improves performance
-        num_targets = min(max(1, num_targets), V.shape[1])
-        per_agg_count[rows] = num_targets
+        # Keeping at least one target greatly improves convergence
+        if num_targets == 0:
+            V[:,0] /= np.sqrt(E[0])
+            num_targets = 1
 
-        basis = numpy.dot(Ba, V[:,0:num_targets]) # new local basis is Ba * V
+        # Define new local basis, Ba * V
+        basis = Ba * V[:,0:num_targets] 
 
-        # add 0 to num_targets-1 columns of U to T
-        for j in range(num_targets):
-            basis[:,j] /= numpy.sqrt(E[j])
-            for x in range(rows.size):
-                row_i[index] = rows[x]
-                col_i[index] = cur_col
-                val_i[index] = basis[x,j]
-                index += 1
-            cur_col += 1
+        # Add columns 0,...,(num_targets-1) of U to T
+        # over current aggregate
+        for j in 0,...,(num_targets-1):
+            add basis[:,j] as column to T
 
-
-    row_i.resize(index)
-    col_i.resize(index)
-    val_i.resize(index)
-
-    # build csr matrix
-    return csr_matrix((val_i, (row_i, col_i)), (B.shape[0], cur_col)), per_agg_count
+    return T
 
 
 def asa_solver(A, B=None,
@@ -103,49 +87,20 @@ def asa_solver(A, B=None,
                num_targets=1,
                max_level_iterations=10,
                weak_tol=15.,
-               local_weak_tol=15.,
-               diagonal_dominance=False,
-               coarse_solver='pinv2',
-               verbose=False,
-               keep=True,
-               **kwargs):
-
-
+               local_weak_tol=15.):
 
     # Call recursive adaptive process starting from finest grid, level 0,
     # to construct adaptive hierarchy. 
-    return try_solve(level=0)
+    return try_solve(A=A, level=0, args)
 
 
+def try_solve(A, level, args):
 
-def try_solve(A, levels,
-              level,
-              symmetry,
-              strength,
-              aggregate,
-              smooth,
-              presmoother,
-              postsmoother,
-              improve_candidates,
-              max_coarse,
-              max_levels,
-              conv_tol,
-              max_targets,
-              min_targets,
-              num_targets,
-              max_level_iterations,
-              weak_tol,
-              local_weak_tol,
-              coarse_solver,
-              diagonal_dominance,
-              verbose,
-              keep,
-              hierarchy=None):
-
-    
     # Delete previously constructed lower levels
+    del hierarchy[level, ..., end]
 
     # Add new level to hierarchy, matrix A, size n
+    hierarchy.append(A)
 
     # Test if we are at the coarsest level
     if n <= max_coarse or level >= max_levels - 1:
@@ -155,10 +110,10 @@ def try_solve(A, levels,
     B = rand(n,num_targets)
     B = relax(B)
 
-    # Get SOC matrix C
+    # Get SOC matrix, C
     C = strength(A)
 
-    # Compute aggregation matrix AggOp
+    # Compute aggregation matrix, AggOp
     AggOp = aggregate(C)
 
     # Loop over adaptive hierarchy until CF is sufficient or
@@ -168,8 +123,8 @@ def try_solve(A, levels,
     target = None
     while (conv_factor > conv_tol) and (level_iter < max_level_iterations):
 
-        # Add new target. Orthogonalize using global /
-        # local Ritz and reconstruct T.  
+        # Add new target. Orthogonalize using global / local
+        # Ritz and construct tentative prolongator, T.  
         B = global_ritz_process(B1=B, B2=target)
         T = local_ritz_process()
 
@@ -180,18 +135,23 @@ def try_solve(A, levels,
         # Construct coarse grid
         Ac = (R * A * P).tocsr()
 
-        # Symmetrically scale diagonal of A
-        [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
-        P = (P * diags(Dinv, offsets=0)).tocsr()
+        # Symmetrically scale diagonal of Ac, modify R, P accodingly
+        sqrt_Dinv, Ac = symmetric_rescaling(Ac)
+        P = P * sqrt_Dinv
         R = P.H
 
+        # Save operators to this level of hierarchy
+        hierarchy[level].P = P
+        hierarchy[level].R = R
+
         # Recursively call try_solve() with coarse grid operator
-        try_solve(level+1, Ac)
+        try_solve(Ac, level+1, args)
         level_iter += 1
 
-        # Test convergence of new hierarchy on random vector
+        # Test convergence of new hierarchy on random vector,
+        # the result of which will be used as the next target
         target = rand(n,1)
-        target = solve(b=0, x0=target, cycle=cycle, maxiter=iters)
+        target = solve(b=0, x0=target, maxiter=iters)
         conv_factor = residuals[end] / residuals[end-1]
 
     return
