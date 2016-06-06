@@ -26,7 +26,8 @@ std::vector<int> get_ind_split(int Cpts[], const int & numCpts, const int &n)
 }
 
 
-void get_col_ptr(const int A_rowptr[],
+// Returns maximum number of nonzeros in any column
+int get_col_ptr(const int A_rowptr[],
 				 const int A_colinds[],
 				 const int &n,
 				 const int is_col_ind[],
@@ -36,6 +37,7 @@ void get_col_ptr(const int A_rowptr[],
 				 const int &row_scale = 1,
 				 const int &col_scale = 1 )
 {
+
 	// Count instances of each col-ind submatrix
 	for (int i=0; i<n; i++) {
 		
@@ -56,9 +58,14 @@ void get_col_ptr(const int A_rowptr[],
 	}
 
 	// Cumulative sum column pointer to correspond with data entries
+	int max_nnz = 0;
 	for (int i=1; i<=(num_cols); i++) {
+		if (colptr[i] > max_nnz) {
+			max_nnz = colptr[i];
+		}
 		colptr[i] += colptr[i-1];
 	}
+	return max_nnz;
 }
 
 

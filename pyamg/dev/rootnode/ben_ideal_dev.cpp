@@ -8,7 +8,6 @@
 //	- TODO : Make sure C-points are sorted
 //		- Probably don't need to, can use splitting array to determine each point!
 //		- Might need it in line 46, temp2 = ...
-//	- TODO : Will sparsity pattern row-ptr be sorted?
 
 template<class I, class T, class F>
 void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
@@ -30,7 +29,9 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 	// Get sparse CSC column pointer for submatrix Acc. Final two arguments
 	// positive to select (positive indexed) C-points for rows and columns.
 	std::vector<I> Acc_colptr(Cpts_size+1,0);
-	get_col_ptr(A_rowptr, A_colinds, n, &splitting[0], &splitting[0], &Acc_colptr[0], Cpts_size, 1, 1);
+	get_col_ptr(A_rowptr, A_colinds, n, &splitting[0],
+				&splitting[0], &Acc_colptr[0],
+				Cpts_size, 1, 1);
 
 	// Allocate row-ind and data arrays for sparse submatrix 
 	I nnz = Acc_colptr[Cpts_size];
@@ -57,7 +58,9 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 	// Get sparse CSC column pointer for submatrix Afc. Final two arguments
 	// select F-points for rows (negative) and C-points for columns (positive).
 	std::vector<I> Afc_colptr(Cpts_size+1,0);
-	get_col_ptr(A_rowptr, A_colinds, n, &splitting[0], &splitting[0], &Afc_colptr[0], Cpts_size, -1, 1);
+	int max_rows = get_col_ptr(A_rowptr, A_colinds, n, &splitting[0],
+							   &splitting[0], &Afc_colptr[0],
+							   Cpts_size, -1, 1);
 
 	// Allocate row-ind and data arrays for sparse submatrix 
 	I nnz = Afc_colptr[Cpts_size];
@@ -69,17 +72,33 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 					  &splitting[0], &Afc_colptr[0], &Afc_rowinds[0],
 					  &Afc_data[0], Cpts_size, 1, -1);
 
+	// Get maximum number of columns selected in sparsity pattern for any row.
+	int max_cols = 0;
+	for (int i=1; i<S_rowptr_size; i++) {
+		int temp = S_rowptr[i]-S_rowptr[i-1]
+		if (max_cols < temp) {
+			max_cols = temp;
+		} 
+	}
+
+	// Preallocate storage for submatrices used in minimization process
+	// Generally much larger than necessary, but may be needed in certain
+	// cases. 
+	int max_size = max_cols * (max_rows * max_cols); 
+	vector<I> vec_inds(max_size, 0);
+	vector<T> submatrix(max_size, 0);
+
 	// Form P row-by-row
 	I data_ind = 0; 
 	I numCpts = 0;
-	for (I row_P=0; i<n; i++) {
+	for (I row_P=0; row_P<n; row_P++) {
 
 		// Check if row is a C-point (>0 in splitting vector).
 		// If so, add identity to P. Recall, enumeration of C-points
 		// in splitting is one-indexed. 
-		if (splitting[i] > 0) {
+		if (splitting[row_P] > 0) {
 			P_rowptr[row_P+1] = P_rowptr[row_P] + 1;
-			P_colinds[data_ind] = splitting[i]-1;
+			P_colinds[data_ind] = splitting[row_P]-1;
 			P_data[data_ind] = 1.0;
 			data_ind += 1;
 			numCpts +=1 ;
@@ -89,21 +108,67 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 		// minimization and multiply by A_{cc} to get row of P. 
 		else {
 
-			vector<I> vec_inds;
-			vector<T> vec_data;
-			I vec_length;
+	        // Find row indices for all nonzero elements in submatrix
+			int f_row = row_P - numCpts;
+	        std::set<int> row_inds;
+
+			// Store nonzero row indices of any column for a given
+			// sparsity pattern (row of S)
+			for (int j=S_rowptr[f_row]; j<S_rowptr[f_row+1]; j++) {
+				int temp_col = S_colinds[j];
+				for (int i=Afc_colptr[temp_col]; i<Afc_colptr[temp_col+1]; i++) {
+					row_inds.insert(Afc_rowinds[i]);
+				}
+			}
+			int submat_m = row_inds.size();
+			int submat_n = S_rowptr[f_row+1] - S_rowptr[f_row];
+			int submat_size = submat_m * submat_n;
+
+			// Fill in column major data array for submatrix
+			int submat_ind = 0;
+			for (int j=S_rowptr[f_row]; j<S_rowptr[f_row+1]; j++) {
+
+				int temp_col = S_colinds[j];
+				int temp_ind = Afc_colptr[temp_col];
+
+				int num_nnz = Afc_colptr[temp_ind+1] - Afc_colptr[temp_ind];
+
+	            for (auto it=row_inds.begin(); it!=row_inds.end(); ++it) {
+
+	            	if ( (*it) == Afc_rowinds[temp_ind] ) {
+
+	            		submatrix[submat_ind] = 
+
+	            		if
+	            		next_nnz
+	            	}
+	            	else {
+
+	            	}
+
+
+	            }
+			
+			}
+
 
 			// TODO :
 			//	- Select submatrix for given row from Afc
-			//		+ How will I pass in the sparsity pattern?
-			//	- Call CLS routine
-			// 	- See if possible to preallocate vec_data and vec_inds for all rows
+			//		+ Submatrix needs to be stored in column major...
+			// 	- Get rhs, constraint matrix, constraint rhs, s
 
 
 
 
 
 
+			std::vector<double> w_l = constrained_least_squares(submatrix,
+																sub_rhs,
+																std::vector<double> &Ct,
+																std::vector<double> &d,
+																submat_m,
+																submat_n,
+																const int &s)
 
 			// Let w_l := \hat{w}_lA_{cc}.
 			// TODO : Make sure w_l has ordered indices?
