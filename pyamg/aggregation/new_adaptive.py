@@ -82,6 +82,7 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
     the weak approximation property are deleted.
     """
 
+    # TODO : hstack is slow as shit
     if B2 is not None:
         B = numpy.hstack((B1, B2.reshape(-1,1)))
     else:
@@ -122,6 +123,7 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
             num_candidates = j
             break
 
+    # TODO : make candidate counting cleaner in loop. move scaling after if 1/E_j
     if num_candidates == 0:
         num_candidates = 1
     if num_candidates == -1:
@@ -134,6 +136,7 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
     return V[:, :num_candidates]
 
 
+# TODO : this has to be moved to C
 def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
     """
     Helper function that finds the minimal local basis of a set of candidates.
@@ -164,6 +167,7 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
     # scale the weak tolerence by the radius of A
     tol = weak_tol / approximate_spectral_radius(A)
 
+    # TODO : Can we avoid reallocation? 
     AggOpCsc = AggOp.tocsc() # we are slicing columns, this makes it much faster
 
     # row, col, and val arrays to store entries of T
@@ -245,6 +249,7 @@ def asa_solver(A, B=None,
                max_level_iterations=10,
                weak_tol=15.,
                local_weak_tol=15.,
+               diagonal_dominance=False,
                coarse_solver='pinv2',
                verbose=False,
                keep=True,
@@ -351,34 +356,6 @@ def asa_solver(A, B=None,
         levelize_smooth_or_improve_candidates(improve_candidates, max_levels)
     smooth = levelize_smooth_or_improve_candidates(smooth, max_levels)
 
-        # TODO - Need to warn against no improve candidates / not let it happen
-
-    strength_fn = []
-    aggregate_fn = []
-    improve_fn = []
-    smooth_fn = []
-    for i in range(0,max_levels):
-
-
-
-
-        # Prolongation smoothing
-        fn, kwargs = unpack_arg(smooth[i])
-        if fn == 'jacobi':
-            P = jacobi_prolongation_smoother(A, T, C, B, **kwargs)
-        elif fn == 'richardson':
-            P = richardson_prolongation_smoother(A, T, **kwargs)
-        elif fn == 'energy':
-            P = energy_prolongation_smoother(A, T, C, B, None, (False, {}),
-                                             **kwargs)
-        elif fn is None:
-            P = T
-        else:
-            raise ValueError('unrecognized prolongation smoother method %s' %
-                             str(fn))
-
-    # TODO : Need to turn these levelized arguments into function handles
-    #       --> Is this really the best way to do this?? 
 
 
     # TODO : Should maybe levelize adaptive parameters level_iterations, max targets, etc.?
@@ -426,6 +403,7 @@ def try_solve(A, levels,
               weak_tol,
               local_weak_tol,
               coarse_solver,
+              diagonal_dominance,
               verbose,
               keep,
               hierarchy=None):
@@ -458,10 +436,9 @@ def try_solve(A, levels,
     current = levels[level]
     current.A = A
     n = A.shape[0]
-    b = np.zeros((n, 1), dtype=A.dtype)
 
     # Test if we are at the coarsest level
-    if current.A.shape[0] <= max_coarse or level >= max_levels - 1:
+    if n <= max_coarse or level >= max_levels - 1:
         if hierarchy == None:
             hierarchy = multilevel_solver(levels, coarse_solver=coarse_solver
             change_smoothers(hierarchy, presmoother, postsmoother)
@@ -473,49 +450,72 @@ def try_solve(A, levels,
     current.history['conv'] = []
     current.history['agg'] = []
 
-    # Get references to function handles and argument dictionaries
-    fn_strength = strength[level][0]
-    strength_args = strength[level][1]
-    fn_aggregate = aggregate[level][0]
-    aggregate_args = aggregate[level][1]
-    fn_smooth = smooth[level][0]
-    smooth_args = smooth[level][1]
-    fn_improve = improve_candidates[level][0]
-    improve_args = improve_candidates[level][1]
-
     # Generate initial targets as random vectors relaxed on AB = 0.
-    #
-    #   - TODO : Address the possibility that relaxation is sufficient.
-    #     ==> What do we do then? Set relaxation as coarse solver?
-    #   - TODO : Compute CF - A-norm before and after?
-    #    --> This is expensive - is it worth it? A few WU every time
-    #        just for a relaxation CF.
-    factors = []
-    targets = my_rand(n,num_targets, zero_crossings=False)
+    current.B = my_rand(n,num_targets, zero_crossings=False)
+    fn, kwargs = unpack_arg(improve_candidates[level])
+    if fn is None:
+        raise ValueError("Must improve candidates for aSA.")
+
+    b = np.zeros((A.shape[0], 1), dtype=A.dtype)
     for i in range(0,num_targets):
-        targets[:,i:(i+1)] = relaxation_as_linear_operator( \
-                                (fn_improve, improve_args), \
-                                current.A, b) * targets[:,i:(i+1)]
+        current.B[:,i:(i+1)] = relaxation_as_linear_operator( \
+                                (fn, kwargs), \
+                                current.A, b) * current.B[:,i:(i+1)]
 
-        conv_factor = 
-        factors.append(conv_factor)
+    # Compute the strength-of-connection matrix C, where larger
+    # C[i,j] denote stronger couplings between i and j.
+    fn, kwargs = unpack_arg(strength[level])
+    if fn == 'symmetric':
+        C = symmetric_strength_of_connection(current.A, **kwargs)
+    elif fn == 'classical':
+        C = classical_strength_of_connection(current.A, **kwargs)
+    elif fn == 'distance':
+        C = distance_strength_of_connection(current.A, **kwargs)
+    elif (fn == 'ode') or (fn == 'evolution'):
+        if 'B' in kwargs:
+            C = evolution_strength_of_connection(current.A, **kwargs)
+        else:
+            C = evolution_strength_of_connection(current.A, current.B, **kwargs)
+    elif fn == 'energy_based':
+        C = energy_based_strength_of_connection(current.A, **kwargs)
+    elif fn == 'predefined':
+        C = kwargs['C'].tocsr()
+    elif fn == 'algebraic_distance':
+        C = algebraic_distance(current.A, **kwargs)
+    elif fn == 'affinity':
+        C = affinity_distance(current.A, **kwargs)
+    elif fn is None:
+        C = currrent.A.tocsr()
+    else:
+        raise ValueError('unrecognized strength of connection method: %s' %
+                         str(fn))
 
-    # Get SOC matrix and aggregation
-    #
-    #   - TODO : May need to add **kwargs to all of these functions
-    #            so that they can take in arbitrary arguments (i.e. 
-    #            ones not applicable to them, specifically B in SOC).
-    #
-    C = fn_strength(current.A, B=current.B, **strength_args)
-    current.AggOp = fn_aggregate(C, **aggregate_args)[0]
+     # Avoid coarsening diagonally dominant rows
+    flag, kwargs = unpack_arg(diagonal_dominance)
+    if flag:
+        C = eliminate_diag_dom_nodes(current.A, C, **kwargs)
 
+    # Compute the aggregation matrix AggOp (i.e., the nodal coarsening of A).
+    # AggOp is a boolean matrix, where the sparsity pattern for the k-th column
+    # denotes the fine-grid nodes agglomerated into k-th coarse-grid node.
+    fn, kwargs = unpack_arg(aggregate[level])
+    if fn == 'standard':
+        current.AggOp = standard_aggregation(C, **kwargs)[0]
+    elif fn == 'naive':
+        current.AggOp = naive_aggregation(C, **kwargs)[0]
+    elif fn == 'lloyd':
+        current.AggOp = lloyd_aggregation(C, **kwargs)[0]
+    elif fn == 'predefined':
+        current.AggOp = kwargs['AggOp'].tocsr()
+    else:
+        raise ValueError('unrecognized aggregation method %s' % str(fn))
 
-    # Loop over adaptove hierarchy until CF is sufficient or we have 
+    # Loop over adaptive hierarchy until CF is sufficient or we have 
     # reached maximum iterations
     level_iter = 0
     conv_factor = 1
     target = None
-    while conv_factor > conv_tol and level_iter < max_level_iterations:
+    while (conv_factor > conv_tol) and (level_iter < max_level_iterations):
 
         # Add new target. Orthogonalize using global / local Ritz and reconstruct T.  
         current.B = global_ritz_process(A=current.A, B1=current.B, B2=target,
@@ -528,7 +528,22 @@ def try_solve(A, levels,
         current.history['agg'].append(per_agg)
 
         # Smooth tentative prolongator
-        current.P = fn_smooth(current.A, current.T, **smooth_args)
+        fn, kwargs = unpack_arg(smooth[level])
+        if fn == 'jacobi':
+            current.P = jacobi_prolongation_smoother(current.A, current.T, C,
+                                                     current.B, **kwargs)
+        elif fn == 'richardson':
+            current.P = richardson_prolongation_smoother(current.A, current.T
+                                                         **kwargs)
+        elif fn == 'energy':
+            current.P = energy_prolongation_smoother(current.A, current.T, C,
+                                                     current.B, None, (False, {}),
+                                                     **kwargs)
+        elif fn is None:
+            current.P = T
+        else:
+            raise ValueError('unrecognized prolongation smoother method %s' %
+                             str(fn))
         current.R = current.P.H
 
         # Construct coarse grid
@@ -537,6 +552,7 @@ def try_solve(A, levels,
         # Symmetrically scale diagonal of A
         #
         #   - TODO : Make sure this is doing the right thing
+        #     TODO : Do we need to do this? 
         #
         [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
         current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
@@ -558,15 +574,17 @@ def try_solve(A, levels,
         level_iter += 1
 
         # Test convergence of new hierarchy
-        # TODO: be smarter about approximating the convergence factor?
+        #   TODO: be smarter about approximating the convergence factor?
         residuals = []
-        x = my_rand(n, 1, current.A.dtype)
-        x = hierarchy.solve(b, x0=x, cycle=cycle, maxiter=iters, tol=1e-16, residuals=residuals)
+        target = my_rand(n, 1, current.A.dtype)
+        target = hierarchy.solve(b, x0=target, cycle=cycle, maxiter=iters,
+                                 tol=1e-16, residuals=residuals)
         conv_factor = residuals[-1] / residuals[-2]
         current.history['conv'].append(conv_factor)
 
         if verbose:
-            print tabs(level), "Iter = ",level_iter,", num targets = ",num_targets,", CF = ", conv_factor
+            print tabs(level), "Iter = ",level_iter,", num targets = ",
+                  num_targets,", CF = ", conv_factor
 
     return
 
