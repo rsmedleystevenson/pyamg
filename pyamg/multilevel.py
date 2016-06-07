@@ -271,7 +271,7 @@ class multilevel_solver:
     def psolve(self, b):
         return self.solve(b, maxiter=1)
 
-    def aspreconditioner(self, cycle='V'):
+    def aspreconditioner(self, cycle='V', init_level=0):
         """Create a preconditioner using this multigrid cycle
 
         Parameters
@@ -305,16 +305,17 @@ class multilevel_solver:
         """
         from scipy.sparse.linalg import LinearOperator
 
-        shape = self.levels[0].A.shape
-        dtype = self.levels[0].A.dtype
+        shape = self.levels[init_level].A.shape
+        dtype = self.levels[init_level].A.dtype
 
         def matvec(b):
-            return self.solve(b, maxiter=1, cycle=cycle, tol=1e-12)
+            return self.solve(b, maxiter=1, cycle=cycle, tol=1e-12, init_level=init_level)
 
         return LinearOperator(shape, matvec, dtype=dtype)
 
     def solve(self, b, x0=None, tol=1e-5, maxiter=100, cycle='V', accel=None,
-              callback=None, residuals=None, return_residuals=False):
+              callback=None, residuals=None, return_residuals=False,
+              init_level=0):
         """Main solution call to execute multigrid cycling.
 
         Parameters
@@ -340,6 +341,10 @@ class multilevel_solver:
             called as callback(xk) where xk is the k-th iterate vector.
         residuals : list
             List to contain residual norms at each iteration.
+        init_level : integer
+            Adds the option to solve a system starting from a lower level
+            in the hierarchy. Used for adaptive methods to improve lower
+            levels of the hierarchy without modifying higher levels. 
 
         Returns
         -------
@@ -400,8 +405,8 @@ class multilevel_solver:
                 else:
                     accel = getattr(isolve, accel)
 
-            A = self.levels[0].A
-            M = self.aspreconditioner(cycle=cycle)
+            A = self.levels[init_level].A
+            M = self.aspreconditioner(cycle=cycle, init_level=init_level)
 
             try:  # try PyAMG style interface which has a residuals parameter
                 return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,
@@ -445,12 +450,12 @@ class multilevel_solver:
         # Clearly, this logic doesn't handle the case of real A and complex b
         from scipy.sparse.sputils import upcast
         from pyamg.util.utils import to_type
-        tp = upcast(b.dtype, x.dtype, self.levels[0].A.dtype)
+        tp = upcast(b.dtype, x.dtype, self.levels[init_level].A.dtype)
         [b, x] = to_type(tp, [b, x])
         b = np.ravel(b)
         x = np.ravel(x)
 
-        A = self.levels[0].A
+        A = self.levels[init_level].A
 
         residuals.append(residual_norm(A, x, b))
 
@@ -461,7 +466,7 @@ class multilevel_solver:
                 # hierarchy has only 1 level
                 x = self.coarse_solver(A, b)
             else:
-                self.__solve(0, x, b, cycle)
+                self.__solve(init_level, x, b, cycle)
 
             residuals.append(residual_norm(A, x, b))
 

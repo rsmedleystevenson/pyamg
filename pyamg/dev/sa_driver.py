@@ -8,6 +8,7 @@
 
 
 import pdb, cProfile, pstats
+from copy import deepcopy
 
 import time
 import math
@@ -22,6 +23,9 @@ from pyamg.aggregation.rootnode import rootnode_solver
 from pyamg.aggregation.aggregation import smoothed_aggregation_solver
 from pyamg.util.utils import symmetric_rescaling
 from pyamg.gallery import poisson
+
+from pyamg.relaxation.smoothing import change_smoothers
+from pyamg.multilevel import multilevel_solver, coarse_grid_solver
 # from Jacob_complexity import *
 
 
@@ -212,6 +216,7 @@ else:
 
 
 sa_residuals = []
+sa_residuals2 = []
 
 
 # ----------------------------------------------------------------------------- #

@@ -23,7 +23,7 @@ from pyamg.util.utils import levelize_strength_or_aggregation, levelize_smooth_o
                             symmetric_rescaling, relaxation_as_linear_operator
 from .aggregate import standard_aggregation, naive_aggregation,\
     lloyd_aggregation
-from .smooth import jacobi_prolongation_smoother, energy_prolongation_smoother, \
+from pyamg.aggregation.smooth import jacobi_prolongation_smoother, energy_prolongation_smoother, \
                    richardson_prolongation_smoother
 from .tentative import fit_candidates
 
@@ -244,7 +244,7 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
 
 
 def asa_solver(A, B=None,
-               symmetry='hermitian'
+               symmetry='hermitian',
                strength='symmetric',
                aggregate='standard',
                smooth='jacobi',
@@ -252,12 +252,10 @@ def asa_solver(A, B=None,
                             {'sweep': 'symmetric'}),
                postsmoother=('block_gauss_seidel',
                              {'sweep': 'symmetric'}),
-               improve_candidates=('block_gauss_seidel',
-                                    {'sweep': 'symmetric',
-                                     'iterations': 4}),
+               improvement_iters=10,
                max_coarse=20,
                max_levels=20,
-               conv_tol=0.5,
+               target_convergence=0.5,
                max_targets=100,
                min_targets=0,
                num_targets=1,
@@ -266,6 +264,7 @@ def asa_solver(A, B=None,
                local_weak_tol=15.,
                diagonal_dominance=False,
                coarse_solver='pinv2',
+               cycle='V',
                verbose=False,
                keep=True,
                **kwargs):
@@ -290,7 +289,7 @@ def asa_solver(A, B=None,
     targets_iters : {integer}
         Number of smoothing passes/multigrid cycles used in the adaptive
         process to obtain targets.
-    conv_tol : {float}
+    target_convergence : {float}
         Convergence factor tolerance before the adaptive solver is accepted.
     weak_tol : {float}
         Weak approximation tolerance for dropping targets globally.
@@ -367,8 +366,6 @@ def asa_solver(A, B=None,
         levelize_strength_or_aggregation(strength, max_levels, max_coarse)
     max_levels, max_coarse, aggregate =\
         levelize_strength_or_aggregation(aggregate, max_levels, max_coarse)
-    improve_candidates =\
-        levelize_smooth_or_improve_candidates(improve_candidates, max_levels)
     smooth = levelize_smooth_or_improve_candidates(smooth, max_levels)
 
 
@@ -382,23 +379,34 @@ def asa_solver(A, B=None,
 
     # Call recursive adaptive process starting from finest grid, level 0,
     # to construct adaptive hierarchy. 
+    hierarchy = multilevel_solver(levels=levels)
     try_solve(A=A, levels=levels, level=0, symmetry=symmetry,
               strength=strength, aggregate=aggregate, smooth=smooth,
               presmoother=presmoother, postsmoother=postsmoother,
-              improve_candidates=improve_candidates,
+              improvement_iters=improvement_iters,
               max_coarse=max_coarse, max_levels=max_levels,
-              conv_tol=conv_tol, max_targets=max_targets,
+              target_convergence=target_convergence, max_targets=max_targets,
               min_targets=min_targets, num_targets=num_targets, 
               max_level_iterations=max_level_iterations,
               weak_tol=weak_tol, local_weak_tol=local_weak_tol,
-              coarse_solver=coarse_solver, verbose=verbose,
-              keep=keep)
+              diagonal_dominance=diagonal_dominance,
+              coarse_solver=coarse_solver, cycle=cycle,
+              verbose=verbose, keep=keep, hierarchy=hierarchy)
 
-    return multilevel_solver(levels, coarse_solver=coarse_solver)
+    return hierarchy
+
+
+# Weird bugs 
+#   - Richardson P smoothing calls some pow funciton in scipy??
 
 
 
-# TODO: this needs to be refactored into a much cleaner recursive code
+
+# Important :
+#   ==> Levels are passed by reference, but a coarse grid solver
+#       is constructed on the first pass, and invalid if we 
+#       remove a level. Thus we can pop() off the levels list,
+#       and it modifies the hierarchy created from the list. 
 def try_solve(A, levels,
               level,
               symmetry,
@@ -407,41 +415,35 @@ def try_solve(A, levels,
               smooth,
               presmoother,
               postsmoother,
-              improve_candidates,
+              improvement_iters,
               max_coarse,
               max_levels,
-              conv_tol,
+              target_convergence,
               max_targets,
               min_targets,
               num_targets,
               max_level_iterations,
               weak_tol,
               local_weak_tol,
-              coarse_solver,
               diagonal_dominance,
+              coarse_solver,
+              cycle,
               verbose,
               keep,
-              hierarchy=None):
+              hierarchy):
 
     """
     Needs some love.
     """
 
-    cycle = "V"
-
-    # ------------------------------------------------------------- #
-    # TODO : if we define  a multilevel solver based on levels, and 
-    #        then change levels, will this change multilevel solver,
-    #        or is a copy constructed?
-    # ------------------------------------------------------------- #
+    def unpack_arg(v):
+        if isinstance(v, tuple):
+            return v[0], v[1]
+        else:
+            return v, {}
 
     # If coarserer hierarchies have already been defined, remove
     # because they will be reconstructed
-    #
-    #   - Eventually may want to keep one multilevel solver
-    #     object and add / remove hierarchies instead of keeping
-    #     a list and reconstructing the hierarchy when necessary...
-    #
     while len(levels) > level:
         levels.pop()
 
@@ -452,11 +454,12 @@ def try_solve(A, levels,
     current.A = A
     n = A.shape[0]
 
-    # Test if we are at the coarsest level
+    # Test if we are at the coarsest level. If no hierarchy has been
+    # constructed in adaptive process yet, construct hierarchy. If 
+    # a hierarchy exists, update coarse grid solver. 
     if n <= max_coarse or level >= max_levels - 1:
-        if hierarchy == None:
-            hierarchy = multilevel_solver(levels, coarse_solver=coarse_solver
-            change_smoothers(hierarchy, presmoother, postsmoother)
+        hierarchy.coarse_solver = coarse_grid_solver(coarse_solver)
+        change_smoothers(hierarchy, presmoother, postsmoother)
         return
 
     # initialize history
@@ -467,7 +470,8 @@ def try_solve(A, levels,
 
     # Generate initial targets as random vectors relaxed on AB = 0.
     current.B = my_rand(n,num_targets, zero_crossings=False)
-    fn, kwargs = unpack_arg(improve_candidates[level])
+    fn, kwargs = unpack_arg(presmoother)
+    kwargs['iterations'] = improvement_iters
     if fn is None:
         raise ValueError("Must improve candidates for aSA.")
 
@@ -530,14 +534,14 @@ def try_solve(A, levels,
     level_iter = 0
     conv_factor = 1
     target = None
-    while (conv_factor > conv_tol) and (level_iter < max_level_iterations):
+    while (conv_factor > target_convergence) and (level_iter < max_level_iterations):
 
         # Add new target. Orthogonalize using global / local Ritz and reconstruct T.  
-        current.B = global_ritz_process(A=current.A, B1=current.B, B2=target,
-                                        weak_tol=weak_tol, level=level,
+        current.B = global_ritz_process(A=current.A, B1=current.B, B2=target, \
+                                        weak_tol=weak_tol, level=level, \
                                         verbose=verbose)
-        current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp,
-                                                B=current.B, weak_tol=local_weak_tol,
+        current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp, \
+                                                B=current.B, weak_tol=local_weak_tol, \
                                                 level=level, verbose=verbose)
         current.history['B'].append(current.B)
         current.history['agg'].append(per_agg)
@@ -545,20 +549,21 @@ def try_solve(A, levels,
         # Smooth tentative prolongator
         fn, kwargs = unpack_arg(smooth[level])
         if fn == 'jacobi':
-            current.P = jacobi_prolongation_smoother(current.A, current.T, C,
+            current.P = jacobi_prolongation_smoother(current.A, current.T, C, \
                                                      current.B, **kwargs)
         elif fn == 'richardson':
-            current.P = richardson_prolongation_smoother(current.A, current.T
+            current.P = richardson_prolongation_smoother(current.A, current.T \
                                                          **kwargs)
         elif fn == 'energy':
-            current.P = energy_prolongation_smoother(current.A, current.T, C,
-                                                     current.B, None, (False, {}),
+            current.P = energy_prolongation_smoother(current.A, current.T, C, \
+                                                     current.B, None, (False, {}), \
                                                      **kwargs)
         elif fn is None:
             current.P = T
         else:
             raise ValueError('unrecognized prolongation smoother method %s' %
                              str(fn))
+        
         current.R = current.P.H
 
         # Construct coarse grid
@@ -577,28 +582,35 @@ def try_solve(A, levels,
         try_solve(A=Ac, levels=levels, level=(level+1), symmetry=symmetry,
                   strength=strength, aggregate=aggregate, smooth=smooth,
                   presmoother=presmoother, postsmoother=postsmoother,
-                  improve_candidates=improve_candidates,
+                  improvement_iters=improvement_iters,
                   max_coarse=max_coarse, max_levels=max_levels,
-                  conv_tol=conv_tol, max_targets=max_targets,
+                  target_convergence=target_convergence, max_targets=max_targets,
                   min_targets=min_targets, num_targets=num_targets, 
                   max_level_iterations=max_level_iterations,
                   weak_tol=weak_tol, local_weak_tol=local_weak_tol,
-                  coarse_solver=coarse_solver, verbose=verbose,
-                  keep=keep)
+                  diagonal_dominance=diagonal_dominance,
+                  coarse_solver=coarse_solver, cycle=cycle,
+                  verbose=verbose, keep=keep, hierarchy=hierarchy)
 
         level_iter += 1
 
         # Test convergence of new hierarchy
+        #
         #   TODO: be smarter about approximating the convergence factor?
+        #         Tristan thinks some kind of linear fit to CFs could
+        #         provide a better estimate of CF.
+        #
         residuals = []
         target = my_rand(n, 1, current.A.dtype)
-        target = hierarchy.solve(b, x0=target, cycle=cycle, maxiter=iters,
-                                 tol=1e-16, residuals=residuals)
+        target = hierarchy.solve(b, x0=target, cycle=cycle, \
+                                 maxiter=improvement_iters, \
+                                 tol=1e-16, residuals=residuals,
+                                 init_level=level, accel=None)
         conv_factor = residuals[-1] / residuals[-2]
         current.history['conv'].append(conv_factor)
 
         if verbose:
-            print tabs(level), "Iter = ",level_iter,", num targets = ",
+            print tabs(level), "Iter = ",level_iter,", num targets = ",\
                   num_targets,", CF = ", conv_factor
 
     return
