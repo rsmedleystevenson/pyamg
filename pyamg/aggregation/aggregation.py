@@ -376,8 +376,6 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
 
     # Smooth the tentative prolongator, so that it's accuracy is greatly
     # improved for algebraically smooth error.
-    # pdb.set_trace()
-
     fn, kwargs = unpack_arg(smooth[len(levels)-1])
     if fn == 'jacobi':
         P = jacobi_prolongation_smoother(A, T, C, B, **kwargs)

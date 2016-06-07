@@ -46,8 +46,13 @@ def Satisfy_Constraints(U, B, BtBinv):
 
     """
 
-    RowsPerBlock = U.blocksize[0]
-    ColsPerBlock = U.blocksize[1]
+    if sparse.isspmatrix_bsr(U):
+        RowsPerBlock = U.blocksize[0]
+        ColsPerBlock = U.blocksize[1]
+    else:
+        RowsPerBlock = 1
+        ColsPerBlock = 1
+ 
     num_block_rows = int(U.shape[0]/RowsPerBlock)
 
     UB = np.ravel(U*B)
@@ -187,7 +192,10 @@ def jacobi_prolongation_smoother(S, T, C, B, omega=4.0/3.0, degree=1,
         # apply satisfy constraints so that U*B = 0
         P = T
         for i in range(degree):
-            U = (D_inv_S*P).tobsr(blocksize=P.blocksize)
+            if sparse.isspmatrix_bsr(P):
+                U = (D_inv_S*P).tobsr(blocksize=P.blocksize)
+            else:
+                U = D_inv_S*P
 
             # Enforce U*B = 0 (1) Construct array of inv(Bi'Bi), where Bi is B
             # restricted to row i's sparsity pattern in Sparsity Pattern. This

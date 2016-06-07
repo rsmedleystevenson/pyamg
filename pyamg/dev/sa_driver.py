@@ -44,7 +44,7 @@ is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
-accel = None
+accel = 'cg'
 keep = False
 
 # Strength of connection 
@@ -111,8 +111,8 @@ aggregation = ('standard')
 #			~ local - local row-wise weight, avoids under-damping 
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
-# interp_smooth = ('jacobi', {'omega': 4.0/3.0 } )
-interp_smooth = ('richardson', {'omega': 3.0/2.0} )
+interp_smooth = ('jacobi', {'omega': 4.0/3.0 } )
+# interp_smooth = ('richardson', {'omega': 3.0/2.0} )
  
 # interp_smooth2 = interp_smooth1
 
@@ -173,9 +173,9 @@ improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 4})]
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 200
+N 			= 500
 epsilon 	= 1.0				# 'Strength' of aniostropy (only for 2d)
-theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
+theta 		= 4.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
 sa_residuals = []
@@ -216,7 +216,6 @@ else:
 
 
 sa_residuals = []
-sa_residuals2 = []
 
 
 # ----------------------------------------------------------------------------- #
@@ -232,15 +231,15 @@ ml_sa = smoothed_aggregation_solver(A, B=None, symmetry='symmetric', strength=st
 									max_coarse=max_coarse, presmoother=relaxation, postsmoother=relaxation,
 						 			improve_candidates=improve_candidates, keep=keep )
 
-sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals)
+sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, accel='gmres')
 end = time.clock()
 
-setup = setup_complexity(sa=ml_sa, strength=strength_connection, smooth=interp_smooth,
-						improve_candidates=improve_candidates, aggregate=aggregation,
-						presmoother=relaxation, postsmoother=relaxation, keep=keep,
-						max_levels=max_levels, max_coarse=max_coarse, coarse_solver=coarse_solver,
-						symmetry='symmetric')
-cycle = cycle_complexity(solver=ml_sa, presmoothing=relaxation, postsmoothing=relaxation, cycle='V')
+# setup = setup_complexity(sa=ml_sa, strength=strength_connection, smooth=interp_smooth,
+# 						improve_candidates=improve_candidates, aggregate=aggregation,
+# 						presmoother=relaxation, postsmoother=relaxation, keep=keep,
+# 						max_levels=max_levels, max_coarse=max_coarse, coarse_solver=coarse_solver,
+# 						symmetry='symmetric')
+cycle = ml_sa.cycle_complexity()
 
 nii_time = end-start
 sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
@@ -248,11 +247,17 @@ for i in range(0,len(sa_residuals)-1):
 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
 CF = np.mean(sa_conv_factors[1:])
-print "SA - ", nii_time, " seconds"
-print " CF - ",CF
-print " Setup complexity - ",setup
-print " Cycle complexity - ",cycle
+print "Poisson - ",N," x ",N
+print "\tSA - ", nii_time, " seconds"
+print "\tCF - ",CF
+# print " Setup complexity - ",setup
+print "\tCycle complexity - ",cycle
 # print " Effectve CF - ", CF**(1.0/cycle)
+print "\n"
 
+sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
+for i in range(0,len(sa_residuals)-1):
+	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
+print sa_conv_factors
 

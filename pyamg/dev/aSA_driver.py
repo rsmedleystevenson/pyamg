@@ -80,9 +80,9 @@ aggregate = ('standard')
 #		+ omega (4/3)- weighted Jacobi w/ weight omega
 #		+ degree (1)- number of Jacobi iterations 
 #		+ filter (F)- True / False, filter smoothing matrix S w/ nonzero 
-#		  indices of SOC matrix. Can greatly control complexity? (appears to slow convergence)
+#		  indices of SOC matrix. Can greatly control complexity? 
 #		+ weighting (diagonal)- construction of diagonal preconditioning
-#			~ local - local row-wise weight, avoids under-damping (appears to slow convergence)
+#			~ local - local row-wise weight, avoids under-damping
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
 # 	- energy
@@ -97,9 +97,15 @@ aggregate = ('standard')
 #			~ local - local row-wise weight, avoids under-damping 
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
-# interp_smooth = ('jacobi', {'omega': 2.0/3.0, 'filter': True} )
-interp_smooth = ('jacobi', {'omega': 3.0/3.0 , 'degree' : 1} )
+interp_smooth = ('jacobi', {'omega' : 4.0/3.0,
+							'degree' : 1,
+							'filter' : False,
+							'weighting' : 'diagonal'} )
 # interp_smooth = ('richardson', {'omega': 3.0/2.0, 'degree': 1} )
+# interp_smooth = ('energy', {'krylov' : 'cg',
+# 							'degree' : 1,
+# 							'maxiter' : 3,
+# 							'weighting' : 'local'} )
 
 
 # Relaxation
@@ -140,7 +146,7 @@ interp_smooth = ('jacobi', {'omega': 3.0/3.0 , 'degree' : 1} )
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
 # relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
-relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
+relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 
@@ -158,7 +164,6 @@ local_weak_tol 		 = 15.0			# new aSA
 min_targets			 = 1
 max_targets			 = 4
 max_level_iterations = 5
-coarse_size			 = 100
 improvement_iters 	 = 10	# number of times a target bad guy is improved
 
 
@@ -181,8 +186,8 @@ bad_guy 	= None
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 750
-epsilon 	= 0.0 			# 'Strength' of aniostropy (only for 2d)
+N 			= 500
+epsilon 	= 1.0 			# 'Strength' of aniostropy (only for 2d)
 theta 		= 4.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
@@ -227,7 +232,7 @@ else:
 # -------------------
 
 start = time.clock()
-ml_sa = smoothed_aggregation_solver(A, B=bad_guy, strength=strength, aggregate=aggregate,
+ml_sa = smoothed_aggregation_solver(A, B=None, symmetry='symmetric', strength=strength, aggregate=aggregate,
 						 			smooth=interp_smooth, max_levels=max_levels, max_coarse=max_coarse,
 						 			presmoother=relaxation, postsmoother=relaxation,
 						 			improve_candidates=improve_candidates, coarse_solver=coarse_solver,
@@ -279,27 +284,27 @@ print sa_conv_factors
 # --------------
 
 start = time.clock()
-ml_new_asa = asa_solver(A, B=bad_guy,
-								strength=strength,
-								aggregate=aggregate,
-								smooth=interp_smooth,
-								presmoother=relaxation,
-								postsmoother=relaxation,
-								improvement_iters=improvement_iters,
-								max_coarse=max_coarse,
-								max_levels=max_levels,
-								target_convergence=target_convergence,
-								max_targets=max_targets,
-								min_targets=min_targets,
-								num_targets=num_targets,
-								max_level_iterations=max_level_iterations,
-								weak_tol=weak_tol,
-								local_weak_tol=local_weak_tol,
-								diagonal_dominance=diagonal_dominance,
-								coarse_solver=coarse_solver,
-								cycle=cycle,
-								verbose=True,
-								keep=keep)
+ml_new_asa = asa_solver(A, B=None,
+						strength=strength,
+						aggregate=aggregate,
+						smooth=interp_smooth,
+						presmoother=relaxation,
+						postsmoother=relaxation,
+						improvement_iters=improvement_iters,
+						max_coarse=max_coarse,
+						max_levels=max_levels,
+						target_convergence=target_convergence,
+						max_targets=max_targets,
+						min_targets=min_targets,
+						num_targets=num_targets,
+						max_level_iterations=max_level_iterations,
+						weak_tol=weak_tol,
+						local_weak_tol=local_weak_tol,
+						diagonal_dominance=diagonal_dominance,
+						coarse_solver=coarse_solver,
+						cycle=cycle,
+						verbose=True,
+						keep=keep)
 
 pdb.set_trace()
 

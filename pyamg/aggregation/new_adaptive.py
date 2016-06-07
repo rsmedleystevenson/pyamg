@@ -396,11 +396,17 @@ def asa_solver(A, B=None,
     return hierarchy
 
 
-# Weird bugs 
+# Weird bugs / Notes
 #   - Richardson P smoothing calls some pow funciton in scipy??
-
-
-
+#   - Filtering does not decrease complexity, omproves CF slightly?
+#   - ^Same with local weighting
+#   - No filter, local weighting seems best for TAD / SAD
+#   - Restricting bad guy to coarse grid caused notable increase in performance
+#   - Don't think we need to symmetrically scale diagonal each iteration.
+#     Lot of WUs, initial tests didn't suggest it improved convergene or
+#     complexity enough to be worth the effort.
+#   - Seems to like energy smoothing. Low degree, e.g. 1 still increases
+#     complexity, but improves CF even more. 
 
 # Important :
 #   ==> Levels are passed by reference, but a coarse grid solver
@@ -430,7 +436,8 @@ def try_solve(A, levels,
               cycle,
               verbose,
               keep,
-              hierarchy):
+              hierarchy,
+              B = None):
 
     """
     Needs some love.
@@ -469,7 +476,11 @@ def try_solve(A, levels,
     current.history['agg'] = []
 
     # Generate initial targets as random vectors relaxed on AB = 0.
-    current.B = my_rand(n,num_targets, zero_crossings=False)
+    if B == None:
+        current.B = my_rand(n,num_targets, zero_crossings=False)
+    else:
+        current.B = B
+
     fn, kwargs = unpack_arg(presmoother)
     kwargs['iterations'] = improvement_iters
     if fn is None:
@@ -504,7 +515,7 @@ def try_solve(A, levels,
     elif fn == 'affinity':
         C = affinity_distance(current.A, **kwargs)
     elif fn is None:
-        C = currrent.A.tocsr()
+        C = current.A.tocsr()
     else:
         raise ValueError('unrecognized strength of connection method: %s' %
                          str(fn))
@@ -543,20 +554,24 @@ def try_solve(A, levels,
         current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp, \
                                                 B=current.B, weak_tol=local_weak_tol, \
                                                 level=level, verbose=verbose)
+        # Coarse grid B
+        Bc = current.T.T * current.B
         current.history['B'].append(current.B)
         current.history['agg'].append(per_agg)
+
+        # pdb.set_trace()
 
         # Smooth tentative prolongator
         fn, kwargs = unpack_arg(smooth[level])
         if fn == 'jacobi':
             current.P = jacobi_prolongation_smoother(current.A, current.T, C, \
-                                                     current.B, **kwargs)
+                                                     Bc, **kwargs)
         elif fn == 'richardson':
             current.P = richardson_prolongation_smoother(current.A, current.T \
                                                          **kwargs)
         elif fn == 'energy':
             current.P = energy_prolongation_smoother(current.A, current.T, C, \
-                                                     current.B, None, (False, {}), \
+                                                     Bc, None, (False, {}), \
                                                      **kwargs)
         elif fn is None:
             current.P = T
@@ -574,9 +589,9 @@ def try_solve(A, levels,
         #   - TODO : Make sure this is doing the right thing
         #     TODO : Do we need to do this? 
         #
-        [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
-        current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
-        current.R = current.P.H
+        # [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
+        # current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
+        # current.R = current.P.H
 
         # Recursively call try_solve() with coarse grid operator
         try_solve(A=Ac, levels=levels, level=(level+1), symmetry=symmetry,
@@ -590,7 +605,7 @@ def try_solve(A, levels,
                   weak_tol=weak_tol, local_weak_tol=local_weak_tol,
                   diagonal_dominance=diagonal_dominance,
                   coarse_solver=coarse_solver, cycle=cycle,
-                  verbose=verbose, keep=keep, hierarchy=hierarchy)
+                  verbose=verbose, keep=keep, hierarchy=hierarchy, B=Bc)
 
         level_iter += 1
 
