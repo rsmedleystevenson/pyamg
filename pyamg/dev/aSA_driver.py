@@ -84,14 +84,14 @@ aggregate = ('standard')
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
 interp_smooth = ('jacobi', {'omega' : 4.0/3.0,
-							'degree' : 2,
-							'filter' : False,
-							'weighting' : 'local'} )
-# interp_smooth = ('richardson', {'omega': 3.0/2.0, 'degree': 1} )
-interp_smooth = ('energy', {'krylov' : 'cg',
 							'degree' : 1,
-							'maxiter' : 3,
-							'weighting' : 'local'} )
+							'filter' : False,
+							'weighting' : 'diagonal'} )
+# interp_smooth = ('richardson', {'omega': 3.0/2.0, 'degree': 1} )
+# interp_smooth = ('energy', {'krylov' : 'cg',
+# 							'degree' : 1,
+# 							'maxiter' : 3,
+# 							'weighting' : 'local'} )
 
 
 # Relaxation
@@ -154,7 +154,7 @@ improvement_iters 	 = 10	# number of times a target bad guy is improved
 num_targets 		= 1		# number of near null space candidated to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
-improve_candidates = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': improvement_iters})
+improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
 # improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
 # improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
 
@@ -168,8 +168,8 @@ is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
-accel = 'gmres'
-cycle = 'V'
+accel = None
+cycle = 'F'
 keep = False
 
 # ----------------------------------------------------------------------------- #
@@ -182,8 +182,8 @@ rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
 N 			= 750
-epsilon 	= 0.0 			# 'Strength' of aniostropy (only for 2d)
-theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
+epsilon 	= 1.0 			# 'Strength' of aniostropy (only for 2d)
+theta 		= 4.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
 sa_residuals = []
@@ -238,7 +238,7 @@ sa_sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, cycle=cycle, accel=acce
 end = time.clock()
 sa_time = end-start
 sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
-for i in range(0,len(sa_residuals)-1):
+for i in range(1,len(sa_residuals)-1):
 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
 print "Smoothed aggregation - ", sa_time, " seconds"

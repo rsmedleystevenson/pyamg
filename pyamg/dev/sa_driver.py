@@ -35,18 +35,6 @@ from scipy.sparse import csr_matrix
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
-# General multilevel parameters
-# -----------------------------
-max_levels 		   = 20			# Max levels in hierarchy
-max_coarse 		   = 100 		# Max points allowed on coarse grid
-tol 			   = 1e-8		# Residual convergence tolerance
-is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
-keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
-diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
-coarse_solver = 'pinv'
-accel = 'cg'
-keep = False
-
 # Strength of connection 
 # ----------------------
 #	- symmetric, strong connection if |A[i,j]| >= theta * sqrt( |A[i,i]| * |A[j,j]| )
@@ -111,7 +99,10 @@ aggregation = ('standard')
 #			~ local - local row-wise weight, avoids under-damping 
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
-interp_smooth = ('jacobi', {'omega': 4.0/3.0 } )
+interp_smooth = ('jacobi', {'degree' : 1,
+							'omega': 4.0/3.0,
+							'filter' : False,
+							'weighting' : 'local' } )
 # interp_smooth = ('richardson', {'omega': 3.0/2.0} )
  
 # interp_smooth2 = interp_smooth1
@@ -175,7 +166,7 @@ zero_rhs 	= True
 problem_dim = 2
 N 			= 500
 epsilon 	= 1.0				# 'Strength' of aniostropy (only for 2d)
-theta 		= 4.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
+theta 		= 0.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
 sa_residuals = []
@@ -218,6 +209,19 @@ else:
 sa_residuals = []
 
 
+# General multilevel parameters
+# -----------------------------
+max_levels 		   = 20			# Max levels in hierarchy
+max_coarse 		   = 100 		# Max points allowed on coarse grid
+tol 			   = 1e-8		# Residual convergence tolerance
+is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
+keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
+diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
+coarse_solver = 'pinv'
+accel = None
+cycle = 'V'
+keep = False
+
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
@@ -231,7 +235,7 @@ ml_sa = smoothed_aggregation_solver(A, B=None, symmetry='symmetric', strength=st
 									max_coarse=max_coarse, presmoother=relaxation, postsmoother=relaxation,
 						 			improve_candidates=improve_candidates, keep=keep )
 
-sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, accel='gmres')
+sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, accel=accel, cycle=cycle)
 end = time.clock()
 
 # setup = setup_complexity(sa=ml_sa, strength=strength_connection, smooth=interp_smooth,
@@ -256,7 +260,7 @@ print "\tCycle complexity - ",cycle
 print "\n"
 
 sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
-for i in range(0,len(sa_residuals)-1):
+for i in range(1,len(sa_residuals)-1):
 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
 print sa_conv_factors
