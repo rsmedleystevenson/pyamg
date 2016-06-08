@@ -181,7 +181,7 @@ keep = False
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 1250
+N 			= 750
 epsilon 	= 0.0 			# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 

@@ -606,9 +606,10 @@ def try_solve(A, levels,
         #   - TODO : Make sure this is doing the right thing
         #     TODO : Do we need to do this? 
         #
-        [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
+        [D, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
         current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
         current.R = current.P.H
+        Bc[:,0] = D * Bc[:,0]
 
         # Recursively call try_solve() with coarse grid operator
         try_solve(A=Ac, levels=levels, level=(level+1), symmetry=symmetry,
