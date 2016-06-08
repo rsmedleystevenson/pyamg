@@ -31,7 +31,7 @@ from .tentative import fit_candidates
 __all__ = ['A_norm', 'my_rand', 'tl_sa_solver', 'asa_solver']
 
 def tabs(level):
-    return '\t'*level
+    return '  '*level
 
 
 def A_norm(x, A):
@@ -109,14 +109,13 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
     # that trivially satisfy the weak approximation property.
     V = scipy.dot(Q, V)
     entire_const = weak_tol / approximate_spectral_radius(A)
-    if verbose:
-        print
-        print tabs(level), "WAP const", entire_const
+    # if verbose:
+        # print tabs(level), "WAP const", entire_const
 
     num_candidates = 0
     for j in range(V.shape[1]):
-        if verbose:
-            print tabs(level), "Vector 1/e", j, 1./E[j], "ELIMINATED" if 1./E[j] <= entire_const else ""
+        # if verbose:
+            # print tabs(level), "Vector 1/e", j, 1./E[j], "ELIMINATED" if 1./E[j] <= entire_const else ""
         
         if 1./E[j] <= entire_const:
             num_candidates = j
@@ -133,9 +132,8 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
         num_candidates = 1
 
 
-    if verbose:
+    # if verbose:
         # print tabs(level), "Finished global ritz process, eliminated", B.shape[1]-num_candidates, "candidates", num_candidates, ". candidates remaining"
-        print
 
     return V[:, 0:num_candidates]
 
@@ -185,6 +183,9 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
     # store how many basis functions we keep per aggregate
     per_agg_count = np.zeros((B.shape[0], 1))
 
+    list_targets = []
+    agg_sizes = []
+
     # iterate over aggregates
     for i in range(AggOpCsc.shape[1]):
 
@@ -208,9 +209,8 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
             else:
                 V[:,j] /= np.sqrt(E[j])
                 num_targets += 1
-
  
-        # Keeping at least one target greatly improves convergence
+        # Make sure at least one candidate is kept
         if num_targets == 0:
             V[:,0] /= np.sqrt(E[0])
             num_targets = 1
@@ -219,6 +219,10 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
 
         # Define new local basis, Ba * V
         basis = np.dot(Ba, V[:,0:num_targets]) 
+        
+        # Diagnostics data
+        list_targets.append(num_targets)
+        agg_sizes.append(len(rows))
 
         # Add columns 0,...,(num_targets-1) of U to T
         for j in range(num_targets):
@@ -230,8 +234,13 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
             cur_col += 1
 
     if verbose:
-        print tabs(level), "Eliminated %d local vectors (%.2f%% remaining nonzeros)" % \
-                (B.shape[1]*AggOp.shape[1] - cur_col, index*100.0/max_size)
+        av_size = np.mean(agg_sizes)
+        av_num = np.mean(list_targets)
+
+        print tabs(level), "Av. agg size = ","%.2f"%av_size,", Av. # targets = ","%.2f"%av_num, \
+                ", Max = ",np.max(list_targets),", Min = ",np.min(list_targets)
+        # print tabs(level), "Eliminated %d local vectors (%.2f%% remaining nonzeros)" % \
+        #         (B.shape[1]*AggOp.shape[1] - cur_col, index*100.0/max_size)
     
     # TODO : don't need this, can construct CSR w/ hanging zeros. 
     #        Will move this function to C anyways.
@@ -282,11 +291,13 @@ def asa_solver(A, B=None,
         and relaxation are used to inform the initial target.
     max_targets : {integer}
         Maximum number of near-nullspace targets to generate
+        TODO : THIS IS NOT USED
     min_targets : {integer}
         Minimum number of near-nullspace targets to generate
+        TODO : THIS IS NOT USED
     num_targets : {integer}
         Number of initial targets to generate
-    targets_iters : {integer}
+    improvement_iters : {integer}
         Number of smoothing passes/multigrid cycles used in the adaptive
         process to obtain targets.
     target_convergence : {float}
@@ -407,6 +418,11 @@ def asa_solver(A, B=None,
 #     complexity enough to be worth the effort.
 #   - Seems to like energy smoothing. Low degree, e.g. 1 still increases
 #     complexity, but improves CF even more. 
+#   - For TAD, aSA seems to like energy smoothing w/ degree 1.
+#     E.g. for theta=3pi/16, n=1250, a modest increase in OC from 3 to 3.65
+#     with energy smoothing bumps CF from ~0.55 --> 0.35. Increasing 
+#     Jacobi degree to 2 was totally intractable moving OC to 6.9,
+#     with CF still ~0.55
 
 # Important :
 #   ==> Levels are passed by reference, but a coarse grid solver
@@ -554,7 +570,8 @@ def try_solve(A, levels,
         current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp, \
                                                 B=current.B, weak_tol=local_weak_tol, \
                                                 level=level, verbose=verbose)
-        # Coarse grid B
+        
+        # Restrict bad guy using tentative prolongator
         Bc = current.T.T * current.B
         current.history['B'].append(current.B)
         current.history['agg'].append(per_agg)
@@ -589,9 +606,9 @@ def try_solve(A, levels,
         #   - TODO : Make sure this is doing the right thing
         #     TODO : Do we need to do this? 
         #
-        # [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
-        # current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
-        # current.R = current.P.H
+        [dum, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
+        current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
+        current.R = current.P.H
 
         # Recursively call try_solve() with coarse grid operator
         try_solve(A=Ac, levels=levels, level=(level+1), symmetry=symmetry,
@@ -625,8 +642,7 @@ def try_solve(A, levels,
         current.history['conv'].append(conv_factor)
 
         if verbose:
-            print tabs(level), "Iter = ",level_iter,", num targets = ",\
-                  num_targets,", CF = ", conv_factor
+            print tabs(level), "Iter = ",level_iter,", CF = ", conv_factor
 
     return
 

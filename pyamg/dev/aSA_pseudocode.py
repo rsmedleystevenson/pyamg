@@ -1,4 +1,4 @@
-def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
+def global_ritz_process(A, B1, B2, weak_tol):
 
     # Orthonormalize the vectors.
     B = [B1, B2]
@@ -28,7 +28,7 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
     return V[:, 0:num_candidates]
 
 
-def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
+def local_ritz_process(A, B, AggOp, weak_tol):
 
     # Scale weak tolerence by spectral radius of A
     #   -> This is expensive, do we need approximate spectral radius?
@@ -51,7 +51,7 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
                 V_j /= sqrt(E_j)
                 num_targets += 1
 
-        # Keeping at least one target greatly improves convergence
+        # Make sure at least one candidate is kept
         if num_targets == 0:
             V[:,0] /= np.sqrt(E[0])
             num_targets = 1
@@ -76,12 +76,10 @@ def asa_solver(A, B=None,
                             {'sweep': 'symmetric'}),
                postsmoother=('block_gauss_seidel',
                              {'sweep': 'symmetric'}),
-               improve_candidates=('block_gauss_seidel',
-                                    {'sweep': 'symmetric',
-                                     'iterations': 4}),
+               improvement_iters=10,
                max_coarse=20,
                max_levels=20,
-               conv_tol=0.5,
+               target_convergence=0.5,
                max_targets=100,
                min_targets=0,
                num_targets=1,
@@ -91,10 +89,10 @@ def asa_solver(A, B=None,
 
     # Call recursive adaptive process starting from finest grid, level 0,
     # to construct adaptive hierarchy. 
-    return try_solve(A=A, level=0, args)
+    return try_solve(A=A, B=None, level=0, args)
 
 
-def try_solve(A, level, args):
+def try_solve(A, B, level, args):
 
     # Delete previously constructed lower levels
     del hierarchy[level, ..., end]
@@ -106,8 +104,11 @@ def try_solve(A, level, args):
     if n <= max_coarse or level >= max_levels - 1:
         return
 
-    # Generate initial targets as random vectors relaxed on AB = 0.
-    B = rand(n,num_targets)
+    # If no target provided, generate random initial targets
+    if B is None:
+        B = rand(n,num_targets)
+
+    # Relax targets on AB = 0
     B = relax(B)
 
     # Get SOC matrix, C
@@ -121,12 +122,16 @@ def try_solve(A, level, args):
     level_iter = 0
     conv_factor = 1
     target = None
-    while (conv_factor > conv_tol) and (level_iter < max_level_iterations):
+    while (conv_factor > target_convergence) and (level_iter < max_level_iterations):
 
         # Add new target. Orthogonalize using global / local
         # Ritz and construct tentative prolongator, T.  
-        B = global_ritz_process(B1=B, B2=target)
-        T = local_ritz_process()
+        B = global_ritz_process(A=A, B1=B, B2=target, weak_tol=weak_tol)
+        T = local_ritz_process(A=A, B=B, AggOp=AggOp, weak_tol=local_weak_tol)
+
+        # Restrict bad guy using tentative prolongator (done before
+        # smoothing so we can ensure P*Bc = B).
+        Bc = T.T * B
 
         # Smooth tentative prolongator
         P = smooth(T, A)
@@ -136,6 +141,8 @@ def try_solve(A, level, args):
         Ac = (R * A * P).tocsr()
 
         # Symmetrically scale diagonal of Ac, modify R, P accodingly
+        #   - Note, this is reasonably expensive to do a lot, while
+        #     only appearing to add marginal benefit.
         sqrt_Dinv, Ac = symmetric_rescaling(Ac)
         P = P * sqrt_Dinv
         R = P.H
@@ -145,7 +152,8 @@ def try_solve(A, level, args):
         hierarchy[level].R = R
 
         # Recursively call try_solve() with coarse grid operator
-        try_solve(Ac, level+1, args)
+        # and initial target vector
+        try_solve(A=Ac, B=Bc, level=level+1, args)
         level_iter += 1
 
         # Test convergence of new hierarchy on random vector,

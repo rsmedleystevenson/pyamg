@@ -22,20 +22,6 @@ from pyamg.util.utils import symmetric_rescaling
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
-# General multilevel parameters
-# -----------------------------
-max_levels 		   = 10 		# Max levels in hierarchy
-max_coarse 		   = 25 		# Max points allowed on coarse grid
-tol 			   = 1e-8		# Residual convergence tolerance
-is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
-keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
-diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
-coarse_solver = 'pinv'
-accel = 'cg'
-cycle = 'V'
-keep = False
-
-
 # Strength of connection 
 # ----------------------
 #	- symmetric, strong connection if |A[i,j]| >= theta * sqrt( |A[i,i]| * |A[j,j]| )
@@ -98,14 +84,14 @@ aggregate = ('standard')
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
 interp_smooth = ('jacobi', {'omega' : 4.0/3.0,
-							'degree' : 1,
+							'degree' : 2,
 							'filter' : False,
-							'weighting' : 'diagonal'} )
+							'weighting' : 'local'} )
 # interp_smooth = ('richardson', {'omega': 3.0/2.0, 'degree': 1} )
-# interp_smooth = ('energy', {'krylov' : 'cg',
-# 							'degree' : 1,
-# 							'maxiter' : 3,
-# 							'weighting' : 'local'} )
+interp_smooth = ('energy', {'krylov' : 'cg',
+							'degree' : 1,
+							'maxiter' : 3,
+							'weighting' : 'local'} )
 
 
 # Relaxation
@@ -146,7 +132,7 @@ interp_smooth = ('jacobi', {'omega' : 4.0/3.0,
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
 # relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
-relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 
@@ -154,7 +140,7 @@ relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.7 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.75 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
@@ -165,17 +151,26 @@ min_targets			 = 1
 max_targets			 = 4
 max_level_iterations = 5
 improvement_iters 	 = 10	# number of times a target bad guy is improved
-
-
 num_targets 		= 1		# number of near null space candidated to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
-improve_candidates = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 4})
+improve_candidates = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': improvement_iters})
 # improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
 # improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
 
-bad_guy 	= None
 
+# General multilevel parameters
+# -----------------------------
+max_levels 		   = 10 		# Max levels in hierarchy
+max_coarse 		   = 25 		# Max points allowed on coarse grid
+tol 			   = 1e-8		# Residual convergence tolerance
+is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
+keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
+diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
+coarse_solver = 'pinv'
+accel = 'gmres'
+cycle = 'V'
+keep = False
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -186,9 +181,9 @@ bad_guy 	= None
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 500
-epsilon 	= 1.0 			# 'Strength' of aniostropy (only for 2d)
-theta 		= 4.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
+N 			= 1250
+epsilon 	= 0.0 			# 'Strength' of aniostropy (only for 2d)
+theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
 sa_residuals = []
@@ -313,7 +308,7 @@ new_asa_sol = ml_new_asa.solve(b, x0, tol, residuals=new_asa_residuals, cycle=cy
 end = time.clock()
 new_asa_time = end-start
 new_asa_conv_factors = np.zeros((len(new_asa_residuals)-1,1))
-for i in range(0,len(new_asa_residuals)-1):
+for i in range(1,len(new_asa_residuals)-1):
 	new_asa_conv_factors[i] = new_asa_residuals[i]/new_asa_residuals[i-1]
 
 print "New  aSA - ", new_asa_time, " seconds"

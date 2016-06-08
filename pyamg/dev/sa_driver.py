@@ -243,7 +243,7 @@ cycle = ml_sa.cycle_complexity()
 
 nii_time = end-start
 sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
-for i in range(0,len(sa_residuals)-1):
+for i in range(1,len(sa_residuals)-1):
 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
 CF = np.mean(sa_conv_factors[1:])
