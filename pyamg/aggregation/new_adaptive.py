@@ -107,6 +107,7 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
 
     # Compute Ritz vectors and normalize them in energy. Also, mark vectors
     # that trivially satisfy the weak approximation property.
+    # TODO : Should this be spectral radius A^2??
     V = scipy.dot(Q, V)
     entire_const = weak_tol / approximate_spectral_radius(A)
     # if verbose:
@@ -423,6 +424,7 @@ def asa_solver(A, B=None,
 #     with energy smoothing bumps CF from ~0.55 --> 0.35. Increasing 
 #     Jacobi degree to 2 was totally intractable moving OC to 6.9,
 #     with CF still ~0.55
+# ==> Approximate spectral radii should probably be for A^2!
 
 # Important :
 #   ==> Levels are passed by reference, but a coarse grid solver
