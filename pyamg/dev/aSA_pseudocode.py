@@ -124,13 +124,17 @@ def try_solve(A, B, level, args):
     target = None
     while (conv_factor > target_convergence) and (level_iter < max_level_iterations):
 
+        # Steve thinks maybe we should smooth all targets here... 
+
         # Add new target. Orthogonalize using global / local
         # Ritz and construct tentative prolongator, T.  
         B = global_ritz_process(A=A, B1=B, B2=target, weak_tol=weak_tol)
         T = local_ritz_process(A=A, B=B, AggOp=AggOp, weak_tol=local_weak_tol)
 
         # Restrict bad guy using tentative prolongator (done before
-        # smoothing so we can ensure P*Bc = B).
+        # smoothing so we can ensure P*Bc = B). 
+        # - use T because want Bc preimage of B
+        #   -need orthogonal columns to ensure it is the preimage
         Bc = T.T * B
 
         # Smooth tentative prolongator
@@ -146,6 +150,7 @@ def try_solve(A, B, level, args):
         sqrt_Dinv, Ac = symmetric_rescaling(Ac)
         P = P * sqrt_Dinv
         R = P.H
+            # Maybe only need to do on finest grid - should check
 
         # Save operators to this level of hierarchy
         hierarchy[level].P = P
