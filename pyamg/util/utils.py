@@ -22,7 +22,7 @@ __all__ = ['blocksize', 'diag_sparse', 'profile_solver', 'to_type',
            'get_Cpt_params', 'compute_BtBinv', 'eliminate_diag_dom_nodes',
            'levelize_strength_or_aggregation',
            'levelize_smooth_or_improve_candidates', 'filter_matrix_columns',
-           'filter_matrix_rows', 'truncate_rows']
+           'filter_matrix_rows', 'truncate_rows', 'mat_mat_complexity']
 
 try:
     from scipy.sparse._sparsetools import csr_scale_rows, bsr_scale_rows
@@ -1126,7 +1126,7 @@ def Coord2RBM(numNodes, numPDEs, x, y, z):
     return rbm
 
 
-def relaxation_as_linear_operator(method, A, b):
+def relaxation_as_linear_operator(method, A, b, cost=[0]):
     """
     Create a linear operator that applies a relaxation method for the
     given right-hand-side
@@ -1178,7 +1178,7 @@ def relaxation_as_linear_operator(method, A, b):
     accepted_methods = ['gauss_seidel', 'block_gauss_seidel', 'sor',
                         'gauss_seidel_ne', 'gauss_seidel_nr', 'jacobi',
                         'block_jacobi', 'richardson', 'schwarz',
-                        'strength_based_schwarz']
+                        'strength_based_schwarz', 'jacobi_ne']
 
     b = np.array(b, dtype=A.dtype)
     fn, kwargs = unpack_arg(method)
@@ -1192,6 +1192,21 @@ def relaxation_as_linear_operator(method, A, b):
         setup_smoother = getattr(relaxation.smoothing, 'setup_' + fn)
     except NameError:
         raise NameError("invalid presmoother method: ", fn)
+
+    # Estimate cost in WUs for different relaxation methods 
+    dcost = 1
+    if fn.endswith(('nr', 'ne')):
+        dcost *= 2
+    if 'sweep' in kwargs:
+        if kwargs['sweep'] == 'symmetric':
+            dcost *= 2
+    if 'iterations' in kwargs:
+        dcost *= kwargs['iterations']
+    if 'degree' in kwargs:
+        dcost *= kwargs['degree']
+
+    cost[0] += dcost
+
     # Get relaxation routine that takes only (A, x, b) as parameters
     relax = setup_smoother(lvl, **kwargs)
 
@@ -2203,6 +2218,59 @@ def truncate_rows(A, nz_per_row):
         A = A.asformat(Aformat)
 
     return A
+
+
+def mat_mat_complexity(A, P, test_cols=10, incomplete=False):
+    """
+    Function to approximate the complexity of a sparse matrix
+    matrix multiplication, A*P. A sample of test_cols columns
+    in P, p_i, are randomly selected, and the complexity to compute 
+    A * p_i found as the number of nonzeros in A which overlap
+    with the sparsity of p_i. This is averaged over the set of
+    randomly selected columns.
+
+    Parameters
+    ----------
+    A : sparse matrix (preferably csr)
+        Left hand side of matrix multipliaction
+    P : sparse matrix (preferably csc)
+        Right hand side of matrix multiplication
+    test_cols : int : Default 10
+        Number of columns to sample for overlapping sparsity
+        patterns of A, P. More samples is more work, but 
+        more accurate. 
+    incomplete : bool : Default False
+        Complexity of incomplete matrix multiplication,
+        where A*P is only computed in the sparsity pattern
+        of P. Used particularly in energy minimization 
+        smoothing of prolongation operators. 
+
+    Returns
+    -------
+    Approximate number of FLOPs to compute A*P.
+
+    """
+
+    from random import randint
+    A0 = A.tocsr()
+    P0 = P.tocsc()
+
+    # Random set of test columns
+    test_cols = min(test_cols, P0.shape[1])
+    k = P0.shape[1]
+    cols = [randint(0,P0.shape[1]-1) for i in range(0,test_cols)]
+
+    work = 0.0
+    for c in cols:
+        inds = P0[:,c].indices
+        if incomplete:
+            work += A0[inds,:][:,inds].nnz
+        else:
+            work += A0[:,inds].nnz
+
+    work = work * P0.shape[1] / float(test_cols)
+
+    return work
 
 
 # from functools import partial, update_wrapper
