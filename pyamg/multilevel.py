@@ -7,8 +7,14 @@ from warnings import warn
 import scipy as sp
 import numpy as np
 
-
 __all__ = ['multilevel_solver', 'coarse_grid_solver']
+
+
+def unpack_arg(v):
+    if isinstance(v, tuple):
+        return v[0], v[1]
+    else:
+        return v, {}
 
 
 class multilevel_solver:
@@ -27,6 +33,10 @@ class multilevel_solver:
         Array of level objects that contain A, R, and P.
     coarse_solver : string
         String passed to coarse_grid_solver indicating the solve type
+    CC : {dict}
+        Dictionary storing cycle complexity with key as cycle type.
+    SC : float
+        Setup complexity for constructing solver.
 
     Methods
     -------
@@ -59,13 +69,23 @@ class multilevel_solver:
             Restriction matrix between levels (often R = P.T)
         P : csr_matrix
             Prolongation or Interpolation matrix.
+        smoothers : {dict}
+            Dictionary with keys 'presmoother' and 'postsmoother', giving
+            the relaxation schemes used on this level. Used to compute 
+            cycle complexity.
+        complexity : {dict}
+            Dictionary to store complexity for each step in setup process.
+        SC : float
+            Setup complexity on this level in WUs relative to fine grid. 
 
         Notes
         -----
         The functionality of this class is a struct
         """
         def __init__(self):
-            pass
+            self.smoothers = {}
+            self.complexity = {}
+            self.SC = None
 
     def __init__(self, levels, coarse_solver='pinv2'):
         """
@@ -76,7 +96,13 @@ class multilevel_solver:
         ----------
         levels : level array
             Array of level objects that contain A, R, and P.
-        coarse_solver: {string, callable, tuple}
+        solver_type : string
+            Type of hierarchy this is, options are
+            - 'sa'  => smoothed aggregation
+            - 'asa' => adaptive smoothed aggregation
+            - 'rn'  => root node
+            - 'amg' => ruge-stuben amg
+        coarse_solver : {string, callable, tuple}
             The solver method is either (1) a string such as 'splu' or 'pinv'
             of a callable object which receives only parameters (A, b) and
             returns an (approximate or exact) solution to the linear system Ax
@@ -94,10 +120,7 @@ class multilevel_solver:
                   pyamg.krylov (e.g. 'cg').  Methods in pyamg.krylov
                   take precedence.
                 + relaxation method, such as 'gauss_seidel' or 'jacobi',
-
-
-
-            - Dense methods:
+           - Dense methods:
                 + pinv     : pseudoinverse (QR)
                 + pinv2    : pseudoinverse (SVD)
                 + lu       : LU factorization
@@ -148,20 +171,24 @@ class multilevel_solver:
         """
 
         self.levels = levels
-
         self.coarse_solver = coarse_grid_solver(coarse_solver)
+        self.CC = {}
+        self.SC = None
 
         for level in levels[:-1]:
             if not hasattr(level, 'R'):
                 level.R = level.P.H
+
 
     def __repr__(self):
         """Prints basic statistics about the multigrid hierarchy.
         """
         output = 'multilevel_solver\n'
         output += 'Number of Levels:     %d\n' % len(self.levels)
+        output += 'Setup Complexity:     %6.3f\n' % self.setup_complexity()
         output += 'Operator Complexity: %6.3f\n' % self.operator_complexity()
         output += 'Grid Complexity:     %6.3f\n' % self.grid_complexity()
+        output += 'Cycle Complexity:    %6.3f\n' % self.cycle_complexity()
         output += 'Coarse Solver:        %s\n' % self.coarse_solver.name()
 
         total_nnz = sum([level.A.nnz for level in self.levels])
@@ -175,9 +202,61 @@ class multilevel_solver:
 
         return output
 
+
+    def setup_complexity(self, verbose=False):
+        """Setup complexity of this multigrid hierarchy.
+
+        Setup complexity is an approximate measure of the number of
+        floating point operations (FLOPs) required to construct the
+        multigrid hierarchy, relative to the cost of performing a
+        single matrix-vector multiply on the finest grid.
+
+        Parameters
+        ----------
+        verbose : bool
+            If True, prints setup cost of each step, e.g. strength,
+            aggregation, etc., in setup process on each level. 
+
+        Returns
+        -------
+        sc : float
+            Complexity of a constructing hierarchy in work units.
+            A 'work unit' is defined as the number of FLOPs required
+            to perform a matrix-vector multiply on the finest grid.
+
+        Notes
+        -----
+            - Once computed, SC is stored in self.SC.
+
+        """
+
+        n = float(self.levels[0].A.shape[0])
+
+        if self.SC is None: 
+            self.SC = 0.0
+            for lvl in self.levels:
+                if lvl.SC is None:
+                    lvl.SC = 0.0
+                    for cost in (lvl.complexity).itervalues():
+                        lvl.SC += cost * (lvl.A.shape[0] / n)
+
+                self.SC += lvl.SC
+
+        if verbose:
+            for i in range(0,len(self.levels)-1):
+                lvl = self.levels[i]
+                print "Level ",i," cost = ","%.3f"%lvl.SC, " WUs"
+                for method, cost in (lvl.complexity).iteritems(): 
+                    temp = cost*(lvl.A.shape[0] / n)
+                    if method == "RAP":
+                        print "\t",method,"\t\t= ","%.3f"%temp,"WUs"
+                    else:
+                        print "\t",method,"\t= ","%.3f"%temp,"WUs"
+
+        return self.SC
+
     def cycle_complexity(self, cycle='V'):
-        """Cycle complexity of this multigrid hierarchy for V(1,1), W(1,1),
-           AMLI(1,1) and F(1,1) cycles when simple relaxation methods are used.
+        """Cycle complexity of this multigrid hierarchy.
 
         Cycle complexity is an approximate measure of the number of
         floating point operations (FLOPs) required to perform a single
@@ -191,51 +270,128 @@ class multilevel_solver:
         Returns
         -------
         cc : float
-            Defined as F_sum / F_0, where
-            F_sum is the total number of nonzeros in the matrix on all
-            levels encountered during a cycle and F_0 is the number of
-            nonzeros in the matrix on the finest level.
+            Complexity of a single multigrid iteration in work units.
+            A 'work unit' is defined as the number of FLOPs required
+            to perform a matrix-vector multiply on the finest grid.
 
         Notes
         -----
-        This is only a rough estimate of the true cycle complexity. The
-        estimate assumes that the cost of pre and post-smoothing are
-        (each) equal to the number of nonzeros in the matrix on that level.
-        This assumption holds for smoothers like Jacobi and Gauss-Seidel.
-        However, the true cycle complexity of cycle using more expensive
-        methods, like block Gauss-Seidel will be underestimated.
-
-        Additionally, if the cycle used in practice isn't a (1,1)-cycle,
-        then this cost estimate will be off.
+        Once computed, CC is stored in dictionary self.CC, with a key
+        given by the cycle type.
 
         """
+
+        # Return if already stored
         cycle = str(cycle).upper()
+        if cycle in self.CC:
+            return self.CC[cycle]
 
-        nnz = [level.A.nnz for level in self.levels]
+        # Get nonzeros per level and nonzeros per level relative to finest
+        nnz = [float(level.A.nnz) for level in self.levels]
+        rel_nnz_A = [level.A.nnz/nnz[0] for level in self.levels]
+        rel_nnz_P = [level.P.nnz/nnz[0] for level in self.levels[0:-1]]
+        rel_nnz_R = [level.R.nnz/nnz[0] for level in self.levels[0:-1]]
 
+        # Determine cost per nnz for smoothing on each level
+        smoother_cost = []
+        for i in range(0,len(self.levels)-1):
+            lvl = self.levels[i]
+            presmoother = lvl.smoothers['presmoother']
+            postsmoother = lvl.smoothers['postsmoother']
+
+            # Presmoother
+            pre_factor = 1
+            if presmoother[0].endswith(('nr', 'ne')):
+                pre_factor *= 2
+            if 'sweep' in presmoother[1]:
+                if presmoother[1]['sweep'] == 'symmetric':
+                    pre_factor *= 2
+            if 'iterations' in presmoother[1]:
+                pre_factor *= presmoother[1]['iterations']
+            if 'degree' in presmoother[1]:
+                pre_factor *= presmoother[1]['degree']
+
+            # Postsmoother
+            post_factor = 1
+            if postsmoother[0].endswith(('nr', 'ne')):
+                post_factor *= 2
+            if 'sweep' in postsmoother[1]:
+                if postsmoother[1]['sweep'] == 'symmetric':
+                    post_factor *= 2
+            if 'iterations' in postsmoother[1]:
+                post_factor *= postsmoother[1]['iterations']
+            if 'degree' in postsmoother[1]:
+                post_factor *= postsmoother[1]['degree']
+
+            # Smoothing cost scaled by A_i.nnz / A_0.nnz
+            smoother_cost.append((pre_factor + post_factor)*rel_nnz_A[i])
+
+        # Compute work for any Schwarz relaxation
+        #   - The multiplier is the average row length, which is how many times
+        #     the residual (on average) must be computed for each row.
+        #   - schwarz_work is the cost of multiplying with the
+        #     A[region_i, region_i]^{-1}
+        schwarz_multiplier = np.zeros((len(self.levels)-1,))
+        schwarz_work = np.zeros((len(self.levels)-1,))
+        for i, lvl in enumerate(self.levels[:-1]):
+            presmoother = lvl.smoothers['presmoother'][0]
+            postsmoother = lvl.smoothers['postsmoother'][0]
+            if (presmoother == 'schwarz') or (postsmoother == 'schwarz'):
+                S = lvl.A
+            if (presmoother == 'strength_based_schwarz') or \
+               (postsmoother == 'strength_based_schwarz'):
+                S = lvl.C
+            if (presmoother.find('schwarz') > 0) or \
+               (postsmoother.find('schwarz') > 0):
+                rowlen = S.indptr[1:] - S.indptr[:-1]
+                schwarz_work[i] = np.sum(rowlen**2)
+                schwarz_multiplier[i] = np.mean(rowlen)
+                # Note this scaling only applies to multiplicative
+                # Schwarz, which is what is currently available.
+                smoother_cost[i] *= schwarz_multiplier[i]
+
+        # Compute work for computing residual, restricting to coarse grid,
+        # and coarse grid correction
+        correction_cost = []
+        for i in range(len(rel_nnz_P)):
+            cost = 0
+            cost += rel_nnz_A[i]    # Computing residual
+            cost += rel_nnz_R[i]    # Restricting residual
+            cost += rel_nnz_P[i]    # Coarse grid correction
+            correction_cost.append(cost)
+
+        # Recursive functions to sum cost of given cycle type over all levels,
+        #   - TODO : include coarse grid direct solve?? (~ 30n^3 for pinv?)
+        C_pinv = 0.0
         def V(level):
             if len(self.levels) == 1:
-                return nnz[0]
+                return rel_nnz_A[0]
             elif level == len(self.levels) - 2:
-                return 2 * nnz[level] + nnz[level + 1]
+                return smoother_cost[level] + schwarz_work[level] + \
+                    C_pinv*(self.levels[level + 1].A.shape[0])**3 / nnz[0]
             else:
-                return 2 * nnz[level] + V(level + 1)
+                return smoother_cost[level] + correction_cost[level] + \
+                    schwarz_work[level] + V(level + 1)
 
         def W(level):
             if len(self.levels) == 1:
-                return nnz[0]
+                return rel_nnz_A[0]
             elif level == len(self.levels) - 2:
-                return 2 * nnz[level] + nnz[level + 1]
+                return smoother_cost[level] + schwarz_work[level] + \
+                    C_pinv*(self.levels[level + 1].A.shape[0])**3 / nnz[0]
             else:
-                return 2 * nnz[level] + 2 * W(level + 1)
+                return smoother_cost[level] + correction_cost[level] + \
+                    schwarz_work[level] + 2*W(level + 1)
 
         def F(level):
             if len(self.levels) == 1:
-                return nnz[0]
+                return rel_nnz_A[0]
             elif level == len(self.levels) - 2:
-                return 2 * nnz[level] + nnz[level + 1]
+                return smoother_cost[level] + schwarz_work[level] + \
+                    C_pinv*(self.levels[level + 1].A.shape[0])**3 / nnz[0]
             else:
-                return 2 * nnz[level] + F(level + 1) + V(level + 1)
+                return smoother_cost[level] + correction_cost[level] + \
+                    schwarz_work[level] + F(level + 1) + V(level + 1)
 
         if cycle == 'V':
             flops = V(0)
@@ -246,7 +402,9 @@ class multilevel_solver:
         else:
             raise TypeError('Unrecognized cycle type (%s)' % cycle)
 
-        return float(flops) / float(nnz[0])
+        self.CC[cycle] = float(flops)
+        return self.CC[cycle]
+
 
     def operator_complexity(self):
         """Operator complexity of this multigrid hierarchy
@@ -258,6 +416,7 @@ class multilevel_solver:
         return sum([level.A.nnz for level in self.levels]) /\
             float(self.levels[0].A.nnz)
 
+
     def grid_complexity(self):
         """Grid complexity of this multigrid hierarchy
 
@@ -268,8 +427,10 @@ class multilevel_solver:
         return sum([level.A.shape[0] for level in self.levels]) /\
             float(self.levels[0].A.shape[0])
 
+
     def psolve(self, b):
         return self.solve(b, maxiter=1)
+
 
     def aspreconditioner(self, cycle='V'):
         """Create a preconditioner using this multigrid cycle
@@ -312,6 +473,7 @@ class multilevel_solver:
             return self.solve(b, maxiter=1, cycle=cycle, tol=1e-12)
 
         return LinearOperator(shape, matvec, dtype=dtype)
+
 
     def solve(self, b, x0=None, tol=1e-5, maxiter=100, cycle='V', accel=None,
               callback=None, residuals=None, return_residuals=False):
@@ -379,6 +541,11 @@ class multilevel_solver:
                     symmetry to be hermitian')
 
         if accel is not None:
+
+            # Check for symmetric smoothing scheme when using CG
+            if (accel is 'cg') and (self.symmetric_smoothing == False):
+                warn('CG requires SPD matrix. Non-symmetric smoothing scheme '\
+                     'may significantly increase convergence factors.')
 
             # Check for AMLI compatability
             if (accel != 'fgmres') and (cycle == 'AMLI'):
@@ -474,6 +641,7 @@ class multilevel_solver:
             return x, residuals
         else:
             return x
+
 
     def __solve(self, lvl, x, b, cycle):
         """
@@ -690,6 +858,7 @@ def coarse_grid_solver(solver):
 
     else:
         raise ValueError('unknown solver: %s' % solver)
+
 
     class generic_solver:
         def __call__(self, A, b):
