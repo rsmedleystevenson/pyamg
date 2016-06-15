@@ -387,7 +387,8 @@ def asa_solver(A, B=None,
     #   - Assume max / min / num targets fixed on all levels too, don't see why they change>
     #   - Max_level_iterations may be reasonable to change per level
 
-
+    # Empty dictionary for complexity tracking on each level
+    complexity = [{}] * max_levels
 
     # Call recursive adaptive process starting from finest grid, level 0,
     # to construct adaptive hierarchy. 
@@ -403,7 +404,18 @@ def asa_solver(A, B=None,
               weak_tol=weak_tol, local_weak_tol=local_weak_tol,
               diagonal_dominance=diagonal_dominance,
               coarse_solver=coarse_solver, cycle=cycle,
-              verbose=verbose, keep=keep, hierarchy=hierarchy)
+              verbose=verbose, keep=keep, hierarchy=hierarchy,
+              complexity=complexity)
+
+    # Add complexity dictionary to levels in hierarchy 
+    nlvls = len(hierarchy.levels)
+    for i in range(0,nlvls):
+        hierarchy.levels[i].complexity = complexity[i]
+
+    # TODO : This needs to be scaled by A.nnz / A0.nnz for each level
+    extra_work = 0.0
+    for i in range(nlvls,max_levels):
+        for method, cost in complexity[i].iteritems()
 
     return hierarchy
 
@@ -424,7 +436,8 @@ def asa_solver(A, B=None,
 #     with energy smoothing bumps CF from ~0.55 --> 0.35. Increasing 
 #     Jacobi degree to 2 was totally intractable moving OC to 6.9,
 #     with CF still ~0.55
-# ==> Approximate spectral radii should probably be for A^2!
+# ==> Approximate spectral radii should be for A^2!
+#     Should also only do once, and do less work to get it (i.e. less exact, row sum?).
 
 # Important :
 #   ==> Levels are passed by reference, but a coarse grid solver
@@ -455,6 +468,7 @@ def try_solve(A, levels,
               verbose,
               keep,
               hierarchy,
+              complexity,
               B = None):
 
     """
