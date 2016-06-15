@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <set>
 
 
 
@@ -116,23 +117,81 @@ void get_csc_submatrix(const int A_rowptr[],
 }
 
 
+
+std::set<int> get_sub_mat(const std::vector<int> &cols,
+						  const std::vector<int> &Afc_colptr,
+						  const std::vector<int> &Afc_rowinds,
+						  const std::vector<double> &Afc_data,
+						  std::vector<double> &submatrix )
+{
+
+	// Find row indices for all nonzero elements in submatrix
+	std::set<int> row_inds;
+
+	// Store nonzero row indices of any column for a given
+	// sparsity pattern (row of S)
+	// for (int j=S_rowptr[f_row]; j<S_rowptr[f_row+1]; j++) {
+		// int temp_col = S_colinds[j];
+	for (int j=0; j<cols.size(); j++) {
+		int temp_col = cols[j];
+		for (int i=Afc_colptr[temp_col]; i<Afc_colptr[temp_col+1]; i++) {
+			row_inds.insert(Afc_rowinds[i]);
+		}
+	}
+	int submat_m = row_inds.size();
+	int submat_n = cols.size();
+
+	// Fill in column major data array for submatrix
+	int submat_ind = 0;
+	for (int j=0; j<cols.size(); j++) {
+
+		int temp_col = cols[j];
+		int temp_ind = Afc_colptr[temp_col];
+
+		// Loop over rows in sparsity pattern
+	    for (auto it=row_inds.begin(); it!=row_inds.end(); ++it) {
+	    	
+	    	// Initialize matrix entry to zero
+			submatrix[submat_ind] = 0.0;
+
+	    	// Check if this row, col pair is in Afc submatrix. Note, both
+	    	// sets of indices are ordered and Afc rows a subset of row_inds!
+	    	for (int i=temp_ind; i<Afc_colptr[temp_col+1]; i++) {
+				if ( (*it) < Afc_rowinds[i] ) {
+					break;
+				}
+				else if ( (*it) == Afc_rowinds[i] ) {
+					submatrix[submat_ind] = Afc_data[i];
+					temp_ind = i+1;
+					break;
+				}
+	    	}
+			submat_ind += 1;
+	    }
+	}
+	return row_inds;
+}
+
+
 int main(int argc, char *argv[]) 
 {
+
+#if 1
 	// Construct sparse matrix, size 9x9
 	std::vector<int> A_rowptr {0,2,5,8,11,14,17,20,23,25};
 	std::vector<int> A_colinds {0,1,0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,7,8,7,8};
 	std::vector<double> A_data {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
 
 	// Arbitrarily coarsen
-	std::vector<int> Cpts {0,2,4,6,8};
-	std::vector<int> Fpts {1,3,5,7};
+	std::vector<int> Cpts {0,3,4,5,7,8};
+	std::vector<int> Fpts {1,2,6};
 	// std::vector<int> Cpts {4,5,6,7,8};		// Scale with -1
 	// std::vector<int> Fpts {0,1,2,3};			// Scale with +1
 
 	int numCpts = Cpts.size();
 	int numFpts = Fpts.size();
 	int n = numFpts + numCpts;
-	int scale_row = -1;
+	int scale_row = 1;
 	int scale_col = 1;
 	int num_cols = numCpts;
 	int num_rows = numFpts;
@@ -181,8 +240,106 @@ int main(int argc, char *argv[])
 	std::cout << "test_return = csc_matrix((data0,rowinds,colptr))\n\n";
 
 
+	/* -------------- test forming constraint \hat{Bc} = Acc * Bc -------------- */
+	// Bad guys
+	std::vector<double> B = {1,2,3,4,5,6,7,8,9,-1,1,-1,1,-1,1,-1,1,-1};
+	int num_bad_guys = 2;
+
+	// Form constraint vector, \hat{B}_c = A_{cc}B_c
+	std::vector<double> constraint(num_bad_guys*numCpts, 0);
+	for (int j=0; j<numCpts; j++) {
+		for (int k=colptr[j]; k<colptr[j+1]; k++) {
+			for (int i=0; i<num_bad_guys; i++) {
+				constraint[i*numCpts + rowinds[k]] += data[k] * B[i*n + Cpts[j]];
+			}
+		}
+	}
+
+	// Get column major submatrix to print out, verify
+	std::vector<double> submat(81,0);
+	std::vector<int> cols;
+	for (int i=0; i<numCpts; i++) {
+		cols.push_back(i);
+	}
+	std::set<int> rows = get_sub_mat(cols, colptr, rowinds, data, submat);
+	int ncols = cols.size();
+	int nrows = rows.size();
+
+	std::cout << "Columns: \n\t";
+	for (int i=0; i<cols.size(); i++) {
+		std::cout << cols[i] << ", ";
+	}
+	std::cout << "\nRows: \n\t";
+	for (auto it = rows.begin(); it!=rows.end(); ++it) {
+		std::cout << *it << ", ";
+	}
+	std::cout << "\nSubmatrix: \n\t";
+	for (int i=0; i<nrows; i++) {
+		for (int j=0; j<numCpts; j++) {
+			int ind = j*nrows + i;
+			std::cout << submat[ind] << "\t";
+		}
+		std::cout << "\n\t";
+	}
+
+	std::cout << "Bc = \n\t";
+	for (int i=0; i<num_bad_guys; i++) {
+		for (int j=0; j<numCpts; j++) {
+			std::cout << B[i*n+Cpts[j]] << ", ";			
+		}
+		std::cout << "\n\t";
+	}
+	std::cout << std::endl;
+
+
+
+	std::cout << "Acc*Bc = \n\t";
+	for (int i=0; i<num_bad_guys; i++) {
+		for (int j=0; j<numCpts; j++) {
+			std::cout << constraint[i*numCpts+j] << ", ";			
+		}
+		std::cout << "\n\t";
+	}
+	std::cout << std::endl;
+
+
+#endif
+
+#if 0
+	// Construct sparse matrix, size 9x9
+	std::vector<int> A_colptr {0,2,5,8,11,14,17,20,23,25};
+	std::vector<int> A_rowinds {0,1,0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,7,8,7,8};
+	std::vector<double> A_data {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
+	std::vector<double> submat(81,0);
+	std::vector<int> cols = {0,1,2,7,8};
+
+	std::set<int> rows = get_sub_mat(cols, A_colptr, A_rowinds, A_data, submat);
+
+	int ncols = cols.size();
+	int nrows = rows.size();
+
+	std::cout << "Columns: \n\t";
+	for (int i=0; i<cols.size(); i++) {
+		std::cout << cols[i] << ", ";
+	}
+
+	std::cout << "\nRows: \n\t";
+	for (auto it = rows.begin(); it!=rows.end(); ++it) {
+		std::cout << *it << ", ";
+	}
+
+	std::cout << "\nSubmatrix: \n\t";
+	for (int i=0; i<nrows; i++) {
+		for (int j=0; j<ncols; j++) {
+			int ind = j*nrows + i;
+			std::cout << submat[ind] << "\t";
+		}
+		std::cout << "\n\t";
+	}
+#endif
 
 }
+
 
 #if 0
 rows = np.array([0,2,5,8,11,14,17,20,23,25],dtype=int)
@@ -190,3 +347,10 @@ cols = np.array([0,1,0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,7,8,7,8],dtype=int)
 data = np.arange(0,len(cols),dtype=int)
 test = csr_matrix((data,cols,rows))
 #endif
+
+// A_colptr = np.array([0,2,5,8,11,14,17,20,23,25])
+// A_rowinds = np.array([0,1,0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,7,8,7,8])
+// A_data = np.array([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25])
+
+
+

@@ -22,6 +22,7 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
                              const I num_bad_guys)
 {
 
+	/* ------ tested ----- */
 	// Get splitting of points in one vector, Cpts enumerated in positive,
 	// one-indexed ordering and Fpts in negative. 
 	std::vector<I> splitting = get_ind_split(Cpts,Cpts_size,n);
@@ -43,18 +44,21 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 					  &splitting[0], &Acc_colptr[0], &Acc_rowinds[0],
 					  &Acc_data[0], Cpts_size, -1, -1);
 
+	/* ------------------- */
+
 	// Form constraint vector, \hat{B}_c = A_{cc}B_c
+	// TODO - MUST HAVE CPTS SORTED FOR THIS LOOP TO WORK
+	//	- Verified if Cpts are sorted...
 	std::vector<T> constraint(num_bad_guys*Cpts_size, 0);
 	for (I j=0; j<Cpts_size; j++) {
 		for (I k=Acc_colptr[j]; k<Acc_colptr[j+1]; k++) {
-			I temp = Acc_rowinds[k];
-			I temp2 = Cpts[temp];
 			for (I i=0; i<num_bad_guys; i++) {
-				constraint[i*Cpts_size+temp] += data[k] * B[i*n+temp2];
+				constraint[i*Cpts_size + Acc_rowinds[k]] += Acc_data[k] * B[i*n + Cpts[j]];
 			}
 		}
 	}
 
+	/* ------ tested ----- */
 	// Get sparse CSC column pointer for submatrix Afc. Final two arguments
 	// select F-points for rows (negative) and C-points for columns (positive).
 	std::vector<I> Afc_colptr(Cpts_size+1,0);
@@ -88,6 +92,8 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 	vector<I> vec_inds(max_size, 0);
 	vector<T> submatrix(max_size, 0);
 
+	/* ------------------- */
+
 	// Form P row-by-row
 	I data_ind = 0; 
 	I numCpts = 0;
@@ -108,6 +114,7 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 		// minimization and multiply by A_{cc} to get row of P. 
 		else {
 
+			/* ------ tested ----- */
 	        // Find row indices for all nonzero elements in submatrix
 			int f_row = row_P - numCpts;
 	        std::set<int> row_inds;
@@ -122,7 +129,6 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 			}
 			int submat_m = row_inds.size();
 			int submat_n = S_rowptr[f_row+1] - S_rowptr[f_row];
-			int submat_size = submat_m * submat_n;
 
 			// Fill in column major data array for submatrix
 			int submat_ind = 0;
@@ -131,25 +137,28 @@ void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
 				int temp_col = S_colinds[j];
 				int temp_ind = Afc_colptr[temp_col];
 
-				int num_nnz = Afc_colptr[temp_ind+1] - Afc_colptr[temp_ind];
-
+				// Loop over rows in sparsity pattern
 	            for (auto it=row_inds.begin(); it!=row_inds.end(); ++it) {
+	            	
+	            	// Initialize matrix entry to zero
+					submatrix[submat_ind] = 0.0;
 
-	            	if ( (*it) == Afc_rowinds[temp_ind] ) {
-
-	            		submatrix[submat_ind] = 
-
-	            		if
-	            		next_nnz
+	            	// Check if this row, col pair is in Afc submatrix. Note, both
+	            	// sets of indices are ordered and Afc rows a subset of row_inds!
+	            	for (int i=temp_ind; i<Afc_colptr[temp_col+1]; i++) {
+						if ( (*it) < Afc_rowinds[i] ) {
+							break;
+						}
+						else if ( (*it) == Afc_rowinds[i] ) {
+							submatrix[submat_ind] = Afc_data[i];
+							temp_ind = i+1;
+							break;
+						}
 	            	}
-	            	else {
-
-	            	}
-
-
+					submat_ind += 1;
 	            }
-			
 			}
+			/* ------------------- */
 
 
 			// TODO :
