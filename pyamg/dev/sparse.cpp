@@ -29,14 +29,14 @@ std::vector<int> get_ind_split(int Cpts[], const int & numCpts, const int &n)
 
 // Returns maximum number of nonzeros in any column
 int get_col_ptr(const int A_rowptr[],
-				 const int A_colinds[],
-				 const int &n,
-				 const int is_col_ind[],
-				 const int is_row_ind[],
-				 int colptr[], 
-				 const int &num_cols,
-				 const int &row_scale = 1,
-				 const int &col_scale = 1 )
+				const int A_colinds[],
+				const int &n,
+				const int is_col_ind[],
+				const int is_row_ind[],
+				int colptr[], 
+				const int &num_cols,
+				const int &row_scale = 1,
+				const int &col_scale = 1 )
 {
 
 	// Count instances of each col-ind submatrix
@@ -176,15 +176,15 @@ std::set<int> get_sub_mat(const std::vector<int> &cols,
 int main(int argc, char *argv[]) 
 {
 
-#if 1
+#if 0
 	// Construct sparse matrix, size 9x9
 	std::vector<int> A_rowptr {0,2,5,8,11,14,17,20,23,25};
 	std::vector<int> A_colinds {0,1,0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,7,8,7,8};
 	std::vector<double> A_data {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25};
 
 	// Arbitrarily coarsen
-	std::vector<int> Cpts {0,3,4,5,7,8};
-	std::vector<int> Fpts {1,2,6};
+	std::vector<int> Cpts {1,2,3,5,6,7};
+	std::vector<int> Fpts {0,4,8};
 	// std::vector<int> Cpts {4,5,6,7,8};		// Scale with -1
 	// std::vector<int> Fpts {0,1,2,3};			// Scale with +1
 
@@ -291,8 +291,6 @@ int main(int argc, char *argv[])
 	}
 	std::cout << std::endl;
 
-
-
 	std::cout << "Acc*Bc = \n\t";
 	for (int i=0; i<num_bad_guys; i++) {
 		for (int j=0; j<numCpts; j++) {
@@ -303,9 +301,98 @@ int main(int argc, char *argv[])
 	std::cout << std::endl;
 
 
+	/* -------------- test forming constraint w = w_l * Acc = Acc * Bc -------------- */
+	
+	// std::vector<double> w_l {1,2,3,4,5,6};
+	// std::vector<double> w;
+	// std::vector<double> w_full;
+	// std::vector<int> col_inds {0,1,2,3,4,5};
+
+	// std::vector<double> submat(81,0);
+	// std::vector<int> cols = Cpts;
+	// std::set<int> rows = get_sub_mat(cols, colptr, rowinds, data, submat);
+	// int ncols = cols.size();
+	// int nrows = rows.size();
+
+	// std::cout << "Columns: \n\t";
+	// for (int i=0; i<cols.size(); i++) {
+	// 	std::cout << cols[i] << ", ";
+	// }
+	// std::cout << "\nRows: \n\t";
+	// for (auto it = rows.begin(); it!=rows.end(); ++it) {
+	// 	std::cout << *it << ", ";
+	// }
+	// std::cout << "\nSubmatrix: \n\t";
+	// for (int i=0; i<nrows; i++) {
+	// 	for (int j=0; j<ncols; j++) {
+	// 		int ind = j*nrows + i;
+	// 		std::cout << submat[ind] << "\t";
+	// 	}
+	// 	std::cout << "\n\t";
+	// }
+	// std::cout << "\n";
+
+	// // Let w_l := \hat{w}_lA_{cc}.
+	// int row_length = 0;
+	// for (int j=0; j<numCpts; j++) {
+
+	// 	double temp_prod = 0;
+	// 	int temp_v0 = 0;
+
+	// 	// Loop over nonzero indices for this column of Acc and vector w_l.
+	// 	// Note, both have ordered, unique indices.
+	// 	for (int k=colptr[j]; k<colptr[j+1]; k++) {
+	// 		for (int v_ind=temp_v0; v_ind<ncols; v_ind++) {
+
+	// 			// Can break here because indices are sorted increasing
+	// 			if ( col_inds[v_ind] > rowinds[k] ) {
+	// 				break;
+	// 			}
+	// 			// If nonzero, add to dot product 
+	// 			else if (col_inds[v_ind] == rowinds[k]) {
+	// 				temp_prod += w_l[v_ind] * data[k];
+	// 				temp_v0 += 1;
+	// 				break;
+	// 			}
+	// 			else {
+	// 				temp_v0 += 1;
+	// 			}
+	// 		}
+	// 	}
+	// 	// If dot product of column of Acc and vector \hat{w}_l is nonzero,
+	// 	// add to sparse structure of P.
+	// 	if (temp_prod != 0) {
+	// 		row_length += 1;
+	// 		w.push_back(temp_prod);
+	// 	}
+	// 	w_full.push_back(temp_prod);
+	// }
+
+	// std::cout << "w_l \t\t= ";
+	// for (int i=0; i<w_l.size(); i++) {
+	// 	std::cout << w_l[i] << ", ";
+	// }
+	// std::cout << "\ncol inds \t= ";
+	// for (int i=0; i<w_l.size(); i++) {
+	// 	std::cout << col_inds[i] << ", ";
+	// }
+	// std::cout << "\nw \t\t= ";
+	// for (int i=0; i<w.size(); i++) {
+	// 	std::cout << w[i] << ", ";
+	// }
+	// std::cout << "\nw_full \t\t= ";
+	// for (int i=0; i<numCpts; i++) {
+	// 	std::cout << w_full[i] << ", ";
+	// }
+	// std::cout << "\n";
+	// if (row_length == w.size()) {
+	// 	std::cout << "sizes agree\n";
+	// }
+
+
 #endif
 
-#if 0
+#if 1
 	// Construct sparse matrix, size 9x9
 	std::vector<int> A_colptr {0,2,5,8,11,14,17,20,23,25};
 	std::vector<int> A_rowinds {0,1,0,1,2,1,2,3,2,3,4,3,4,5,4,5,6,5,6,7,6,7,8,7,8};
@@ -317,6 +404,15 @@ int main(int argc, char *argv[])
 
 	int ncols = cols.size();
 	int nrows = rows.size();
+
+	int row_P = 6;
+	std::vector<double> rhs(nrows,0);
+	int i=0;
+	for (auto it=rows.begin(); it!=rows.end(); it++, i++) {
+		if ( (*it) == row_P ) {
+			rhs[i] = 1.0;
+		}
+	}
 
 	std::cout << "Columns: \n\t";
 	for (int i=0; i<cols.size(); i++) {
@@ -336,6 +432,14 @@ int main(int argc, char *argv[])
 		}
 		std::cout << "\n\t";
 	}
+
+	std::cout << "\nRHS: \n\t";
+	for (auto it = rhs.begin(); it!=rhs.end(); ++it) {
+		std::cout << *it << ", ";
+	}
+	std::cout << "\n";
+
+
 #endif
 
 }
