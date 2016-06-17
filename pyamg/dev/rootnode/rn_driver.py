@@ -20,10 +20,8 @@ from pyamg.gallery.diffusion import diffusion_stencil_2d
 from pyamg.gallery.stencil import stencil_grid
 from pyamg.aggregation.rootnode import rootnode_solver
 from pyamg.aggregation.aggregation import smoothed_aggregation_solver
-from pyamg.aggregation.rootnode_nii import newideal_solver
 from pyamg.util.utils import symmetric_rescaling
 from pyamg.gallery import poisson
-from pyamg.Jacob_complexity import *
 
 
 from scipy import sparse
@@ -35,7 +33,7 @@ from scipy.sparse import csr_matrix
 # General multilevel parameters
 # -----------------------------
 max_levels 		   = 20			# Max levels in hierarchy
-max_coarse 		   = 100 		# Max points allowed on coarse grid
+max_coarse 		   = 20 		# Max points allowed on coarse grid
 tol 			   = 1e-8		# Residual convergence tolerance
 is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
@@ -110,11 +108,11 @@ aggregation = ('standard')
 # interp_smooth2 = ('jacobi', {'omega': 4.0/3.0 } )
 # interp_smooth2 = ('richardson', {'omega': 3.0/2.0} )
 interp_smooth1 = ('energy', {'krylov': 'cg', \
-							'degree': 6, \
-							'maxiter': 8, \
+							'degree': 3, \
+							'maxiter': 5, \
 							'weighting': 'diagonal', \
-							'prefilter' : ('rowwise', {'theta' : 0.0}), \
-							'Pfilter' : ('rowwise', {'theta' : 0.0}) })	# only used in rn, not in nii  
+							'prefilter' : {'theta' : 0.0}, \
+							'postfilter' : {'theta' : 0.0} })	# only used in rn, not in nii  
 # interp_smooth2 = interp_smooth1
 
 # Relaxation
@@ -174,8 +172,8 @@ improve_candidates = [('gauss_seidel', {'sweep': 'symmetric', 'iterations': 4})]
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 1000
-epsilon 	= 0.0				# 'Strength' of aniostropy (only for 2d)
+N 			= 500
+epsilon 	= 0.001				# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
@@ -232,16 +230,11 @@ start = time.clock()
 ml_rn = rootnode_solver(A, B=None, strength=strength_connection, aggregate=aggregation,
 						 smooth=interp_smooth1, max_levels=max_levels, max_coarse=max_coarse,
 						 presmoother=relaxation, postsmoother=relaxation,
-						 improve_candidates=improve_candidates, keep=keep )
+						 improve_candidates=improve_candidates, keep=keep, setup_complexity=True )
 
 sol = ml_rn.solve(b, x0, tol, residuals=rn_residuals)
-setup = setup_complexity(sa=ml_rn, strength=strength_connection, smooth=interp_smooth1,
-						improve_candidates=improve_candidates, aggregate=aggregation,
-						presmoother=relaxation, postsmoother=relaxation, keep=keep,
-						max_levels=max_levels, max_coarse=max_coarse, coarse_solver=coarse_solver,
-						symmetry='symmetric')
-cycle = cycle_complexity(solver=ml_rn, presmoothing=relaxation, postsmoothing=relaxation, cycle='V')
-
+setup = ml_rn.setup_complexity()
+cycle = ml_rn.cycle_complexity()
 
 
 end = time.clock()
@@ -257,5 +250,7 @@ print " Setup complexity - ",setup
 print " Cycle complexity - ",cycle
 print " Effectve CF - ", CF**(1.0/cycle)
 
+
+pdb.set_trace()
 
 
