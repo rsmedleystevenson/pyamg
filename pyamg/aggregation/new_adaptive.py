@@ -58,7 +58,8 @@ def my_rand(d1, d2, zero_crossings=True):
     return x
 
 
-def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
+def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0,
+                        verbose=False, cost=[0]):
     """
     Helper function that compresses two sets of targets B1 and B2 into one set
     of candidates. This is the Ritz procedure.
@@ -140,7 +141,8 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0, verbose=False):
 
 
 # TODO : this has to be moved to C
-def local_ritz_process(A, AggOp, B, weak_tol=15., level=0, verbose=False):
+def local_ritz_process(A, AggOp, B, weak_tol=15., level=0,
+                       verbose=False, cost=[0]):
     """
     Helper function that finds the minimal local basis of a set of candidates.
 
@@ -387,8 +389,17 @@ def asa_solver(A, B=None,
     #   - Assume max / min / num targets fixed on all levels too, don't see why they change>
     #   - Max_level_iterations may be reasonable to change per level
 
-    # Empty dictionary for complexity tracking on each level
+    # Dictionary for complexity tracking on each level
     complexity = [{}] * max_levels
+    for lvl in complexity:
+        lvl['RAP'] = 0.0
+        lvl['aggregation'] = 0.0
+        lvl['strength'] = 0.0
+        lvl['test_solve'] = 0.0
+        lvl['global_ritz'] = 0.0
+        lvl['local_ritz'] = 0.0
+        lvl['smooth_P'] = 0.0
+
 
     # Call recursive adaptive process starting from finest grid, level 0,
     # to construct adaptive hierarchy. 
@@ -475,11 +486,18 @@ def try_solve(A, levels,
     Needs some love.
     """
 
-    def unpack_arg(v):
+    def unpack_arg(v, cost=True):
         if isinstance(v, tuple):
-            return v[0], v[1]
+            if cost:
+                (v[1])['cost'] = [0.0]
+                return v[0], v[1]
+            else:
+                return v[0], v[1]
         else:
-            return v, {}
+            if cost:
+                return v, {'cost' : [0.0]}
+            else:
+                return v, {}
 
     # If coarserer hierarchies have already been defined, remove
     # because they will be reconstructed
@@ -579,13 +597,18 @@ def try_solve(A, levels,
     target = None
     while (conv_factor > target_convergence) and (level_iter < max_level_iterations):
 
-        # Add new target. Orthogonalize using global / local Ritz and reconstruct T.  
+        # Add new target. Orthogonalize using global / local Ritz and reconstruct T. 
+        temp_cost = [0] 
         current.B = global_ritz_process(A=current.A, B1=current.B, B2=target, \
                                         weak_tol=weak_tol, level=level, \
-                                        verbose=verbose)
+                                        verbose=verbose, cost=temp_cost)
+        complexity[level]['global_ritz'] += temp_cost[0]
+        temp_cost[0] = 0 
         current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp, \
                                                 B=current.B, weak_tol=local_weak_tol, \
-                                                level=level, verbose=verbose)
+                                                level=level, verbose=verbose,
+                                                cost=temp_cost)
+        complexity[level]['local_ritz'] += temp_cost[0]
         
         # Restrict bad guy using tentative prolongator
         Bc = current.T.T * current.B
@@ -640,7 +663,8 @@ def try_solve(A, levels,
                   weak_tol=weak_tol, local_weak_tol=local_weak_tol,
                   diagonal_dominance=diagonal_dominance,
                   coarse_solver=coarse_solver, cycle=cycle,
-                  verbose=verbose, keep=keep, hierarchy=hierarchy, B=Bc)
+                  verbose=verbose, keep=keep, hierarchy=hierarchy,
+                  complexity=complexity, B=Bc)
 
         level_iter += 1
 
