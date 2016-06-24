@@ -424,9 +424,9 @@ def asa_solver(A, B=None,
         hierarchy.levels[i].complexity = complexity[i]
 
     # TODO : This needs to be scaled by A.nnz / A0.nnz for each level
-    extra_work = 0.0
-    for i in range(nlvls,max_levels):
-        for method, cost in complexity[i].iteritems()
+    # extra_work = 0.0
+    # for i in range(nlvls,max_levels):
+    #     for method, cost in complexity[i].iteritems()
 
     return hierarchy
 
@@ -531,7 +531,7 @@ def try_solve(A, levels,
     else:
         current.B = B
 
-    fn, kwargs = unpack_arg(presmoother)
+    fn, kwargs = unpack_arg(presmoother, cost=False)
     kwargs['iterations'] = improvement_iters
     if fn is None:
         raise ValueError("Must improve candidates for aSA.")
