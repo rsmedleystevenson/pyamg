@@ -124,6 +124,10 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
             Optionally, may be a tuple (fn, args), where fn is a string such as
         ['splu', 'lu', ...] or a callable function, and args is a dictionary of
         arguments to be passed to fn.
+    setup_complexity : bool
+        For a detailed, more accurate setup complexity, pass in 
+        'setup_complexity' = True. This will slow down performance, but
+        increase accuracy of complexiy count. 
 
     Returns
     -------
@@ -210,6 +214,11 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
        http://citeseer.ist.psu.edu/vanek96algebraic.html
 
     """
+
+    if ('setup_complexity' in kwargs):
+        if kwargs['setup_complexity'] == True:
+            mat_mat_complexity.__detailed__ = True
+        del kwargs['setup_complexity']
 
     if not (isspmatrix_csr(A) or isspmatrix_bsr(A)):
         try:
@@ -438,21 +447,21 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         levels[-1].complexity['smooth_R'] = kwargs['cost'][0]
 
     if keep:
-        levels[-1].C = C  # strength of connection matrix
-        levels[-1].AggOp = AggOp  # aggregation operator
-        levels[-1].T = T  # tentative prolongator
+        levels[-1].C = C            # strength of connection matrix
+        levels[-1].AggOp = AggOp    # aggregation operator
+        levels[-1].T = T            # tentative prolongator
 
     levels[-1].P = P  # smoothed prolongator
     levels[-1].R = R  # restriction operator
-    if symmetry == 'nonsymmetric':
-        levels[-1].complexity['RAP'] = (mat_mat_complexity(A,P) + 
-                                    mat_mat_complexity(R,A) ) / float(A.nnz)
-    else:
-        levels[-1].complexity['RAP'] = 2*mat_mat_complexity(A,P) / float(A.nnz)
+
+    # Form coarse grid operator, get complexity
+    levels[-1].complexity['RAP'] = mat_mat_complexity(R,A) / float(A.nnz)
+    RA = R * A
+    levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P) / float(A.nnz)
+    A = RA * P      # Galerkin operator, Ac = RAP
+    A.symmetry = symmetry
 
     levels.append(multilevel_solver.level())
-    A = R * A * P              # Galerkin operator
-    A.symmetry = symmetry
     levels[-1].A = A
     levels[-1].B = B           # right near nullspace candidates
 
