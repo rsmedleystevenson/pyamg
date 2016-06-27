@@ -16,7 +16,8 @@ from scipy.sparse.linalg.interface import LinearOperator
 from scipy import stats
 
 from pyamg.multilevel import multilevel_solver, coarse_grid_solver
-from pyamg.strength import symmetric_strength_of_connection, ode_strength_of_connection
+from pyamg.strength import symmetric_strength_of_connection,\
+                        classical_strength_of_connection, evolution_strength_of_connection
 from pyamg.relaxation.smoothing import change_smoothers
 from pyamg.util.linalg import norm, approximate_spectral_radius
 from pyamg.util.utils import levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
@@ -58,7 +59,7 @@ def my_rand(d1, d2, zero_crossings=True):
     return x
 
 
-def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0,
+def global_ritz_process(A, B1, B2, weak_tol, level, max_bad_guys,
                         verbose=False, cost=[0]):
     """
     Helper function that compresses two sets of targets B1 and B2 into one set
@@ -136,12 +137,12 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0,
 
     # if verbose:
         # print tabs(level), "Finished global ritz process, eliminated", B.shape[1]-num_candidates, "candidates", num_candidates, ". candidates remaining"
-
+    num_candidates = np.min((num_candidates,max_bad_guys))
     return V[:, 0:num_candidates]
 
 
 # TODO : this has to be moved to C
-def local_ritz_process(A, AggOp, B, weak_tol=15., level=0,
+def local_ritz_process(A, AggOp, B, weak_tol, level, max_bullets,
                        verbose=False, cost=[0]):
     """
     Helper function that finds the minimal local basis of a set of candidates.
@@ -219,6 +220,7 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0,
             num_targets = 1
 
         per_agg_count[rows] = num_targets
+        num_targets = np.min((num_targets,max_bullets))
 
         # Define new local basis, Ba * V
         basis = np.dot(Ba, V[:,0:num_targets]) 
@@ -268,8 +270,8 @@ def asa_solver(A, B=None,
                max_coarse=20,
                max_levels=20,
                target_convergence=0.5,
-               max_targets=100,
-               min_targets=0,
+               max_bullets=100,
+               max_bad_guys=0,
                num_targets=1,
                max_level_iterations=10,
                weak_tol=15.,
@@ -292,10 +294,10 @@ def asa_solver(A, B=None,
         Also in this case, the initial setup stage is skipped, because this
         provides the first target(s).  If None, then a random initial guess
         and relaxation are used to inform the initial target.
-    max_targets : {integer}
+    max_bullets : {integer}
         Maximum number of near-nullspace targets to generate
         TODO : THIS IS NOT USED
-    min_targets : {integer}
+    max_bad_guys : {integer}
         Minimum number of near-nullspace targets to generate
         TODO : THIS IS NOT USED
     num_targets : {integer}
@@ -409,8 +411,8 @@ def asa_solver(A, B=None,
               presmoother=presmoother, postsmoother=postsmoother,
               improvement_iters=improvement_iters,
               max_coarse=max_coarse, max_levels=max_levels,
-              target_convergence=target_convergence, max_targets=max_targets,
-              min_targets=min_targets, num_targets=num_targets, 
+              target_convergence=target_convergence, max_bullets=max_bullets,
+              max_bad_guys=max_bad_guys, num_targets=num_targets, 
               max_level_iterations=max_level_iterations,
               weak_tol=weak_tol, local_weak_tol=local_weak_tol,
               diagonal_dominance=diagonal_dominance,
@@ -467,8 +469,8 @@ def try_solve(A, levels,
               max_coarse,
               max_levels,
               target_convergence,
-              max_targets,
-              min_targets,
+              max_bullets,
+              max_bad_guys,
               num_targets,
               max_level_iterations,
               weak_tol,
@@ -531,7 +533,13 @@ def try_solve(A, levels,
     else:
         current.B = B
 
+    # TODO : This needs some work, turns out changing kwargs changes
+    # internal argument. Currently reset to original value after improving...
     fn, kwargs = unpack_arg(presmoother, cost=False)
+    try:
+        temp = kwargs['iterations']
+    except:
+        temp = 1
     kwargs['iterations'] = improvement_iters
     if fn is None:
         raise ValueError("Must improve candidates for aSA.")
@@ -541,6 +549,8 @@ def try_solve(A, levels,
         current.B[:,i:(i+1)] = relaxation_as_linear_operator( \
                                 (fn, kwargs), \
                                 current.A, b) * current.B[:,i:(i+1)]
+
+    kwargs['iterations'] = temp
 
     # Compute the strength-of-connection matrix C, where larger
     # C[i,j] denote stronger couplings between i and j.
@@ -601,13 +611,14 @@ def try_solve(A, levels,
         temp_cost = [0] 
         current.B = global_ritz_process(A=current.A, B1=current.B, B2=target, \
                                         weak_tol=weak_tol, level=level, \
+                                        max_bad_guys=max_bad_guys, \
                                         verbose=verbose, cost=temp_cost)
         complexity[level]['global_ritz'] += temp_cost[0]
         temp_cost[0] = 0 
         current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp, \
                                                 B=current.B, weak_tol=local_weak_tol, \
-                                                level=level, verbose=verbose,
-                                                cost=temp_cost)
+                                                max_bullets=max_bullets, level=level, \
+                                                verbose=verbose, cost=temp_cost)
         complexity[level]['local_ritz'] += temp_cost[0]
         
         # Restrict bad guy using tentative prolongator
@@ -657,8 +668,8 @@ def try_solve(A, levels,
                   presmoother=presmoother, postsmoother=postsmoother,
                   improvement_iters=improvement_iters,
                   max_coarse=max_coarse, max_levels=max_levels,
-                  target_convergence=target_convergence, max_targets=max_targets,
-                  min_targets=min_targets, num_targets=num_targets, 
+                  target_convergence=target_convergence, max_bullets=max_bullets,
+                  max_bad_guys=max_bad_guys, num_targets=num_targets, 
                   max_level_iterations=max_level_iterations,
                   weak_tol=weak_tol, local_weak_tol=local_weak_tol,
                   diagonal_dominance=diagonal_dominance,
