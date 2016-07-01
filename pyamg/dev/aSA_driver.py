@@ -140,7 +140,7 @@ relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.75 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.25 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
@@ -148,7 +148,7 @@ eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 weak_tol 		 	 = 15.0			# new aSA 
 local_weak_tol 		 = 15.0			# new aSA
 min_targets			 = 1
-max_targets			 = 4
+max_targets			 = 1
 max_level_iterations = 5
 improvement_iters 	 = 10	# number of times a target bad guy is improved
 num_targets 		= 1		# number of near null space candidated to generate
@@ -161,8 +161,8 @@ improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improve
 
 # General multilevel parameters
 # -----------------------------
-max_levels 		   = 10 		# Max levels in hierarchy
-max_coarse 		   = 25 		# Max points allowed on coarse grid
+max_levels 		   = 20 		# Max levels in hierarchy
+max_coarse 		   = 10 		# Max points allowed on coarse grid
 tol 			   = 1e-8		# Residual convergence tolerance
 is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
@@ -181,7 +181,7 @@ keep = False
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 750
+N 			= 100
 epsilon 	= 1.0 			# 'Strength' of aniostropy (only for 2d)
 theta 		= 4.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
@@ -237,15 +237,27 @@ sa_sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, cycle=cycle, accel=acce
 
 end = time.clock()
 sa_time = end-start
+
+# Get complexities
+OC = ml_sa.operator_complexity()
+CC = ml_sa.cycle_complexity()
+SC = ml_sa.setup_complexity()
+
+# Convergence factors 
 sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
 for i in range(1,len(sa_residuals)-1):
 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
-print "Smoothed aggregation - ", sa_time, " seconds"
-print sa_conv_factors
+CF = np.mean(sa_conv_factors[1:])
 
-# cc = ml_sa.cycle_complexity()
-# print "Cycle complexity = ",cc
+print "SA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
+# print "\tSetup time      	- ",sa_setup_time, " seconds"
+# print "\tSolve time      	- ", sa_solve_time, " seconds"
+print "\tConv. factor    	- ", CF
+print "\tSetup complexity 	- ", SC
+print "\tOp. complexity  	- ", OC
+print "\tCyc. complexity 	- ", CC
+
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -266,7 +278,7 @@ print sa_conv_factors
 # end = time.clock()
 # asa_time = end-start
 # asa_conv_factors = np.zeros((len(asa_residuals)-1,1))
-# for i in range(0,len(asa_residuals)-1):
+# for i in range(1,len(asa_residuals)-1):
 # 	asa_conv_factors[i] = asa_residuals[i]/asa_residuals[i-1]
 
 # print "Classical aSA - ", asa_time, " seconds"
@@ -301,19 +313,31 @@ ml_new_asa = asa_solver(A, B=None,
 						verbose=True,
 						keep=keep)
 
-pdb.set_trace()
-
 new_asa_sol = ml_new_asa.solve(b, x0, tol, residuals=new_asa_residuals, cycle=cycle, accel=accel)
-
 end = time.clock()
 new_asa_time = end-start
+# Convergence factors 
+
+pdb.set_trace()
+
+# Get complexities
+OC = ml_new_asa.operator_complexity()
+CC = ml_new_asa.cycle_complexity()
+SC = ml_new_asa.setup_complexity()
+
 new_asa_conv_factors = np.zeros((len(new_asa_residuals)-1,1))
 for i in range(1,len(new_asa_residuals)-1):
 	new_asa_conv_factors[i] = new_asa_residuals[i]/new_asa_residuals[i-1]
 
-print "New  aSA - ", new_asa_time, " seconds"
-print new_asa_conv_factors
+CF = np.mean(new_asa_conv_factors[1:])
 
+print "aSA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
+# print "\tSetup time      	- ",sa_setup_time, " seconds"
+# print "\tSolve time      	- ", sa_solve_time, " seconds"
+print "\tConv. factor    	- ", CF
+print "\tSetup complexity 	- ", SC
+print "\tOp. complexity  	- ", OC
+print "\tCyc. complexity 	- ", CC
 
 # pdb.set_trace()
 
