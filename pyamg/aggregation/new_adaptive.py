@@ -110,7 +110,7 @@ def global_ritz_process(A, B1, B2=None, weak_tol=15., level=0,
     # that trivially satisfy the weak approximation property.
     # TODO : Should this be spectral radius A^2??
     V = scipy.dot(Q, V)
-    entire_const = weak_tol / approximate_spectral_radius(A)
+    entire_const = (weak_tol / approximate_spectral_radius(A) ) )**2
     # if verbose:
         # print tabs(level), "WAP const", entire_const
 
@@ -170,7 +170,7 @@ def local_ritz_process(A, AggOp, B, weak_tol=15., level=0,
     #     return AggOp
 
     # scale the weak tolerence by the radius of A
-    tol = weak_tol / approximate_spectral_radius(A)
+    tol = (weak_tol / approximate_spectral_radius(A) )**2
 
     # TODO : Can we avoid reallocation? 
     AggOpCsc = AggOp.tocsc() # we are slicing columns, this makes it much faster
