@@ -31,6 +31,21 @@ from .tentative import fit_candidates
 
 __all__ = ['A_norm', 'my_rand', 'tl_sa_solver', 'asa_solver']
 
+
+def unpack_arg(v, cost=True):
+    if isinstance(v, tuple):
+        if cost:
+            (v[1])['cost'] = [0.0]
+            return v[0], v[1]
+        else:
+            return v[0], v[1]
+    else:
+        if cost:
+            return v, {'cost' : [0.0]}
+        else:
+            return v, {}
+
+
 def tabs(level):
     return '  '*level
 
@@ -95,8 +110,6 @@ def global_ritz_process(A, B1, B2, weak_tol, level, max_bad_guys,
 
     # Formulate and solve the eigenpairs problem returning eigenvalues in
     # ascending order.
-    # QtAQ = scipy.dot(Q.conjugate().T, A*Q)        # WAP  
-    # [E,V] = scipy.linalg.eigh(QtAQ)
     QtAAQ = A*Q
     QtAAQ = scipy.dot(QtAAQ.conjugate().T, QtAAQ)   # WAP_{A^2} = SAP
     [E,V] = scipy.linalg.eigh(QtAAQ)
@@ -109,34 +122,24 @@ def global_ritz_process(A, B1, B2, weak_tol, level, max_bad_guys,
 
     # Compute Ritz vectors and normalize them in energy. Also, mark vectors
     # that trivially satisfy the weak approximation property.
-    # TODO : Should this be spectral radius A^2??
     V = scipy.dot(Q, V)
-    entire_const = (weak_tol / approximate_spectral_radius(A) ) )**2
-    # if verbose:
-        # print tabs(level), "WAP const", entire_const
+    entire_const = (weak_tol / approximate_spectral_radius(A) )**2
 
     num_candidates = 0
     for j in range(V.shape[1]):
-        # if verbose:
-            # print tabs(level), "Vector 1/e", j, 1./E[j], "ELIMINATED" if 1./E[j] <= entire_const else ""
-        
         if 1./E[j] <= entire_const:
             num_candidates = j
             break
         else:
             V[:,j] /= np.sqrt(E[j])
             num_candidates += 1
-            # verify energy norm is 1
-            # print tabs(level), "&&&&&&&&&&&&&&&&&&&&", scipy.dot(A*V[:,j],V[:,j])
 
     # Make sure at least one candidate is kept
     if num_candidates == 0:
         V[:,0] /= np.sqrt(E[0])
         num_candidates = 1
 
-
-    # if verbose:
-        # print tabs(level), "Finished global ritz process, eliminated", B.shape[1]-num_candidates, "candidates", num_candidates, ". candidates remaining"
+    # Only allow for for max_bad_guys to be kept
     num_candidates = np.min((num_candidates,max_bad_guys))
     return V[:, 0:num_candidates]
 
@@ -224,7 +227,7 @@ def local_ritz_process(A, AggOp, B, weak_tol, level, max_bullets,
 
         # Define new local basis, Ba * V
         basis = np.dot(Ba, V[:,0:num_targets]) 
-        
+                
         # Diagnostics data
         list_targets.append(num_targets)
         agg_sizes.append(len(rows))
@@ -418,7 +421,7 @@ def asa_solver(A, B=None,
               diagonal_dominance=diagonal_dominance,
               coarse_solver=coarse_solver, cycle=cycle,
               verbose=verbose, keep=keep, hierarchy=hierarchy,
-              complexity=complexity)
+              complexity=complexity, B=B)
 
     # Add complexity dictionary to levels in hierarchy 
     nlvls = len(hierarchy.levels)
@@ -488,19 +491,6 @@ def try_solve(A, levels,
     Needs some love.
     """
 
-    def unpack_arg(v, cost=True):
-        if isinstance(v, tuple):
-            if cost:
-                (v[1])['cost'] = [0.0]
-                return v[0], v[1]
-            else:
-                return v[0], v[1]
-        else:
-            if cost:
-                return v, {'cost' : [0.0]}
-            else:
-                return v, {}
-
     # If coarserer hierarchies have already been defined, remove
     # because they will be reconstructed
     while len(levels) > level:
@@ -545,10 +535,9 @@ def try_solve(A, levels,
         raise ValueError("Must improve candidates for aSA.")
 
     b = np.zeros((A.shape[0], 1), dtype=A.dtype)
-    for i in range(0,num_targets):
-        current.B[:,i:(i+1)] = relaxation_as_linear_operator( \
-                                (fn, kwargs), \
-                                current.A, b) * current.B[:,i:(i+1)]
+    current.B = relaxation_as_linear_operator( \
+                            (fn, kwargs), \
+                            current.A, b) * current.B
 
     kwargs['iterations'] = temp
 
@@ -656,11 +645,11 @@ def try_solve(A, levels,
         #   - TODO : Make sure this is doing the right thing
         #     TODO : Do we need to do this? 
         #
-        # [D, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
-        # current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
-        # current.R = current.P.H
-        # for i in range(0,Bc.shape[1]):
-        #     Bc[:,i] = D * Bc[:,i]
+        [D, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
+        current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
+        current.R = current.P.H
+        for i in range(0,Bc.shape[1]):
+            Bc[:,i] = D * Bc[:,i]
 
         # Recursively call try_solve() with coarse grid operator
         try_solve(A=Ac, levels=levels, level=(level+1), symmetry=symmetry,
@@ -677,6 +666,8 @@ def try_solve(A, levels,
                   verbose=verbose, keep=keep, hierarchy=hierarchy,
                   complexity=complexity, B=Bc)
 
+        # TODO : in practice should break here if this was last iteration
+        #   - won't see CF, but iterating is a waste of work
         level_iter += 1
 
         # Test convergence of new hierarchy

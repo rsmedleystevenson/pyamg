@@ -17,7 +17,7 @@ from pyamg.aggregation.adaptive import adaptive_sa_solver
 from pyamg.aggregation.new_adaptive import asa_solver
 from pyamg.util.utils import symmetric_rescaling
 
-
+from poisson import get_poisson
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -131,8 +131,8 @@ interp_smooth = ('jacobi', {'omega' : 4.0/3.0,
 # Note, Schwarz relaxation, polynomial relaxation, Cimmino relaxation,
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
-# relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
-relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
+relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
+# relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 
@@ -140,22 +140,22 @@ relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.25 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.3 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
 # -----------------------
 weak_tol 		 	 = 15.0			# new aSA 
 local_weak_tol 		 = 15.0			# new aSA
-min_targets			 = 1
-max_targets			 = 1
-max_level_iterations = 5
-improvement_iters 	 = 10	# number of times a target bad guy is improved
-num_targets 		= 1		# number of near null space candidated to generate
+max_bad_guys		 = 5
+max_bullets			 = 1
+max_level_iterations = 3
+improvement_iters 	 = 5		# number of times a target bad guy is improved
+num_targets 		 = 1		# number of near null space candidated to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
-improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
-# improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
+# improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
+improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
 # improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
 
 
@@ -168,8 +168,8 @@ is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
-accel = None
-cycle = 'F'
+accel = 'gmres'
+cycle = 'V'
 keep = False
 
 # ----------------------------------------------------------------------------- #
@@ -178,47 +178,19 @@ keep = False
 # Problem parameters and variables
 # ---------------------------------
 
-rand_guess 	= True
-zero_rhs 	= True
-problem_dim = 2
-N 			= 100
-epsilon 	= 1.0 			# 'Strength' of aniostropy (only for 2d)
-theta 		= 4.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
+# Poisson
+# -------
+n0 = 300
+eps = 1.0
+theta = 3*np.pi / 14.0
+A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=True)
+n = A.shape[0]
+x0 = np.random.rand(n,1)
+b = np.zeros((n,1))
 
-# Empty arrays to store residuals
-sa_residuals = []
-asa_residuals = []
-new_asa_residuals = []
-
-# 1d Poisson 
-if problem_dim == 1:
-	grid_dims = [N,1]
-	A = poisson((N,), format='csr')
-# 2d Poisson
-elif problem_dim == 2:
-	grid_dims = [N,N]
-	stencil = diffusion_stencil_2d(epsilon,theta)
-	A = stencil_grid(stencil, grid_dims, format='csr')
-
-# # Vectors and additional variables
-[d,d,A] = symmetric_rescaling(A)
-vec_size = np.prod(grid_dims)
-
-# Zero right hand side or sin(pi x)
-if zero_rhs:
-	b = np.zeros((vec_size,1))
-	# If zero rhs and zero initial guess, throw error
-	if not rand_guess:
-		print "Zero rhs and zero initial guess converges trivially."
-# Note, this vector probably doesn't make sense in 2d... 
-else: 
-	b = np.sin(math.pi*np.arange(0,vec_size)/(vec_size-1.0))
-
-# Random vs. zero initial guess
-if rand_guess:
-	x0 = np.random.rand(vec_size,1)
-else:
-	x0 = np.zeros(vec_size,1)
+[D, dum, dum] = symmetric_rescaling(A, copy=False)
+bad_guy = np.ones((n,1))
+bad_guy[:,0] = D * bad_guy[:,0]
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -226,37 +198,38 @@ else:
 # Classical SA solver
 # -------------------
 
-start = time.clock()
-ml_sa = smoothed_aggregation_solver(A, B=None, symmetry='symmetric', strength=strength, aggregate=aggregate,
-						 			smooth=interp_smooth, max_levels=max_levels, max_coarse=max_coarse,
-						 			presmoother=relaxation, postsmoother=relaxation,
-						 			improve_candidates=improve_candidates, coarse_solver=coarse_solver,
-						 			keep=keep_levels )
+# sa_residuals = []
+# start = time.clock()
+# ml_sa = smoothed_aggregation_solver(A, B=bad_guy, symmetry='symmetric', strength=strength, aggregate=aggregate,
+# 						 			smooth=interp_smooth, max_levels=max_levels, max_coarse=max_coarse,
+# 						 			presmoother=relaxation, postsmoother=relaxation,
+# 						 			improve_candidates=improve_candidates, coarse_solver=coarse_solver,
+# 						 			keep=keep_levels )
 
-sa_sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, cycle=cycle, accel=accel)
+# sa_sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, cycle=cycle, accel=accel)
 
-end = time.clock()
-sa_time = end-start
+# end = time.clock()
+# sa_time = end-start
 
-# Get complexities
-OC = ml_sa.operator_complexity()
-CC = ml_sa.cycle_complexity()
-SC = ml_sa.setup_complexity()
+# # Get complexities
+# OC = ml_sa.operator_complexity()
+# CC = ml_sa.cycle_complexity()
+# SC = ml_sa.setup_complexity()
 
-# Convergence factors 
-sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
-for i in range(1,len(sa_residuals)-1):
-	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
+# # Convergence factors 
+# sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
+# for i in range(1,len(sa_residuals)-1):
+# 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
-CF = np.mean(sa_conv_factors[1:])
+# CF = np.mean(sa_conv_factors[1:])
 
-print "SA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
-# print "\tSetup time      	- ",sa_setup_time, " seconds"
-# print "\tSolve time      	- ", sa_solve_time, " seconds"
-print "\tConv. factor    	- ", CF
-print "\tSetup complexity 	- ", SC
-print "\tOp. complexity  	- ", OC
-print "\tCyc. complexity 	- ", CC
+# print "SA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
+# # print "\tSetup time      	- ",sa_setup_time, " seconds"
+# # print "\tSolve time      	- ", sa_solve_time, " seconds"
+# print "\tConv. factor    	- ", CF
+# # print "\tSetup complexity 	- ", SC
+# print "\tOp. complexity  	- ", OC
+# print "\tCyc. complexity 	- ", CC
 
 
 # ----------------------------------------------------------------------------- #
@@ -265,6 +238,7 @@ print "\tCyc. complexity 	- ", CC
 # Classical aSA solver
 # --------------------
 
+# asa_residuals = []
 # start = time.clock()
 # [ml_asa, work] = asa_solver(A, B=bad_guy, pdef=is_pdef, num_candidates=num_candidates,
 # 									candidate_iters=candidate_iters, improvement_iters=improvement_iters,
@@ -290,8 +264,9 @@ print "\tCyc. complexity 	- ", CC
 # New aSA solver
 # --------------
 
+new_asa_residuals = []
 start = time.clock()
-ml_new_asa = asa_solver(A, B=None,
+ml_new_asa = asa_solver(A, B=bad_guy,
 						strength=strength,
 						aggregate=aggregate,
 						smooth=interp_smooth,
@@ -301,8 +276,8 @@ ml_new_asa = asa_solver(A, B=None,
 						max_coarse=max_coarse,
 						max_levels=max_levels,
 						target_convergence=target_convergence,
-						max_targets=max_targets,
-						min_targets=min_targets,
+						max_bullets=max_bullets,
+						max_bad_guys=max_bad_guys,
 						num_targets=num_targets,
 						max_level_iterations=max_level_iterations,
 						weak_tol=weak_tol,
@@ -316,15 +291,13 @@ ml_new_asa = asa_solver(A, B=None,
 new_asa_sol = ml_new_asa.solve(b, x0, tol, residuals=new_asa_residuals, cycle=cycle, accel=accel)
 end = time.clock()
 new_asa_time = end-start
-# Convergence factors 
-
-pdb.set_trace()
 
 # Get complexities
 OC = ml_new_asa.operator_complexity()
 CC = ml_new_asa.cycle_complexity()
 SC = ml_new_asa.setup_complexity()
 
+# Convergence factors 
 new_asa_conv_factors = np.zeros((len(new_asa_residuals)-1,1))
 for i in range(1,len(new_asa_residuals)-1):
 	new_asa_conv_factors[i] = new_asa_residuals[i]/new_asa_residuals[i-1]
@@ -335,9 +308,18 @@ print "aSA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
 # print "\tSetup time      	- ",sa_setup_time, " seconds"
 # print "\tSolve time      	- ", sa_solve_time, " seconds"
 print "\tConv. factor    	- ", CF
-print "\tSetup complexity 	- ", SC
+# print "\tSetup complexity 	- ", SC
 print "\tOp. complexity  	- ", OC
 print "\tCyc. complexity 	- ", CC
 
-# pdb.set_trace()
+pdb.set_trace()
+
+
+
+
+
+
+
+
+
 
