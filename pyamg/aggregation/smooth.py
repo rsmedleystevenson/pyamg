@@ -212,7 +212,7 @@ def jacobi_prolongation_smoother(S, T, C, B, omega=4.0/3.0, degree=1,
                 U = D_inv_S*P
                 U_block = [1,1]
 
-            # Enforce U*B = 0 (1) Construct array of inv(Bi'Bi), where Bi is B
+            # (1) Enforce U*B = 0. Construct array of inv(Bi'Bi), where Bi is B
             # restricted to row i's sparsity pattern in Sparsity Pattern. This
             # array is used multiple times in Satisfy_Constraints(...).
             BtBinv = compute_BtBinv(B, U)
@@ -230,7 +230,6 @@ def jacobi_prolongation_smoother(S, T, C, B, omega=4.0/3.0, degree=1,
             # Update P
             P = P - U
             cost[0] += max(P.nnz, U.nnz) / float(S.nnz)
-
     else:
         # Carry out Jacobi as normal
         P = T
