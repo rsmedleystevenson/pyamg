@@ -11,6 +11,7 @@
 // TODO : Can add natural filtering after row w_l has been computed.
 //		  Instead of pushing straight to P, store in temp vector, filter,
 //		  then push to P. 
+//		--> This is easy, add it in first pass, do not wait until after finishing code.
 
 template<class I, class T, class F>
 void ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
