@@ -4,6 +4,8 @@ __docformat__ = "restructuredtext en"
 
 import pdb
 
+# TODO : Be consistent with scipy importing. Remove unnecessary imports. 
+
 import time
 import numpy as np
 import scipy
@@ -74,7 +76,7 @@ def my_rand(d1, d2, zero_crossings=True):
     return x
 
 
-def global_ritz_process(A, B1, B2, weak_tol, level, max_bad_guys,
+def global_ritz_process(A, B1, B2, sap_tol, level, max_bad_guys,
                         verbose=False, cost=[0]):
     """
     Helper function that compresses two sets of targets B1 and B2 into one set
@@ -91,6 +93,10 @@ def global_ritz_process(A, B1, B2, weak_tol, level, max_bad_guys,
         n x m2 array of m2 potential candidates
     weak_tol : {float}
         The constant in the weak approximation property.
+    level
+        This is only for debugging purposes --> TODO : Remove
+    max_bad_guys : int 
+        Maximum number of global bad guys to keep
 
     Returns
     -------
@@ -99,35 +105,35 @@ def global_ritz_process(A, B1, B2, weak_tol, level, max_bad_guys,
     the weak approximation property are deleted.
     """
 
-    # TODO : hstack is slow as shit
+    # TODO : hstack is very slow
     if B2 is not None:
         B = np.hstack((B1, B2.reshape(-1,1)))
     else:
         B = B1
 
-    # Orthonormalize the vectors.
+    # Orthonormalize the vectors. Cost taken from Golub/Van Loan ~ 2mn^2
     [Q,R] = scipy.linalg.qr(B, mode='economic')
+    cost[0] += 2.0 * B.shape[0] * B.shape[1]**2 / float(A.nnz)
 
     # Formulate and solve the eigenpairs problem returning eigenvalues in
-    # ascending order.
+    # ascending order. Eigenvalue cost ~ 9n^3 for symmetric QR, Golub/Van Loan
     QtAAQ = A*Q
     QtAAQ = scipy.dot(QtAAQ.conjugate().T, QtAAQ)   # WAP_{A^2} = SAP
     [E,V] = scipy.linalg.eigh(QtAAQ)
+    cost[0] += Q.shape[1] + float(Q.shape[0] * Q.shape[1]**2) / A.nnz + \
+                float(9.0 * QtAAQ.shape[0]**3) / A.nnz
 
     # Make sure eigenvectors are real. Eigenvalues must be already real.
-    try:
-        V = np.real(V)
-    except:
-        import pdb; pdb.set_trace()
+    V = np.real(V)
 
-    # Compute Ritz vectors and normalize them in energy. Also, mark vectors
-    # that trivially satisfy the weak approximation property.
+    # Compute Ritz vectors and normalize them in energy. 
     V = scipy.dot(Q, V)
-    entire_const = (weak_tol / approximate_spectral_radius(A) )**2
+    cost[0] += float(V.shape[0] * V.shape[1]**2) / A.nnz
 
+    # Select candidates that don't trivially satisfy the WAP(A^2).
     num_candidates = 0
     for j in range(V.shape[1]):
-        if 1./E[j] <= entire_const:
+        if 1./E[j] <= sap_tol:
             num_candidates = j
             break
         else:
@@ -139,13 +145,15 @@ def global_ritz_process(A, B1, B2, weak_tol, level, max_bad_guys,
         V[:,0] /= np.sqrt(E[0])
         num_candidates = 1
 
+    cost[0] += float(V.shape[0] * num_candidates) / A.nnz
+
     # Only allow for for max_bad_guys to be kept
     num_candidates = np.min((num_candidates,max_bad_guys))
     return V[:, 0:num_candidates]
 
 
 # TODO : this has to be moved to C
-def local_ritz_process(A, AggOp, B, weak_tol, level, max_bullets,
+def local_ritz_process(A, AggOp, B, sap_tol, level, max_bullets,
                        verbose=False, cost=[0]):
     """
     Helper function that finds the minimal local basis of a set of candidates.
@@ -160,7 +168,7 @@ def local_ritz_process(A, AggOp, B, weak_tol, level, max_bullets,
         n x m array of m candidates.
     weak_tol : {float}
         The weak approximation constant divided by the approximate spectral
-        radius of the Matrix.
+        radius of A, both squared for the WAP(A^2).
 
     Returns
     -------
@@ -172,9 +180,6 @@ def local_ritz_process(A, AggOp, B, weak_tol, level, max_bullets,
     # return fit_candidates(AggOp, B)[0], []
     # if B.shape[1] < 2:
     #     return AggOp
-
-    # scale the weak tolerence by the radius of A
-    tol = (weak_tol / approximate_spectral_radius(A) )**2
 
     # TODO : Can we avoid reallocation? 
     AggOpCsc = AggOp.tocsc() # we are slicing columns, this makes it much faster
@@ -196,17 +201,21 @@ def local_ritz_process(A, AggOp, B, weak_tol, level, max_bullets,
     # iterate over aggregates
     for i in range(AggOpCsc.shape[1]):
 
-        agg = AggOpCsc[:,i] # get the current aggregate
-        rows = agg.nonzero()[0] # non zero rows of aggregate
-        Ba = B[rows] # restrict B to aggregate
+        # Get current aggregate and restrict bad guys to it
+        agg = AggOpCsc[:,i]
+        rows = agg.nonzero()[0]
+        Ba = B[rows]
 
-        BatBa = np.dot(Ba.transpose(), Ba) # Ba^T*Ba
+        # Get eigenvalue decomposition of Ba^T*Ba, sprt eigenvalues
+        # and vectors in descending order.
+        BatBa = np.dot(Ba.transpose(), Ba)
+        [E, V] = np.linalg.eigh(BatBa)
+        E = E[::-1]
+        V = np.fliplr(V)
+        cost[0] +=  float(Ba.shape[1]*Ba.shape[0]**2 + 9*V.shape[0]**3) / A.nnz
 
-        [E, V] = np.linalg.eigh(BatBa) # Eigen decomp of Ba^T*Ba
-        E = E[::-1] # eigenvalues are ascending, we want them descending
-        V = np.fliplr(V) # flip eigenvectors to match new order of eigenvalues
-
-        local_const = agg.getnnz() * tol / AggOp.getnnz()
+        # Form constant for local WAP(A^2)
+        local_const = sap_tol * float(agg.nnz) / AggOp.nnz
         num_targets = 0
 
         # iterate over eigenvectors
@@ -224,10 +233,12 @@ def local_ritz_process(A, AggOp, B, weak_tol, level, max_bullets,
 
         per_agg_count[rows] = num_targets
         num_targets = np.min((num_targets,max_bullets))
+        cost[0] += float(V.shape[0] * num_targets) / A.nnz
 
         # Define new local basis, Ba * V
         basis = np.dot(Ba, V[:,0:num_targets]) 
-                
+        cost[0] += float(Ba.shape[0] * Ba.shape[1] * num_targets) / A.nnz
+
         # Diagnostics data
         list_targets.append(num_targets)
         agg_sizes.append(len(rows))
@@ -278,7 +289,6 @@ def asa_solver(A, B=None,
                num_targets=1,
                max_level_iterations=10,
                weak_tol=15.,
-               local_weak_tol=15.,
                diagonal_dominance=False,
                coarse_solver='pinv2',
                cycle='V',
@@ -312,8 +322,6 @@ def asa_solver(A, B=None,
         Convergence factor tolerance before the adaptive solver is accepted.
     weak_tol : {float}
         Weak approximation tolerance for dropping targets globally.
-    local_weak_tol : {float}
-        Weak approximation tolerance for dropping targets locally.
     max_coarse : {integer}
         Maximum number of variables permitted on the coarse grid. 
     max_levels : {integer}
@@ -365,6 +373,11 @@ def asa_solver(A, B=None,
     >>> x=sa.solve(b=np.ones((A.shape[0],)),x0=np.ones((A.shape[0],)),residuals=residuals)
     """
 
+    if ('setup_complexity' in kwargs):
+        if kwargs['setup_complexity'] == True:
+            mat_mat_complexity.__detailed__ = True
+        del kwargs['setup_complexity']
+
     if not (isspmatrix_csr(A) or isspmatrix_bsr(A)):
         try:
             print 'Implicit conversion of A to CSR in tl_sa_solver()...'
@@ -395,16 +408,15 @@ def asa_solver(A, B=None,
     #   - max_level_iterations may be reasonable to change per level
 
     # Dictionary for complexity tracking on each level
-    complexity = [{}] * max_levels
-    for lvl in complexity:
-        lvl['RAP'] = 0.0
-        lvl['aggregation'] = 0.0
-        lvl['strength'] = 0.0
-        lvl['test_solve'] = 0.0
-        lvl['global_ritz'] = 0.0
-        lvl['local_ritz'] = 0.0
-        lvl['smooth_P'] = 0.0
-
+    complexity = []
+    for i in range(0,max_levels):
+        complexity.append( {'RAP': 0.0,
+                            'aggregation': 0.0,
+                            'strength': 0.0,
+                            'test_solve': 0.0,
+                            'global_ritz': 0.0,
+                            'local_ritz': 0.0,
+                            'smooth_P': 0.0} )
 
     # Call recursive adaptive process starting from finest grid, level 0,
     # to construct adaptive hierarchy. 
@@ -417,8 +429,7 @@ def asa_solver(A, B=None,
               target_convergence=target_convergence, max_bullets=max_bullets,
               max_bad_guys=max_bad_guys, num_targets=num_targets, 
               max_level_iterations=max_level_iterations,
-              weak_tol=weak_tol, local_weak_tol=local_weak_tol,
-              diagonal_dominance=diagonal_dominance,
+              weak_tol=weak_tol, diagonal_dominance=diagonal_dominance,
               coarse_solver=coarse_solver, cycle=cycle,
               verbose=verbose, keep=keep, hierarchy=hierarchy,
               complexity=complexity, B=B)
@@ -426,22 +437,31 @@ def asa_solver(A, B=None,
     # Add complexity dictionary to levels in hierarchy 
     nlvls = len(hierarchy.levels)
     for i in range(0,nlvls):
+
+        # Scale complexity on level i to be WUs w.r.t. the operator
+        # on level i for consistency with other methods. Rescaled to
+        # total WUs w.r.t. the fine grid in multilevel.py.
+        temp = float(levels[0].A.nnz) / levels[i].A.nnz 
+        for method in complexity[i]:
+            complexity[i][method] *= temp
+
         hierarchy.levels[i].complexity = complexity[i]
 
-    # TODO : This needs to be scaled by A.nnz / A0.nnz for each level
-    # extra_work = 0.0
-    # for i in range(nlvls,max_levels):
-    #     for method, cost in complexity[i].iteritems()
+    # TODO : This needs to be added to SC somewhere
+    extra_work = 0.0
+    for i in range(nlvls,max_levels):
+        for method, cost in complexity[i].iteritems():
+            extra_work += cost
+
+    print("Extra setup cost on unaccounted for levels = ", extra_work)
 
     return hierarchy
 
 
 # Weird bugs / Notes
-#   - Richardson P smoothing calls some pow funciton in scipy??
 #   - Filtering does not decrease complexity, omproves CF slightly?
 #   - ^Same with local weighting
 #   - No filter, local weighting seems best for TAD / SAD
-#   - Restricting bad guy to coarse grid caused notable increase in performance
 #   - Don't think we need to symmetrically scale diagonal each iteration.
 #     Lot of WUs, initial tests didn't suggest it improved convergene or
 #     complexity enough to be worth the effort.
@@ -477,7 +497,6 @@ def try_solve(A, levels,
               num_targets,
               max_level_iterations,
               weak_tol,
-              local_weak_tol,
               diagonal_dominance,
               coarse_solver,
               cycle,
@@ -490,7 +509,11 @@ def try_solve(A, levels,
     """
     Needs some love.
 
-    TODO : add SC for V-cycles, relaxation targets
+    TODO : add SC for relaxation targets
+           Check on SC for small eigenvalue problems -- really 9n^3??
+
+           ----> BAD GUYS DO NOT APPEAR TO BE A-ORTHOGONAL COMING OUT OF GRITZ???
+
     """
 
     # If coarserer hierarchies have already been defined, remove
@@ -505,6 +528,10 @@ def try_solve(A, levels,
     current.A = A
     n = A.shape[0]
 
+    # Leading constant in approximation properties
+    #   TODO : Approximate this in a cheaper way?
+    sap_tol = (weak_tol / approximate_spectral_radius(A) )**2
+
     # Test if we are at the coarsest level. If no hierarchy has been
     # constructed in adaptive process yet, construct hierarchy. If 
     # a hierarchy exists, update coarse grid solver. 
@@ -518,6 +545,9 @@ def try_solve(A, levels,
     current.history['B'] = []
     current.history['conv'] = []
     current.history['agg'] = []
+
+    # Leading constant for complexity w.r.t. the finest grid
+    chi = float(A.nnz) / levels[0].A.nnz
 
     # Generate initial targets as random vectors relaxed on AB = 0.
     if B == None:
@@ -571,13 +601,13 @@ def try_solve(A, levels,
         raise ValueError('unrecognized strength of connection method: %s' %
                          str(fn))
 
-    complexity[level]['strength'] += kwargs['cost'][0]
+    complexity[level]['strength'] += kwargs['cost'][0] * chi
 
      # Avoid coarsening diagonally dominant rows
     flag, kwargs = unpack_arg(diagonal_dominance)
     if flag:
         C = eliminate_diag_dom_nodes(current.A, C, **kwargs)
-        complexity[level]['strength'] += kwargs['cost'][0]
+        complexity[level]['strength'] += kwargs['cost'][0] * chi
 
     # Compute the aggregation matrix AggOp (i.e., the nodal coarsening of A).
     # AggOp is a boolean matrix, where the sparsity pattern for the k-th column
@@ -594,7 +624,7 @@ def try_solve(A, levels,
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
 
-    complexity[level]['aggregation'] += kwargs['cost'][0] * (float(C.nnz)/A.nnz)
+    complexity[level]['aggregation'] += kwargs['cost'][0] * (float(C.nnz)/levels[0].A.nnz)
 
     # Loop over adaptive hierarchy until CF is sufficient or we have 
     # reached maximum iterations. Maximum iterations is checked inside
@@ -607,22 +637,22 @@ def try_solve(A, levels,
         # Add new target. Orthogonalize using global / local Ritz and reconstruct T. 
         temp_cost = [0] 
         current.B = global_ritz_process(A=current.A, B1=current.B, B2=target, \
-                                        weak_tol=weak_tol, level=level, \
+                                        sap_tol=sap_tol, level=level, \
                                         max_bad_guys=max_bad_guys, \
                                         verbose=verbose, cost=temp_cost)
-        complexity[level]['global_ritz'] += temp_cost[0]
+        complexity[level]['global_ritz'] += temp_cost[0] * chi
         temp_cost[0] = 0 
         current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp, \
-                                                B=current.B, weak_tol=local_weak_tol, \
+                                                B=current.B, sap_tol=sap_tol, \
                                                 max_bullets=max_bullets, level=level, \
                                                 verbose=verbose, cost=temp_cost)
-        complexity[level]['local_ritz'] += temp_cost[0]
+        complexity[level]['local_ritz'] += temp_cost[0] * chi
         
         # Restrict bad guy using tentative prolongator
         Bc = current.T.T * current.B
         current.history['B'].append(current.B)
         current.history['agg'].append(per_agg)
-        complexity[level]['smooth_P'] += float(current.T.nnz) / current.A.nnz
+        complexity[level]['smooth_P'] += float(current.T.nnz) / levels[0].A.nnz
 
         # Smooth tentative prolongator
         fn, kwargs = unpack_arg(smooth[level])
@@ -643,17 +673,17 @@ def try_solve(A, levels,
                              str(fn))
         
         current.R = current.P.H
-	    complexity[level]['smooth_P'] += kwargs['cost'][0]
+        complexity[level]['smooth_P'] += kwargs['cost'][0] * chi
 
-	    # Form coarse grid operator, get complexity
-	    complexity[level]['RAP'] += mat_mat_complexity(current.R, current.A) / float(current.A.nnz)
-	    RA = current.R * current.A
-	    complexity[level]['RAP'] += mat_mat_complexity(RA, current.P) / float(current.A.nnz)
-	    Ac = RA * current.P      # Galerkin operator, Ac = RAP
+        # Form coarse grid operator, get complexity
+        complexity[level]['RAP'] += mat_mat_complexity(current.R, current.A) / float(levels[0].A.nnz)
+        RA = current.R * current.A
+        complexity[level]['RAP'] += mat_mat_complexity(RA, current.P) / float(levels[0].A.nnz)
+        Ac = csr_matrix(RA * current.P)      # Galerkin operator, Ac = RAP
 
         # Symmetrically scale diagonal of Ac, modify R,P accodingly
         #     TODO : Do we need to do this? 
-        #			 Add cost
+        #             Add cost
         [D, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
         current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
         current.R = current.P.H
@@ -669,8 +699,7 @@ def try_solve(A, levels,
                   target_convergence=target_convergence, max_bullets=max_bullets,
                   max_bad_guys=max_bad_guys, num_targets=num_targets, 
                   max_level_iterations=max_level_iterations,
-                  weak_tol=weak_tol, local_weak_tol=local_weak_tol,
-                  diagonal_dominance=diagonal_dominance,
+                  weak_tol=weak_tol, diagonal_dominance=diagonal_dominance,
                   coarse_solver=coarse_solver, cycle=cycle,
                   verbose=verbose, keep=keep, hierarchy=hierarchy,
                   complexity=complexity, B=Bc)
@@ -679,7 +708,7 @@ def try_solve(A, levels,
         # test iterations that won't be used to improve solver
         level_iter += 1
         if level_iter == max_level_iterations:
-        	break
+            break
 
         # Test convergence of new hierarchy
         residuals = []
@@ -690,6 +719,12 @@ def try_solve(A, levels,
                                  init_level=level, accel=None)
         conv_factor = residuals[-1] / residuals[-2]
         current.history['conv'].append(conv_factor)
+        temp_CC = hierarchy.cycle_complexity(cycle=cycle, init_level=level,
+                                             recompute=True)
+
+        # Count WUs to run test iterations - note, the CC is in terms of
+        # the fine grid operator, so we do not scale by chi = Ai.nnz / A0.nnz
+        complexity[level]['test_solve'] += temp_CC * improvement_iters
 
         if verbose:
             print tabs(level), "Iter = ",level_iter,", CF = ", conv_factor

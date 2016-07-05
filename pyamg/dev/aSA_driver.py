@@ -19,6 +19,15 @@ from pyamg.util.utils import symmetric_rescaling
 
 from poisson import get_poisson
 
+
+def A_norm(x, A):
+    """
+    Calculate A-norm of x
+    """
+    x = np.ravel(x)
+    return np.sqrt(np.dot(x.conjugate(), A*x))
+
+
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
@@ -34,7 +43,7 @@ from poisson import get_poisson
 #		+ block_flag (F)- True / False for block matrices
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
-strength = ('symmetric', {'theta': 0.15} )
+strength = ('symmetric', {'theta': 0.0} )
 
 
 # Aggregation 
@@ -140,7 +149,7 @@ relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.3 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.7 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
@@ -148,15 +157,15 @@ eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 weak_tol 		 	 = 15.0			# new aSA 
 local_weak_tol 		 = 15.0			# new aSA
 max_bad_guys		 = 5
-max_bullets			 = 1
-max_level_iterations = 2
+max_bullets			 = 2
+max_level_iterations = 5
 improvement_iters 	 = 5		# number of times a target bad guy is improved
 num_targets 		 = 1		# number of near null space candidated to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
 # improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
-# improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
-improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
+improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
+# improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
 
 
 # General multilevel parameters
@@ -180,10 +189,10 @@ keep = False
 
 # Poisson
 # -------
-n0 = 300
-eps = 1.0
+n0 = 700
+eps = 0.01
 theta = 3*np.pi / 14.0
-A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=True)
+A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
 n = A.shape[0]
 x0 = np.random.rand(n,1)
 b = np.zeros((n,1))
@@ -286,7 +295,8 @@ ml_new_asa = asa_solver(A, B=bad_guy,
 						coarse_solver=coarse_solver,
 						cycle=cycle,
 						verbose=True,
-						keep=keep)
+						keep=keep,
+						setup_complexity=True)
 
 new_asa_sol = ml_new_asa.solve(b, x0, tol, residuals=new_asa_residuals, cycle=cycle, accel=accel)
 end = time.clock()
@@ -295,7 +305,7 @@ new_asa_time = end-start
 # Get complexities
 OC = ml_new_asa.operator_complexity()
 CC = ml_new_asa.cycle_complexity()
-SC = ml_new_asa.setup_complexity()
+SC = ml_new_asa.setup_complexity(verbose=True)
 
 # Convergence factors 
 new_asa_conv_factors = np.zeros((len(new_asa_residuals)-1,1))
@@ -308,14 +318,14 @@ print "aSA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
 # print "\tSetup time      	- ",sa_setup_time, " seconds"
 # print "\tSolve time      	- ", sa_solve_time, " seconds"
 print "\tConv. factor    	- ", CF
-# print "\tSetup complexity 	- ", SC
+print "\tSetup complexity 	- ", SC
 print "\tOp. complexity  	- ", OC
 print "\tCyc. complexity 	- ", CC
 
 pdb.set_trace()
 
 
-
+bad_guys = ml_new_asa.levels[0].history['B']
 
 
 
