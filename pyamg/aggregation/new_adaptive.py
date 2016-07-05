@@ -21,7 +21,7 @@ from pyamg.strength import symmetric_strength_of_connection,\
 from pyamg.relaxation.smoothing import change_smoothers
 from pyamg.util.linalg import norm, approximate_spectral_radius
 from pyamg.util.utils import levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
-                            symmetric_rescaling, relaxation_as_linear_operator
+                            symmetric_rescaling, relaxation_as_linear_operator, mat_mat_complexity
 from .aggregate import standard_aggregation, naive_aggregation,\
     lloyd_aggregation
 from pyamg.aggregation.smooth import jacobi_prolongation_smoother, energy_prolongation_smoother, \
@@ -392,7 +392,7 @@ def asa_solver(A, B=None,
     # TODO : Should maybe levelize adaptive parameters level_iterations, max targets, etc.?
     #   - Assume tolerances fixed on all levels
     #   - Assume max / min / num targets fixed on all levels too, don't see why they change>
-    #   - Max_level_iterations may be reasonable to change per level
+    #   - max_level_iterations may be reasonable to change per level
 
     # Dictionary for complexity tracking on each level
     complexity = [{}] * max_levels
@@ -489,6 +489,8 @@ def try_solve(A, levels,
 
     """
     Needs some love.
+
+    TODO : add SC for V-cycles, relaxation targets
     """
 
     # If coarserer hierarchies have already been defined, remove
@@ -569,10 +571,13 @@ def try_solve(A, levels,
         raise ValueError('unrecognized strength of connection method: %s' %
                          str(fn))
 
+    complexity[level]['strength'] += kwargs['cost'][0]
+
      # Avoid coarsening diagonally dominant rows
     flag, kwargs = unpack_arg(diagonal_dominance)
     if flag:
         C = eliminate_diag_dom_nodes(current.A, C, **kwargs)
+        complexity[level]['strength'] += kwargs['cost'][0]
 
     # Compute the aggregation matrix AggOp (i.e., the nodal coarsening of A).
     # AggOp is a boolean matrix, where the sparsity pattern for the k-th column
@@ -589,12 +594,15 @@ def try_solve(A, levels,
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
 
+    complexity[level]['aggregation'] += kwargs['cost'][0] * (float(C.nnz)/A.nnz)
+
     # Loop over adaptive hierarchy until CF is sufficient or we have 
-    # reached maximum iterations
+    # reached maximum iterations. Maximum iterations is checked inside
+    # loop to prevent running test iterations that will not be used. 
     level_iter = 0
     conv_factor = 1
     target = None
-    while (conv_factor > target_convergence) and (level_iter < max_level_iterations):
+    while (conv_factor > target_convergence):
 
         # Add new target. Orthogonalize using global / local Ritz and reconstruct T. 
         temp_cost = [0] 
@@ -614,8 +622,7 @@ def try_solve(A, levels,
         Bc = current.T.T * current.B
         current.history['B'].append(current.B)
         current.history['agg'].append(per_agg)
-
-        # pdb.set_trace()
+        complexity[level]['smooth_P'] += float(current.T.nnz) / current.A.nnz
 
         # Smooth tentative prolongator
         fn, kwargs = unpack_arg(smooth[level])
@@ -623,7 +630,7 @@ def try_solve(A, levels,
             current.P = jacobi_prolongation_smoother(current.A, current.T, C, \
                                                      Bc, **kwargs)
         elif fn == 'richardson':
-            current.P = richardson_prolongation_smoother(current.A, current.T \
+            current.P = richardson_prolongation_smoother(current.A, current.T, \
                                                          **kwargs)
         elif fn == 'energy':
             current.P = energy_prolongation_smoother(current.A, current.T, C, \
@@ -636,15 +643,17 @@ def try_solve(A, levels,
                              str(fn))
         
         current.R = current.P.H
+	    complexity[level]['smooth_P'] += kwargs['cost'][0]
 
-        # Construct coarse grid
-        Ac = (current.R * current.A * current.P).tocsr()
+	    # Form coarse grid operator, get complexity
+	    complexity[level]['RAP'] += mat_mat_complexity(current.R, current.A) / float(current.A.nnz)
+	    RA = current.R * current.A
+	    complexity[level]['RAP'] += mat_mat_complexity(RA, current.P) / float(current.A.nnz)
+	    Ac = RA * current.P      # Galerkin operator, Ac = RAP
 
         # Symmetrically scale diagonal of Ac, modify R,P accodingly
-        #
-        #   - TODO : Make sure this is doing the right thing
         #     TODO : Do we need to do this? 
-        #
+        #			 Add cost
         [D, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
         current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
         current.R = current.P.H
@@ -666,16 +675,13 @@ def try_solve(A, levels,
                   verbose=verbose, keep=keep, hierarchy=hierarchy,
                   complexity=complexity, B=Bc)
 
-        # TODO : in practice should break here if this was last iteration
-        #   - won't see CF, but iterating is a waste of work
+        # Break if this was last adaptive iteration to prevent computing
+        # test iterations that won't be used to improve solver
         level_iter += 1
+        if level_iter == max_level_iterations:
+        	break
 
         # Test convergence of new hierarchy
-        #
-        #   TODO: be smarter about approximating the convergence factor?
-        #         Tristan thinks some kind of linear fit to CFs could
-        #         provide a better estimate of CF.
-        #
         residuals = []
         target = my_rand(n, 1, current.A.dtype)
         target = hierarchy.solve(b, x0=target, cycle=cycle, \

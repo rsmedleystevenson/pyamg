@@ -34,7 +34,7 @@ from poisson import get_poisson
 #		+ block_flag (F)- True / False for block matrices
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
-strength = ('symmetric', {'theta': 0} )
+strength = ('symmetric', {'theta': 0.15} )
 
 
 # Aggregation 
@@ -149,14 +149,14 @@ weak_tol 		 	 = 15.0			# new aSA
 local_weak_tol 		 = 15.0			# new aSA
 max_bad_guys		 = 5
 max_bullets			 = 1
-max_level_iterations = 3
+max_level_iterations = 2
 improvement_iters 	 = 5		# number of times a target bad guy is improved
 num_targets 		 = 1		# number of near null space candidated to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
 # improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
-improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
-# improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
+# improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
+improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
 
 
 # General multilevel parameters

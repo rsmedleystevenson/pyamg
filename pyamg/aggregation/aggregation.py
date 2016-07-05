@@ -360,7 +360,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     flag, kwargs = unpack_arg(diagonal_dominance)
     if flag:
         C = eliminate_diag_dom_nodes(A, C, **kwargs)
-        levels[-1].complexity['diag_dom'] = kwargs['cost'][0]
+        levels[-1].complexity['strength'] = kwargs['cost'][0]
 
     # Compute the aggregation matrix AggOp (i.e., the nodal coarsening of A).
     # AggOp is a boolean matrix, where the sparsity pattern for the k-th column
