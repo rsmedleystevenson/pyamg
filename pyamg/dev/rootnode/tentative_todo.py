@@ -10,6 +10,7 @@ import numpy as np
 from scipy.sparse import isspmatrix_csr, isspmatrix_bsr, bsr_matrix, csr_matrix, identity, vstack, dia_matrix
 from scipy import linalg, array
 from pyamg import amg_core
+from pyamg.util.utils import filter_matrix_rows, truncate_rows
 
 from copy import deepcopy
 
@@ -164,103 +165,74 @@ def fit_candidates(AggOp, B, tol=1e-10):
 
 
 # # -------------------------------- CHECK ON / FIX -------------------------------- #
-#     # NEED TO IMPLEMENT THIS FOR SUPER NODES AS WELL...
-#       This means that Cpts will refer to blocks. In this case, the minmization is over 2x2 or 3x3, etc. blocks... 
-#     # K1 = B.shape[0] / num_pts  # dof per supernode (e.g. 3 for 3d vectors)
-#     # K2 = B.shape[1]           # candidates
-def ben_ideal_interpolation(A, AggOp, Cnodes, B=None, SOC=None, weighting=10.0, tol=1e-10):
+def ben_ideal_interpolation(A, AggOp, Cnodes, B, SOC, d=1, prefilter={}):
 
-    blocksize = None
+    if ('theta' in prefilter) and (prefilter['theta'] == 0):
+        prefilter.pop('theta', None)
 
     if not isspmatrix_csr(AggOp):
         raise TypeError('expected csr_matrix for argument AggOp')
 
-    if B is not None:
-        B = np.asarray(B)
-        if B.dtype not in ['float32', 'float64', 'complex64', 'complex128']:
-            B = np.asarray(B, dtype='float64')
+    B = np.asarray(B)
+    if B.dtype not in ['float32', 'float64', 'complex64', 'complex128']:
+        B = np.asarray(B, dtype='float64')
 
-        if len(B.shape) != 2:
-            raise ValueError('expected 2d array for argument B')
+    if len(B.shape) != 2:
+        raise ValueError('expected 2d array for argument B')
 
-        if B.shape[0] % AggOp.shape[0] != 0:
-            raise ValueError('dimensions of AggOp %s and B %s are \
-                              incompatible' % (AggOp.shape, B.shape))
+    if B.shape[0] % AggOp.shape[0] != 0:
+        raise ValueError('dimensions of AggOp %s and B %s are \
+                          incompatible' % (AggOp.shape, B.shape))
 
-    # BSR matrix - get blocksize and convert to csr matrix to extract submatrices.
-    if isspmatrix_bsr(A):
-        blocksize = A.blocksize
-        A = A.tocsr()
-        num_pts = A.shape[0]
-        Cpts = [blocksize[0]*i+j for i in Cnodes for j in range(0,blocksize[0])]
-        Fpts = [i for i in range(0,num_pts) if i not in Cnodes]
-        num_Fpts = len(Fpts)
-        num_Cpts = len(Cpts)
-        num_bad_guys = B.shape[1]
-        if isspmatrix_bsr(B):
-            B = B.tocsr()
-
-        if blocksize[0] != blocksize[1]:
-            warnings.warn('A has rectangular block size.\n New ideal interpolation is not set up to accomodate this.')
-
-    # CSR matrix
-    else:
-        num_pts = AggOp.shape[0]
-        Cpts = deepcopy(Cnodes)
-        Fpts = [i for i in range(0,num_pts) if i not in Cpts]
-        num_Fpts = len(Fpts)
-        num_Cpts = len(Cpts)
-        num_bad_guys = B.shape[1]
-
-
-    # ----------------------------------------------------------------------------- #
-    # Shouldn't even compute F points in Python as above. If I can avoid
-    # constructing submatrices at all, just pass A and C-points into the C-code...
-    #   - Is it better to form Acc a-priori for w = \hat{w}*Acc? \hat{B}_c = AccB_c?
-    #   - Can I form LQ minimization operators w/o Afc explicit? 
-    #   - How am I computing sparsity pattern? Preferably in C I suppose? 
-    # ----------------------------------------------------------------------------- #
-
+    if not isspmatrix_csr(A):
+        try: 
+            A = A.tocsr()
+            warnings.warn("Warning, implicit conversion of A to csr.")
+        except:
+            raise TypeError("Incompatible matrix type A.")
 
     # Sort indices of A
     A.sort_indices()
+    n = A.shape[0]
+    num_Cnodes = len(Cnodes)
+    num_bad_guys = B.shape[1]
 
-    # Unconstrained new ideal interpolation if no bad guys are provided
-    if B is None:
-        warnings.warn("No bad guys provided - using unconstrained minimization.")
-        fn = amg_core.unconstrained_new_ideal
-        fn( Y.indptr,
-            Y.indices,
-            Y.data,
-            lqTopOp.indptr,
-            lqTopOp.indices,
-            lqTopOp.data,
-            rhsTop.indptr,
-            rhsTop.indices,
-            rhsTop.data,
-            num_Fpts,
-            num_Cpts )
-    # Constrained new ideal interpolation if bad guys are provided
-    else:
-        lqBottomOp = weighting*(B[Cpts,:].T*Acc)
-        rhsBottom = weighting*B[Fpts,:].T
-        fn = amg_core.new_ideal_interpolation
-        fn( Y.indptr,
-            Y.indices,
-            Y.data,
-            lqTopOp.indptr,
-            lqTopOp.indices,
-            lqTopOp.data,
-            lqBottomOp.ravel(order='F'),
-            rhsTop.indptr,
-            rhsTop.indices,
-            rhsTop.data,
-            rhsBottom.ravel(order='F'),
-            num_Fpts,
-            num_Cpts,
-            num_bad_guys )
+    # Form sparsity pattern by multiplying SOC by AggOp
+    S = csr_matrix(AggOp, dtype='float64')
+    for i in range(0,d):
+        S = SOC * S
 
-    # Form P
+    # Filter sparsity pattern
+    if 'theta' in prefilter and 'k' in prefilter:
+        temp = filter_matrix_rows(S, prefilter['theta'])
+        S = truncate_rows(S, prefilter['k'])
+        # Union two sparsity patterns
+        S += temp
+    elif 'k' in prefilter:
+        S = truncate_rows(S, prefilter['k'])
+    elif 'theta' in prefilter:
+        S = filter_matrix_rows(S, prefilter['theta'])
+    elif len(prefilter) > 0:
+        raise ValueError("Unrecognized prefilter option")
+
+    S.eliminate_zeros()
+
+    # Form empty array for row pointer of P
+    P_rowptr = np.empty((n+1,),dtype='intc')
+
+
+    # Ben ideal interpolation
+    fn = amg_core.ben_ideal_interpolation
+    fn( A.indptr,
+        A.indices,
+        A.data,
+        S.indptr,
+        S.indices,
+        P_rowptr,
+        B,
+        Cnodes,
+        n,
+        num_bad_guys )
 
 
     return P

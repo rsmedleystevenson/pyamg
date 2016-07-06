@@ -5,24 +5,25 @@
 #include <iomanip>
 
 
-
+/* I think this is already in PyAMG somewhere? */
 inline int signof(int a) { return (a<0 ? -1 : 1); }
 
-// References may not work here...
+/* 2d array index A[row,col] to row-major index. */
 inline int row_major(const int &row, const int &col, const int &num_cols) 
 {
-	// return col*num_cols + row;		// THIS IS WRONG - JUST A TEST
 	return row*num_cols + col;
 }
 
-// References may not work here...
+
+/* 2d array index A[row,col] to column-major index. */
 inline int col_major(const int &row, const int &col, const int &num_rows) 
 {
 	return col*num_rows + row;
 }
 
-void print_mat(double vec[], const int &m, const int &n,
-					 const bool &is_col_major=0) 
+
+void print_mat(double vec[], const int m, const int n,
+					 const bool is_col_major=0) 
 {
 	if (is_col_major) {
 		for (int i=0; i<m; i++) {
@@ -47,13 +48,33 @@ void print_mat(double vec[], const int &m, const int &n,
 }
 
 
-// QR on matrix A stored in row or column major. A is 
-// overwritten with R and Q is returned, both in the  
-// same storage format that A is passed in as.
+/* QR-decomposition using Householer transformations on dense
+ * 2d array stored in either column- or row-major form. 
+ * 
+ * Parameters
+ * ----------
+ * 		A : double array
+ *			2d matrix A stored in 1d column- or row-major.
+ * 		m : &int
+ *			Number of rows in A
+ *		n : &int
+ *			Number of columns in A
+ *		is_col_major : bool
+ *			True if A is stored in column-major, false
+ *			if A is stored in row-major.
+ *
+ * Returns
+ * -------
+ * 		Q : vector<double>
+ *			Matrix Q stored in same format as A.
+ *		R : in-place
+ *			R is stored over A in place, in same format.
+ *
+ */
 std::vector<double> QR(double A[],
 					   const int &m,
 					   const int &n,
-					   const bool is_col_major=0)
+					   const bool is_col_major)
 {
 	// Funciton pointer for row or column major matrices
 	int (*get_ind)(const int&, const int&, const int&);
@@ -138,19 +159,42 @@ std::vector<double> QR(double A[],
 }
 
 
-// Backwards substitution solve on upper triangular system. Note, R
-// need not be square, the system will be solved over the rank r upper
-// triangular block. If remaining entries in solution available, will
-// be set to zero. Solution stored in vector reference x.
-//	- R is m x n
-//  - rhs has length m
-//	- x has length n
+/* Backward substitution solve on upper-triangular linear system,
+ * Rx = rhs, where R is stored in column- or row-major form. 
+ * 
+ * Parameters
+ * ----------
+ *		R : double array, length m*n
+ *			Upper-triangular array stored in column- or row-major.
+ *		rhs : double array, length m
+ *			Right hand side of linear system
+ *		x : double array, length n
+ *			Preallocated array for solution
+ *		m : &int
+ *			Number of rows in R
+ *		n : &int
+ *			Number of columns in R
+ *		is_col_major : bool
+ *			True if R is stored in column-major, false
+ *			if R is stored in row-major.
+ *
+ * Returns
+ * -------
+ *		Nothing, solution is stored in x[].
+ *
+ * Notes
+ * -----
+ * R need not be square, the system will be solved over the
+ * rank r upper-triangular block. If remaining entries in
+ * solution are unused, they will be set to zero.
+ *
+ */		
 void upper_tri_solve(const double R[],
 					 const double rhs[],
 					 double x[],
 					 const int &m,
 					 const int &n,
-					 const bool is_col_major=0)
+					 const bool is_col_major)
 {
 	// Funciton pointer for row or column major matrices
 	int (*get_ind)(const int&, const int&, const int&);
@@ -185,19 +229,42 @@ void upper_tri_solve(const double R[],
 }
 
 
-// Forward substitution solve on lower triangular system. Note, L
-// need not be square, the system will be solved over the rank r lower
-// triangular block. If remaining entries in solution available, will
-// be set to zero. Solution stored in vector reference x.
-//	- L is m x n
-//  - rhs has length m
-//	- x has length n
+/* Forward substitution solve on lower-triangular linear system,
+ * Lx = rhs, where L is stored in column- or row-major form. 
+ * 
+ * Parameters
+ * ----------
+ *		L : double array, length m*n
+ *			Lower-triangular array stored in column- or row-major.
+ *		rhs : double array, length m
+ *			Right hand side of linear system
+ *		x : double array, length n
+ *			Preallocated array for solution
+ *		m : &int
+ *			Number of rows in L
+ *		n : &int
+ *			Number of columns in L
+ *		is_col_major : bool
+ *			True if L is stored in column-major, false
+ *			if L is stored in row-major.
+ *
+ * Returns
+ * -------
+ *		Nothing, solution is stored in x[].
+ *
+ * Notes
+ * -----
+ * L need not be square, the system will be solved over the
+ * rank r lower-triangular block. If remaining entries in
+ * solution are unused, they will be set to zero.
+ *
+ */
 void lower_tri_solve(const double L[],
 					 const double rhs[],
 					 double x[],
 					 const int &m,
 					 const int &n,
-					 const bool is_col_major=0)
+					 const bool is_col_major)
 {
 	// Funciton pointer for row or column major matrices
 	int (*get_ind)(const int&, const int&, const int&);
@@ -219,7 +286,7 @@ void lower_tri_solve(const double L[],
 			temp -= L[get_ind(i,j,*C)]*x[j];
 		}
 		if (std::abs(L[get_ind(i,i,*C)]) < 1e-12) {
-			std::cout << "Warning: Upper triangular matrix near singular.\n"
+			std::cout << "Warning: Lower triangular matrix near singular.\n"
 						 "Dividing by ~ 0.\n";
 		}
 		x[i] = temp / L[get_ind(i,i,*C)];
@@ -232,9 +299,34 @@ void lower_tri_solve(const double L[],
 }
 
 
-
-// Least squares minimization using QR. If system is under determined, 
-// free entries are set to zero. 
+/* Method to solve the linear least squares problem.
+ *
+ * Parameters
+ * ----------
+ * 		A : double array, length m*n
+ *			2d array stored in column- or row-major.
+ *		b : double array, length m
+ *			Right hand side of unconstrained problem.
+ *		x : double array, length n
+ *			Container for solution
+ * 		m : &int
+ *			Number of rows in A
+ *		n : &int
+ *			Number of columns in A
+ *		is_col_major : bool
+ *			True if A is stored in column-major, false
+ *			if A is stored in row-major.
+ *
+ * Returns
+ * -------
+ * 		x : vector<double>
+ *			Solution to constrained least sqaures problem.
+ *
+ * Notes
+ * -----
+ * If system is under determined, free entries are set to zero. 
+ *
+ */
 void least_squares(double A[],
 				   double b[],
 				   double x[],
@@ -267,21 +359,75 @@ void least_squares(double A[],
 }
 
 
-// Assume A is mxn, C is sxn. 
-//	- Pass A and C^T in column major (C in in row major)
+/* Method to solve an arbitrary constrained least squares.
+ * Can be used one of two ways, with any shape and rank
+ * operator A.
+ *
+ * 	1. Suppose we want to solve
+ *		x = argmin || xA - b || s.t. xC = d 				(1)
+ * 	Let C = QR, and make the change of variable z := xQ.
+ * 	Then (1) is equivalent to
+ *		z = argmin || zQ^TA - b ||   s.t. zR = d
+ *		  = argmin || A^TQz^T - b || s.t. R^Tz^T = d 		(2)
+ * 	This is solved by passing in A in *row major* and
+ * 	C in *column major.*
+ *		- A is nxm
+ *		- C is mxs
+ *
+ * 	2. Suppose we want to solve
+ *		x = argmin || Ax - b || s.t. Cx = d 				(3)
+ * 	Let C^T = QR, and make the change of variable z := Q^Tx.
+ * 	Then (1) is equivalent to
+ *		z = argmin || AQx - b ||   s.t. R^Tz = d 			(4)
+ * 	This is solved by passing in A in *column major* and
+ * 	C in *row major.* 
+ *		- A is mxn
+ *		- C is sxn
+ *
+ * Parameters
+ * ----------
+ * 		A : vector<double>
+ *			2d array stored in column- or row-major.
+ *		b : vector<double>
+ *			Right hand side of unconstrained problem.
+ *		C : vector<double>
+ *			Constraint operator, stored in opposite form as
+ *			A. E.g. A in column-major means C in row-major.
+ *		d : vector<double> 
+ *			Right hand side of contraint equation.
+ *		m : &int
+ *			Number of columns if A is in row-major, number
+ *			of rows if A is in column-major.
+ *		n : &int
+ *			Number of rows if A is in row-major, number
+ *			of columns if A is in column-major.
+ *		s : &int
+ *			Number of constraints.
+ *
+ * Returns
+ * -------
+ * 		x : vector<double>
+ *			Solution to constrained least sqaures problem.
+ *
+ */
 std::vector<double> constrained_least_squares(std::vector<double> &A,
 											  std::vector<double> &b,
-											  std::vector<double> &Ct,
+											  std::vector<double> &C,
 											  std::vector<double> &d,
 											  const int &m,
 											  const int &n,
 											  const int &s)
 {
 
-	// Need to track which vectors are stored in what format...
-	std::vector<double> Qc = QR(&Ct[0],n,s,1);
+	// Perform QR on matrix C. R is written over C in column major,
+	// and Q is returned in column major. 
+	std::vector<double> Qc = QR(&C[0],n,s,1);
 
-	// Form matrix product S = A*Qc in column major. Stored in A.
+	print_mat(&C[0], n, s, 1);
+
+	// Form matrix product S = A^T * Q. For A passed in as row
+	// major, perform S = A * Q, assuming that A is in column major
+	// (A^T row major = A column major).
 	std::vector<double> temp_vec(n,0);
 	for (int i=0; i<m; i++) {
 		for (int j=0; j<n; j++) {
@@ -300,12 +446,12 @@ std::vector<double> constrained_least_squares(std::vector<double> &A,
 	// in place, don't think it's worth it.
 	for (int i=1; i<s; i++) {
 		for (int j=0; j<i; j++) {
-			Ct[col_major(i,j,n)] = Ct[col_major(j,i,n)];
+			C[col_major(i,j,n)] = C[col_major(j,i,n)];
 		}
 	}
 
 	// Satisfy constraints R^Tz = d, move to rhs of LS
-	lower_tri_solve(&Ct[0],&d[0],&temp_vec[0],n,s,1);
+	lower_tri_solve(&C[0],&d[0],&temp_vec[0],n,s,1);
 	for (int i=0; i<m; i++) {
 		double val = 0.0;
 		for (int j=0; j<s; j++) {
@@ -315,7 +461,6 @@ std::vector<double> constrained_least_squares(std::vector<double> &A,
 	}
 
 	// Call LS on reduced system
-	// 	- TODO : Either need to define (n-s) or not pass by reference
 	int temp_ind = n-s;
 	least_squares(&A[col_major(0,s,m)], &b[0], &temp_vec[s], m, temp_ind, 1);
 
@@ -496,7 +641,7 @@ int main(int argc, char *argv[])
 	// Solution = [-0.382384, 0.382384, -0.490184, 0.705872, -0.147064]
 	// std::vector<double> A {1,2,1, 0,2,1, 3,0,0, 1,1,0, -1,-2,0};
 	// std::vector<double> b { -1, 1, 0};
-	// std::vector<double> Ct {1,2,3,4,5};
+	// std::vector<double> C {1,2,3,4,5};
 	// std::vector<double> d {1};
 	// int m = 3;
 	// int n = 5;
@@ -504,19 +649,19 @@ int main(int argc, char *argv[])
 
 	// Exactly determined
 	// Solution = [12, -12, -5.25, 4.5, 1.75]
-	// std::vector<double> A {1,2,1, 0,2,1, 3,0,0, 1,1,0, -1,-2,0};
-	// std::vector<double> b { -1, 1, 0};
-	// std::vector<double> Ct {1,1,1,1,1, 1,2,3,4,5};
-	// std::vector<double> d {1, -1};
-	// int m = 3;
-	// int n = 5;
-	// int s = 2;
+	std::vector<double> A {1,2,1, 0,2,1, 3,0,0, 1,1,0, -1,-2,0};
+	std::vector<double> b { -1, 1, 0};
+	std::vector<double> C {1,1,1,1,1, 1,2,3,4,5};
+	std::vector<double> d {1, -1};
+	int m = 3;
+	int n = 5;
+	int s = 2;
 
 	// Over determined 
 	// Solution = [0.596714, -0.12228, 0.3956, 1.54949, -1.56511]
 	// std::vector<double> A {1,-1,2,-2,3, 1,3,1,-2,0, 0,1,0,4,1, 0,0,-1,0,3, 2,0,0,0,3};
 	// std::vector<double> b { -2, -1, 0, 1, 2};
-	// std::vector<double> Ct {-1,1,-1,1,-1};
+	// std::vector<double> C {-1,1,-1,1,-1};
 	// std::vector<double> d {2};
 	// int m = 5;
 	// int n = 5;
@@ -524,17 +669,15 @@ int main(int argc, char *argv[])
 
 	// Over determined, singular A
 	// Solution = [-1.61035, 0.0202868, 0.280168, 0.579224, -0.0703043]
-	std::vector<double> A {1,1,0,0,0, 2,2,0,0,0, 0,1,0,4,1, 0,0,-1,0,3, 2,0,0,0,3};
-	std::vector<double> b { -2, -1, 0, 1, 2};
-	std::vector<double> Ct {-1,1,-1,1,-1};
-	std::vector<double> d {2};
-	int m = 5;
-	int n = 5;
-	int s = 1;
+	// std::vector<double> A {1,1,0,0,0, 2,2,0,0,0, 0,1,0,4,1, 0,0,-1,0,3, 2,0,0,0,3};
+	// std::vector<double> b { -2, -1, 0, 1, 2};
+	// std::vector<double> C {-1,1,-1,1,-1};
+	// std::vector<double> d {2};
+	// int m = 5;
+	// int n = 5;
+	// int s = 1;
 
-
-
-	std::vector<double> x = constrained_least_squares(A, b, Ct, d, m, n, s);
+	std::vector<double> x = constrained_least_squares(A, b, C, d, m, n, s);
 
 	std::cout << "x : \n\t";
 	for (int i=0; i<n; i++) {
