@@ -18,6 +18,7 @@ from pyamg.aggregation.new_adaptive import asa_solver
 from pyamg.util.utils import symmetric_rescaling
 
 from poisson import get_poisson
+from elasticity_bar import get_elasticity_bar
 
 
 def A_norm(x, A):
@@ -44,6 +45,7 @@ def A_norm(x, A):
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
 strength = ('symmetric', {'theta': 0.0} )
+# strength = ('evolution', {'epsilon': 4.0, 'k' : 2} )
 
 
 # Aggregation 
@@ -140,8 +142,8 @@ interp_smooth = ('jacobi', {'omega' : 4.0/3.0,
 # Note, Schwarz relaxation, polynomial relaxation, Cimmino relaxation,
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
-relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
-# relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
+# relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
+relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 
@@ -149,29 +151,28 @@ relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.7 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.85 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
 # -----------------------
-weak_tol 		 	 = 15.0			# new aSA 
-local_weak_tol 		 = 15.0			# new aSA
-max_bad_guys		 = 5
-max_bullets			 = 2
-max_level_iterations = 5
-improvement_iters 	 = 5		# number of times a target bad guy is improved
-num_targets 		 = 1		# number of near null space candidated to generate
+weak_tol 		 	 = 0.0			# new aSA 
+max_bad_guys		 = 10
+max_bullets			 = 8
+max_level_iterations = 1
+improvement_iters 	 = 10		# number of times a target bad guy is improved
+num_targets 		 = 1		# number of near null space candidates to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
-# improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
-improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
+improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
+# improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
 # improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
 
 
 # General multilevel parameters
 # -----------------------------
 max_levels 		   = 20 		# Max levels in hierarchy
-max_coarse 		   = 10 		# Max points allowed on coarse grid
+max_coarse 		   = 20 		# Max points allowed on coarse grid
 tol 			   = 1e-8		# Residual convergence tolerance
 is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
@@ -189,16 +190,31 @@ keep = False
 
 # Poisson
 # -------
-n0 = 700
-eps = 0.01
-theta = 3*np.pi / 14.0
-A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
+# n0 = 700
+# eps = 1.0
+# theta = 3*np.pi / 14.0
+# A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
+# n = A.shape[0]
+# x0 = np.random.rand(n,1)
+# b = np.zeros((n,1))
+# bad_guy = np.ones((n,1))
+# bad_guy = None
+# bad_guy = np.array((np.sin(np.linspace(0,1,A.shape[0])*np.pi),)).T
+
+# Elasticity 
+# ----------
+nx = 2
+ny = 100
+nz = 5
+A, b, bad_guy = get_elasticity_bar(nx=nx, ny=ny, nz=nz)
+A.eliminate_zeros()
 n = A.shape[0]
 x0 = np.random.rand(n,1)
-b = np.zeros((n,1))
+# bad_guy = None
+
+pdb.set_trace()
 
 [D, dum, dum] = symmetric_rescaling(A, copy=False)
-bad_guy = np.ones((n,1))
 bad_guy[:,0] = D * bad_guy[:,0]
 
 # ----------------------------------------------------------------------------- #
@@ -207,38 +223,38 @@ bad_guy[:,0] = D * bad_guy[:,0]
 # Classical SA solver
 # -------------------
 
-# sa_residuals = []
-# start = time.clock()
-# ml_sa = smoothed_aggregation_solver(A, B=bad_guy, symmetry='symmetric', strength=strength, aggregate=aggregate,
-# 						 			smooth=interp_smooth, max_levels=max_levels, max_coarse=max_coarse,
-# 						 			presmoother=relaxation, postsmoother=relaxation,
-# 						 			improve_candidates=improve_candidates, coarse_solver=coarse_solver,
-# 						 			keep=keep_levels )
+sa_residuals = []
+start = time.clock()
+ml_sa = smoothed_aggregation_solver(A, B=bad_guy, symmetry='symmetric', strength=strength, aggregate=aggregate,
+						 			smooth=interp_smooth, max_levels=max_levels, max_coarse=max_coarse,
+						 			presmoother=relaxation, postsmoother=relaxation,
+						 			improve_candidates=improve_candidates, coarse_solver=coarse_solver,
+						 			keep=keep_levels )
 
-# sa_sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, cycle=cycle, accel=accel)
+sa_sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, cycle=cycle, accel=accel)
 
-# end = time.clock()
-# sa_time = end-start
+end = time.clock()
+sa_time = end-start
 
-# # Get complexities
-# OC = ml_sa.operator_complexity()
-# CC = ml_sa.cycle_complexity()
-# SC = ml_sa.setup_complexity()
+# Get complexities
+OC = ml_sa.operator_complexity()
+CC = ml_sa.cycle_complexity()
+SC = ml_sa.setup_complexity()
 
-# # Convergence factors 
-# sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
-# for i in range(1,len(sa_residuals)-1):
-# 	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
+# Convergence factors 
+sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
+for i in range(1,len(sa_residuals)-1):
+	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
 
-# CF = np.mean(sa_conv_factors[1:])
+CF = np.mean(sa_conv_factors[1:])
 
-# print "SA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
-# # print "\tSetup time      	- ",sa_setup_time, " seconds"
-# # print "\tSolve time      	- ", sa_solve_time, " seconds"
-# print "\tConv. factor    	- ", CF
-# # print "\tSetup complexity 	- ", SC
-# print "\tOp. complexity  	- ", OC
-# print "\tCyc. complexity 	- ", CC
+print "SA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
+# print "\tSetup time      	- ",sa_setup_time, " seconds"
+# print "\tSolve time      	- ", sa_solve_time, " seconds"
+print "\tConv. factor    	- ", CF
+print "\tSetup complexity 	- ", SC
+print "\tOp. complexity  	- ", OC
+print "\tCyc. complexity 	- ", CC
 
 
 # ----------------------------------------------------------------------------- #
@@ -290,7 +306,6 @@ ml_new_asa = asa_solver(A, B=bad_guy,
 						num_targets=num_targets,
 						max_level_iterations=max_level_iterations,
 						weak_tol=weak_tol,
-						local_weak_tol=local_weak_tol,
 						diagonal_dominance=diagonal_dominance,
 						coarse_solver=coarse_solver,
 						cycle=cycle,
@@ -329,7 +344,5 @@ bad_guys = ml_new_asa.levels[0].history['B']
 
 
 
-
-
-
+test = np.sin(np.linspace(0,1,A.shape[0])*np.pi)
 
