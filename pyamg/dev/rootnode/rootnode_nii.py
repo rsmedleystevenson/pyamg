@@ -404,29 +404,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     # Cpts = [i for i in range(0,AggOp.shape[0]) if splitting[i]==1]
 
     # Compute prolongation operator.
-    if test_ind==0:
-        T = new_ideal_interpolation(A=A, AggOp=AggOp, Cnodes=Cnodes, B=B[:, 0:blocksize(A)], SOC=C)
-    else: 
-        T = py_ideal_interpolation(A=A, AggOp=AggOp, Cnodes=Cnodes, B=B[:, 0:blocksize(A)], SOC=C)
-
-    print "\nSize of sparsity pattern - ", T.nnz
-
-    # Smooth the tentative prolongator, so that it's accuracy is greatly
-    # improved for algebraically smooth error.
-    # fn, kwargs = unpack_arg(smooth[len(levels)-1])
-    # if fn == 'jacobi':
-    #     P = jacobi_prolongation_smoother(A, T, C, B, **kwargs)
-    # elif fn == 'richardson':
-    #     P = richardson_prolongation_smoother(A, T, **kwargs)
-    # elif fn == 'energy':
-    #     P = energy_prolongation_smoother(A, T, C, B, None, (False, {}),
-    #                                      **kwargs)
-    # elif fn is None:
-    #     P = T
-    # else:
-    #     raise ValueError('unrecognized prolongation smoother method %s' %
-    #                      str(fn))
-    P = T
+    P = ben_ideal_interpolation(A=A, AggOp=AggOp, Cnodes=Cnodes, B=B[:, 0:blocksize(A)], SOC=C)
   
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -434,6 +412,9 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     # Compute the restriction matrix R, which interpolates from the fine-grid
     # to the coarse-grid.  If A is nonsymmetric, then R must be constructed
     # based on A.H.  Otherwise R = P.H or P.T.
+    #
+    #      TODO : Probably don't need to scale each iteration, can test. 
+    #
     symmetry = A.symmetry
     if symmetry == 'hermitian':
         # symmetrically scale out the diagonal, include scaling in P, R

@@ -164,8 +164,45 @@ def fit_candidates(AggOp, B, tol=1e-10):
     return Q, R
 
 
-# # -------------------------------- CHECK ON / FIX -------------------------------- #
+
 def ben_ideal_interpolation(A, AggOp, Cnodes, B, SOC, d=1, prefilter={}):
+    """ Ben ideal interpolation - form P = [W; I] via minimizing 
+
+            ||I - WAcc^{-1}Acf||_F,  s.t.  PBc = B            
+    
+    Parameters
+    ----------
+    A : csr_matrix
+        Operator on current level of hierarchy, dimension nxn.
+    AggOp : csr_matrix
+        Describes the sparsity pattern of the tentative prolongator.
+        Has dimension (n, #aggregates)
+    Cnodes : array-like
+        List of designated C-points
+    B : array
+        The near-nullspace candidates stored in column-wise fashion.
+        Has dimension (n, #candidates)
+    SOC : csr_matrix
+
+    d : int : Default 1
+        Degree of expanding the sparsity pattern for P via multiplying
+        with the SOC matrix.
+    prefilter : {dictionary} : Default {}
+        Filters elements by row in sparsity pattern for P to reduce operator and
+        setup complexity. If None or empty dictionary, no dropping in P is done.
+        If postfilter has key 'k', then the largest 'k' entries  are kept in each
+        row.  If postfilter has key 'theta', all entries such that
+            P[i,j] < kwargs['theta']*max(abs(P[i,:]))
+        are dropped.  If postfilter['k'] and postfiler['theta'] are present, then
+        they are used in conjunction, with the union of their patterns used.
+
+    Returns
+    -------
+    P : csr_matrix
+        Interpolation operator
+
+
+    """
 
     if ('theta' in prefilter) and (prefilter['theta'] == 0):
         prefilter.pop('theta', None)
@@ -220,20 +257,21 @@ def ben_ideal_interpolation(A, AggOp, Cnodes, B, SOC, d=1, prefilter={}):
     # Form empty array for row pointer of P
     P_rowptr = np.empty((n+1,),dtype='intc')
 
-
     # Ben ideal interpolation
     fn = amg_core.ben_ideal_interpolation
-    fn( A.indptr,
-        A.indices,
-        A.data,
-        S.indptr,
-        S.indices,
-        P_rowptr,
-        B,
-        Cnodes,
-        n,
-        num_bad_guys )
+    P_vecs = fn(A.indptr,
+                A.indices,
+                A.data,
+                S.indptr,
+                S.indices,
+                P_rowptr,
+                B,
+                Cnodes,
+                n,
+                num_bad_guys )
 
+    P = csr_matrix((np.array(P_vecs[1]), np.array(P_vecs[0]), \
+                    P_rowptr), shape=[n,num_Cnodes])
 
     return P
 

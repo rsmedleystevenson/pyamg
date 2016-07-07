@@ -48,8 +48,11 @@
     (      ctype splitting [], const int splitting_size),
     (      ctype indices [], const int indices_size),
     (const ctype A_rowptr [], const int A_rowptr_size),
-    (const ctype A_colinds [], const int A_colinds_size)
-
+    (const ctype A_colinds [], const int A_colinds_size),
+    (const ctype S_rowptr [], const int S_rowptr_size),
+    (const ctype S_colinds [], const int S_colinds_size),
+    (      ctype P_rowptr [], const int P_rowptr_size),
+    (      ctype Cpts [], const Cpts_size)
 };
 %enddef
 
@@ -78,7 +81,8 @@
     (      ctype temp [], const int temp_size),
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
-    (      ctype cost [], const int cost_size)
+    (      ctype cost [], const int cost_size),
+    (const ctype A_data [], A_data_size)
 };
 %enddef
 
