@@ -165,7 +165,7 @@ def fit_candidates(AggOp, B, tol=1e-10):
 
 
 
-def ben_ideal_interpolation(A, AggOp, Cnodes, B, SOC, d=1, prefilter={}):
+def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     """ Ben ideal interpolation - form P = [W; I] via minimizing 
 
             ||I - WAcc^{-1}Acf||_F,  s.t.  PBc = B            
@@ -227,15 +227,31 @@ def ben_ideal_interpolation(A, AggOp, Cnodes, B, SOC, d=1, prefilter={}):
             warnings.warn("Warning, implicit conversion of A to csr.")
         except:
             raise TypeError("Incompatible matrix type A.")
-
+    
     # Sort indices of A
     A.sort_indices()
     n = A.shape[0]
     num_Cnodes = len(Cnodes)
     num_bad_guys = B.shape[1]
 
+    # Form initial sparsity pattern
+    # TODO : forming rowptr is slow python loop, better way??
+    # TODO : Do I need to sort C-pts?
+    temp_inds = np.zeros((n,))
+    temp_inds[Cnodes] = 1
+    Cnodes = np.where(temp_inds==1)[0]
+    if AggOp == None;
+        rowptr = np.zeros((n+1,),dtype='intc')
+        for i in range(0,num_Cnodes-1):
+            rowptr[(Cnodes[i]+1):(Cnodes[i+1]+1)] = i+1
+
+        rowptr[(1+Cnodes[-1]):] = rowptr[Cnodes[-1]]+1
+        S = csr_matrix((np.ones((num_Cnodes,), dtype='intc'),
+                        np.arange(0,Cnodes), rowptr), dtype='float64')
+    else:
+        S = csr_matrix(AggOp, dtype='float64')
+
     # Form sparsity pattern by multiplying SOC by AggOp
-    S = csr_matrix(AggOp, dtype='float64')
     for i in range(0,d):
         S = SOC * S
 

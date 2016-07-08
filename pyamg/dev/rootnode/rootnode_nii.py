@@ -33,8 +33,11 @@ __all__ = ['newideal_solver']
 
 
 def newideal_solver(A, B=None, BH=None,
-                    symmetry='hermitian', strength='symmetric',
-                    aggregate='standard', smooth='energy',
+                    symmetry='hermitian',
+                    strength='symmetric',
+                    aggregate=None,
+                    splitting='RS',
+                    smooth='energy',
                     presmoother=('block_gauss_seidel',
                                  {'sweep': 'symmetric'}),
                     postsmoother=('block_gauss_seidel',
@@ -43,7 +46,8 @@ def newideal_solver(A, B=None, BH=None,
                                         {'sweep': 'symmetric',
                                          'iterations': 4}),
                     max_levels = 10, max_coarse = 10,
-                    diagonal_dominance=False, keep=False, test_ind=0, **kwargs):
+                    diagonal_dominance=False, keep=False, 
+                    test_ind=0, **kwargs):
     """
     Create a multilevel solver using root-node based Smoothed Aggregation (SA).
     See the notes below, for the major differences with the classical-style
@@ -86,6 +90,9 @@ def newideal_solver(A, B=None, BH=None,
         parameter on a per level basis.  Also, see notes below for using a
         predefined aggregation on each level. Method-specific parameters may be
         passed in using a tuple, e.g. aggregate=('pairwise',{'num_matchings': 2 })
+    splitting : {list} : 
+
+    
     smooth : {list} : default ['energy', None]
         Method used to smooth the tentative prolongator.  Method-specific
         parameters may be passed in using a tuple, e.g.  smooth=
@@ -391,24 +398,23 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
         Cnodes = kwargs['Cnodes']
+    elif fn == None:
+        AggOp = None
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
 
-# ----------------------------------------------------------------------------- #
-# ------------------- New ideal interpolation constructed --------------------  #
-# ----------------------------------------------------------------------------- #
+    # Check for alternative to AggOp, CF-splitting. Must have one or
+    # the other. 
+    fn, kwargs = unpack_arg(splitting[len(levels)-1])
 
-    # pdb.set_trace()
 
-    # splitting = CR(A)
-    # Cpts = [i for i in range(0,AggOp.shape[0]) if splitting[i]==1]
 
     # Compute prolongation operator.
-    P = ben_ideal_interpolation(A=A, AggOp=AggOp, Cnodes=Cnodes, B=B[:, 0:blocksize(A)], SOC=C)
+    # 
+    #   TODO : Add in degree of sparsity and filtering option
+    #
+    P = ben_ideal_interpolation(A=A, B=B, SOC=C, Cnodes=Cnodes, AggOp=AggOp)
   
-# ----------------------------------------------------------------------------- #
-# ----------------------------------------------------------------------------- #
-
     # Compute the restriction matrix R, which interpolates from the fine-grid
     # to the coarse-grid.  If A is nonsymmetric, then R must be constructed
     # based on A.H.  Otherwise R = P.H or P.T.
