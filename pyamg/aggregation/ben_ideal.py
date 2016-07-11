@@ -6,30 +6,31 @@ import pdb
 
 import numpy as np
 from warnings import warn
-from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr,
+from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr, \
     isspmatrix_bsr, identity, SparseEfficiencyWarning, diags
 
 from pyamg.multilevel import multilevel_solver
 from pyamg.relaxation.smoothing import change_smoothers
 from pyamg.util.utils import relaxation_as_linear_operator,\
     symmetric_rescaling, eliminate_diag_dom_nodes, blocksize, \
-    levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates
+    levelize_strength_or_aggregation, mat_mat_complexity, \
+    levelize_smooth_or_improve_candidates
 from pyamg.strength import classical_strength_of_connection,\
     symmetric_strength_of_connection, evolution_strength_of_connection,\
     energy_based_strength_of_connection, distance_strength_of_connection,\
     algebraic_distance
 from aggregate import standard_aggregation, naive_aggregation, \
-    lloyd_aggregation, pairwise_aggregation
+    lloyd_aggregation
 
 from pyamg.classical.split import RS, PMIS, PMISc, MIS, CLJP, CLJPc
 from pyamg.classical.cr import CR
 from tentative import ben_ideal_interpolation
 
 
-__all__ = ['benideal_solver']
+__all__ = ['ben_ideal_solver']
 
 
-def benideal_solver(A, B=None, BH=None,
+def ben_ideal_solver(A, B=None, BH=None,
                     symmetry='hermitian',
                     strength='symmetric',
                     aggregate=None,
@@ -227,7 +228,6 @@ def benideal_solver(A, B=None, BH=None,
         levelize_strength_or_aggregation(aggregate, max_levels, max_coarse)
     improve_candidates =\
         levelize_smooth_or_improve_candidates(improve_candidates, max_levels)
-    smooth = levelize_smooth_or_improve_candidates(smooth, max_levels)
 
     # Construct multilevel structure
     levels = []
@@ -241,16 +241,16 @@ def benideal_solver(A, B=None, BH=None,
 
     while len(levels) < max_levels and \
             levels[-1].A.shape[0]/blocksize(levels[-1].A) > max_coarse:
-        extend_hierarchy(levels, strength, aggregate, smooth,
-                         improve_candidates, diagonal_dominance, keep, test_ind=test_ind)
+        extend_hierarchy(levels, strength, aggregate, splitting,
+                    improve_candidates, diagonal_dominance, keep)
 
     ml = multilevel_solver(levels, **kwargs)
     change_smoothers(ml, presmoother, postsmoother)
     return ml
 
 
-def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
-                     diagonal_dominance=False, keep=True, test_ind=0):
+def extend_hierarchy(levels, strength, aggregate, splitting,
+                     improve_candidates, diagonal_dominance, keep):
     """Service routine to implement the strength of connection, aggregation,
     tentative prolongation construction, and prolongation smoothing.  Called by
     smoothed_aggregation_solver.
@@ -347,7 +347,11 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     # Check for CF-splitting to generate C-points. Must use either a
     # CF-splitting or aggregation routine. If both provided, Aggregation
     # routine used to generate sparsity and C-points taken from CF-splitting.
-    fn, kwargs = unpack_arg(splitting[len(levels)-1])
+    # 
+    # TODO : levelize splitting in here and in classical.py
+    #
+    # fn, kwargs = unpack_arg(splitting[len(levels)-1])
+    fn, kwargs = unpack_arg(splitting)
     if fn == 'RS':
         Cnodes = RS(C, **kwargs)
     elif fn == 'PMIS':

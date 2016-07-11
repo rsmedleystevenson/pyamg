@@ -3,7 +3,7 @@
 __docformat__ = "restructuredtext en"
 
 import numpy as np
-from scipy.sparse import isspmatrix_csr, bsr_matrix
+from scipy.sparse import isspmatrix_csr, bsr_matrix, csr_matrix
 from pyamg import amg_core
 
 __all__ = ['fit_candidates','ben_ideal_interpolation']
@@ -228,10 +228,10 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
 
     # Sort C-points and form initial sparsity pattern
     # TODO : forming rowptr is slow python loop, better way??
-    temp_inds = np.zeros((n,))
+    temp_inds = np.zeros((n,), dtype='intc')
     temp_inds[Cnodes] = 1
     Cnodes = np.where(temp_inds==1)[0]
-    if AggOp == None;
+    if AggOp == None:
         rowptr = np.zeros((n+1,),dtype='intc')
         for i in range(0,num_Cnodes-1):
             rowptr[(Cnodes[i]+1):(Cnodes[i+1]+1)] = i+1
@@ -272,7 +272,7 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
                 S.indptr,
                 S.indices,
                 P_rowptr,
-                B,
+                B.ravel(),
                 Cnodes,
                 n,
                 num_bad_guys )

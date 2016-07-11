@@ -657,16 +657,16 @@ std::vector<double> constrained_least_squares(std::vector<double> &A,
 //
 // template<class I, class T>
 std::pair<std::vector<int>, std::vector<double> > 
-     ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
-                             const int A_colinds[], const int A_colinds_size,
-                             const double A_data[], const int A_data_size,
-                             const int S_rowptr[], const int S_rowptr_size,
-                             const int S_colinds[], const int S_colinds_size,
-                             int P_rowptr[], const int P_rowptr_size,
-                             const double B[], const int B_size,
-                             const int Cpts[], const int Cpts_size,
-                             const int n,
-                             const int num_bad_guys )
+    ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
+                            const int A_colinds[], const int A_colinds_size,
+                            const double A_data[], const int A_data_size,
+                            const int S_rowptr[], const int S_rowptr_size,
+                            const int S_colinds[], const int S_colinds_size,
+                            int P_rowptr[], const int P_rowptr_size,
+                            const double B[], const int B_size,
+                            const int Cpts[], const int Cpts_size,
+                            const int n,
+                            const int num_bad_guys )
 {
 
     /* ------ tested ----- */

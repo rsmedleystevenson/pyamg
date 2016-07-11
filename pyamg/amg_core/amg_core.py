@@ -651,9 +651,9 @@ PairVector_swigregister = _amg_core.PairVector_swigregister
 PairVector_swigregister(PairVector)
 
 
-def ben_ideal_interpolation(A_rowptr, A_rowptr_size, A_colinds, A_colinds_size, A_data, A_data_size, S_rowptr, S_rowptr_size, S_colinds, S_colinds_size, P_rowptr, P_rowptr_size, B, B_size, Cpts, Cpts_size, n, num_bad_guys):
-    """ben_ideal_interpolation(I const [] A_rowptr, int const A_rowptr_size, I const [] A_colinds, int const A_colinds_size, T const [] A_data, int const A_data_size, I const [] S_rowptr, int const S_rowptr_size, I const [] S_colinds, int const S_colinds_size, I [] P_rowptr, int const P_rowptr_size, T const [] B, int const B_size, I const [] Cpts, int const Cpts_size, I const n, I const num_bad_guys) -> PairVector"""
-    return _amg_core.ben_ideal_interpolation(A_rowptr, A_rowptr_size, A_colinds, A_colinds_size, A_data, A_data_size, S_rowptr, S_rowptr_size, S_colinds, S_colinds_size, P_rowptr, P_rowptr_size, B, B_size, Cpts, Cpts_size, n, num_bad_guys)
+def ben_ideal_interpolation(A_rowptr, A_rowptr_size, A_colinds, A_colinds_size, A_data, A_data_size, S_rowptr, S_rowptr_size, S_colinds, S_colinds_size):
+    """ben_ideal_interpolation(int const [] A_rowptr, int const A_rowptr_size, int const [] A_colinds, int const A_colinds_size, double const [] A_data, int const A_data_size, int const [] S_rowptr, int const S_rowptr_size, int const [] S_colinds, int const S_colinds_size) -> PairVector"""
+    return _amg_core.ben_ideal_interpolation(A_rowptr, A_rowptr_size, A_colinds, A_colinds_size, A_data, A_data_size, S_rowptr, S_rowptr_size, S_colinds, S_colinds_size)
 
 def signof(*args):
     """

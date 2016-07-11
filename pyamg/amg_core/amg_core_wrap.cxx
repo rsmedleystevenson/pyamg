@@ -2937,29 +2937,28 @@ SWIG_Python_NonDynamicSetAttr(PyObject *obj, PyObject *name, PyObject *value) {
 
 /* -------- TYPES TABLE (BEGIN) -------- */
 
-#define SWIGTYPE_p_I swig_types[0]
-#define SWIGTYPE_p_T swig_types[1]
-#define SWIGTYPE_p_allocator_type swig_types[2]
-#define SWIGTYPE_p_char swig_types[3]
-#define SWIGTYPE_p_difference_type swig_types[4]
-#define SWIGTYPE_p_double swig_types[5]
-#define SWIGTYPE_p_first_type swig_types[6]
-#define SWIGTYPE_p_float swig_types[7]
-#define SWIGTYPE_p_p_PyObject swig_types[8]
-#define SWIGTYPE_p_second_type swig_types[9]
-#define SWIGTYPE_p_size_type swig_types[10]
-#define SWIGTYPE_p_std__allocatorT_double_t swig_types[11]
-#define SWIGTYPE_p_std__allocatorT_int_t swig_types[12]
-#define SWIGTYPE_p_std__complexT_double_t swig_types[13]
-#define SWIGTYPE_p_std__complexT_float_t swig_types[14]
-#define SWIGTYPE_p_std__invalid_argument swig_types[15]
-#define SWIGTYPE_p_std__pairT_std__vectorT_int_std__allocatorT_int_t_t_std__vectorT_double_std__allocatorT_double_t_t_t swig_types[16]
-#define SWIGTYPE_p_std__vectorT_double_std__allocatorT_double_t_t swig_types[17]
-#define SWIGTYPE_p_std__vectorT_int_std__allocatorT_int_t_t swig_types[18]
-#define SWIGTYPE_p_swig__SwigPyIterator swig_types[19]
-#define SWIGTYPE_p_value_type swig_types[20]
-static swig_type_info *swig_types[22];
-static swig_module_info swig_module = {swig_types, 21, 0, 0, 0, 0};
+#define SWIGTYPE_p_allocator_type swig_types[0]
+#define SWIGTYPE_p_char swig_types[1]
+#define SWIGTYPE_p_difference_type swig_types[2]
+#define SWIGTYPE_p_double swig_types[3]
+#define SWIGTYPE_p_first_type swig_types[4]
+#define SWIGTYPE_p_float swig_types[5]
+#define SWIGTYPE_p_int swig_types[6]
+#define SWIGTYPE_p_p_PyObject swig_types[7]
+#define SWIGTYPE_p_second_type swig_types[8]
+#define SWIGTYPE_p_size_type swig_types[9]
+#define SWIGTYPE_p_std__allocatorT_double_t swig_types[10]
+#define SWIGTYPE_p_std__allocatorT_int_t swig_types[11]
+#define SWIGTYPE_p_std__complexT_double_t swig_types[12]
+#define SWIGTYPE_p_std__complexT_float_t swig_types[13]
+#define SWIGTYPE_p_std__invalid_argument swig_types[14]
+#define SWIGTYPE_p_std__pairT_std__vectorT_int_std__allocatorT_int_t_t_std__vectorT_double_std__allocatorT_double_t_t_t swig_types[15]
+#define SWIGTYPE_p_std__vectorT_double_std__allocatorT_double_t_t swig_types[16]
+#define SWIGTYPE_p_std__vectorT_int_std__allocatorT_int_t_t swig_types[17]
+#define SWIGTYPE_p_swig__SwigPyIterator swig_types[18]
+#define SWIGTYPE_p_value_type swig_types[19]
+static swig_type_info *swig_types[21];
+static swig_module_info swig_module = {swig_types, 20, 0, 0, 0, 0};
 #define SWIG_TypeQuery(name) SWIG_TypeQueryModule(&swig_module, &swig_module, name)
 #define SWIG_MangledTypeQuery(name) SWIG_MangledTypeQueryModule(&swig_module, &swig_module, name)
 
@@ -10615,24 +10614,16 @@ SWIGINTERN PyObject *PairVector_swigregister(PyObject *SWIGUNUSEDPARM(self), PyO
 
 SWIGINTERN PyObject *_wrap_ben_ideal_interpolation(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
-  I *arg1 ;
+  int *arg1 ;
   int arg2 ;
-  I *arg3 ;
+  int *arg3 ;
   int arg4 ;
-  T *arg5 ;
+  double *arg5 ;
   int arg6 ;
-  I *arg7 ;
+  int *arg7 ;
   int arg8 ;
-  I *arg9 ;
+  int *arg9 ;
   int arg10 ;
-  I *arg11 ;
-  int arg12 ;
-  T *arg13 ;
-  int arg14 ;
-  I *arg15 ;
-  int arg16 ;
-  I arg17 ;
-  I arg18 ;
   void *argp1 = 0 ;
   int res1 = 0 ;
   int val2 ;
@@ -10653,22 +10644,6 @@ SWIGINTERN PyObject *_wrap_ben_ideal_interpolation(PyObject *SWIGUNUSEDPARM(self
   int res9 = 0 ;
   int val10 ;
   int ecode10 = 0 ;
-  void *argp11 = 0 ;
-  int res11 = 0 ;
-  int val12 ;
-  int ecode12 = 0 ;
-  void *argp13 = 0 ;
-  int res13 = 0 ;
-  int val14 ;
-  int ecode14 = 0 ;
-  void *argp15 = 0 ;
-  int res15 = 0 ;
-  int val16 ;
-  int ecode16 = 0 ;
-  void *argp17 ;
-  int res17 = 0 ;
-  void *argp18 ;
-  int res18 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
@@ -10679,124 +10654,60 @@ SWIGINTERN PyObject *_wrap_ben_ideal_interpolation(PyObject *SWIGUNUSEDPARM(self
   PyObject * obj7 = 0 ;
   PyObject * obj8 = 0 ;
   PyObject * obj9 = 0 ;
-  PyObject * obj10 = 0 ;
-  PyObject * obj11 = 0 ;
-  PyObject * obj12 = 0 ;
-  PyObject * obj13 = 0 ;
-  PyObject * obj14 = 0 ;
-  PyObject * obj15 = 0 ;
-  PyObject * obj16 = 0 ;
-  PyObject * obj17 = 0 ;
   std::pair< std::vector< int,std::allocator< int > >,std::vector< double,std::allocator< double > > > result;
   
-  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOOOO:ben_ideal_interpolation",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15,&obj16,&obj17)) SWIG_fail;
-  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_I, 0 |  0 );
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOO:ben_ideal_interpolation",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9)) SWIG_fail;
+  res1 = SWIG_ConvertPtr(obj0, &argp1,SWIGTYPE_p_int, 0 |  0 );
   if (!SWIG_IsOK(res1)) {
-    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ben_ideal_interpolation" "', argument " "1"" of type '" "I const []""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res1), "in method '" "ben_ideal_interpolation" "', argument " "1"" of type '" "int const []""'"); 
   } 
-  arg1 = reinterpret_cast< I * >(argp1);
+  arg1 = reinterpret_cast< int * >(argp1);
   ecode2 = SWIG_AsVal_int(obj1, &val2);
   if (!SWIG_IsOK(ecode2)) {
     SWIG_exception_fail(SWIG_ArgError(ecode2), "in method '" "ben_ideal_interpolation" "', argument " "2"" of type '" "int""'");
   } 
   arg2 = static_cast< int >(val2);
-  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_I, 0 |  0 );
+  res3 = SWIG_ConvertPtr(obj2, &argp3,SWIGTYPE_p_int, 0 |  0 );
   if (!SWIG_IsOK(res3)) {
-    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ben_ideal_interpolation" "', argument " "3"" of type '" "I const []""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res3), "in method '" "ben_ideal_interpolation" "', argument " "3"" of type '" "int const []""'"); 
   } 
-  arg3 = reinterpret_cast< I * >(argp3);
+  arg3 = reinterpret_cast< int * >(argp3);
   ecode4 = SWIG_AsVal_int(obj3, &val4);
   if (!SWIG_IsOK(ecode4)) {
     SWIG_exception_fail(SWIG_ArgError(ecode4), "in method '" "ben_ideal_interpolation" "', argument " "4"" of type '" "int""'");
   } 
   arg4 = static_cast< int >(val4);
-  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_T, 0 |  0 );
+  res5 = SWIG_ConvertPtr(obj4, &argp5,SWIGTYPE_p_double, 0 |  0 );
   if (!SWIG_IsOK(res5)) {
-    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "ben_ideal_interpolation" "', argument " "5"" of type '" "T const []""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res5), "in method '" "ben_ideal_interpolation" "', argument " "5"" of type '" "double const []""'"); 
   } 
-  arg5 = reinterpret_cast< T * >(argp5);
+  arg5 = reinterpret_cast< double * >(argp5);
   ecode6 = SWIG_AsVal_int(obj5, &val6);
   if (!SWIG_IsOK(ecode6)) {
     SWIG_exception_fail(SWIG_ArgError(ecode6), "in method '" "ben_ideal_interpolation" "', argument " "6"" of type '" "int""'");
   } 
   arg6 = static_cast< int >(val6);
-  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_I, 0 |  0 );
+  res7 = SWIG_ConvertPtr(obj6, &argp7,SWIGTYPE_p_int, 0 |  0 );
   if (!SWIG_IsOK(res7)) {
-    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "ben_ideal_interpolation" "', argument " "7"" of type '" "I const []""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res7), "in method '" "ben_ideal_interpolation" "', argument " "7"" of type '" "int const []""'"); 
   } 
-  arg7 = reinterpret_cast< I * >(argp7);
+  arg7 = reinterpret_cast< int * >(argp7);
   ecode8 = SWIG_AsVal_int(obj7, &val8);
   if (!SWIG_IsOK(ecode8)) {
     SWIG_exception_fail(SWIG_ArgError(ecode8), "in method '" "ben_ideal_interpolation" "', argument " "8"" of type '" "int""'");
   } 
   arg8 = static_cast< int >(val8);
-  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_I, 0 |  0 );
+  res9 = SWIG_ConvertPtr(obj8, &argp9,SWIGTYPE_p_int, 0 |  0 );
   if (!SWIG_IsOK(res9)) {
-    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "ben_ideal_interpolation" "', argument " "9"" of type '" "I const []""'"); 
+    SWIG_exception_fail(SWIG_ArgError(res9), "in method '" "ben_ideal_interpolation" "', argument " "9"" of type '" "int const []""'"); 
   } 
-  arg9 = reinterpret_cast< I * >(argp9);
+  arg9 = reinterpret_cast< int * >(argp9);
   ecode10 = SWIG_AsVal_int(obj9, &val10);
   if (!SWIG_IsOK(ecode10)) {
     SWIG_exception_fail(SWIG_ArgError(ecode10), "in method '" "ben_ideal_interpolation" "', argument " "10"" of type '" "int""'");
   } 
   arg10 = static_cast< int >(val10);
-  res11 = SWIG_ConvertPtr(obj10, &argp11,SWIGTYPE_p_I, 0 |  0 );
-  if (!SWIG_IsOK(res11)) {
-    SWIG_exception_fail(SWIG_ArgError(res11), "in method '" "ben_ideal_interpolation" "', argument " "11"" of type '" "I []""'"); 
-  } 
-  arg11 = reinterpret_cast< I * >(argp11);
-  ecode12 = SWIG_AsVal_int(obj11, &val12);
-  if (!SWIG_IsOK(ecode12)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode12), "in method '" "ben_ideal_interpolation" "', argument " "12"" of type '" "int""'");
-  } 
-  arg12 = static_cast< int >(val12);
-  res13 = SWIG_ConvertPtr(obj12, &argp13,SWIGTYPE_p_T, 0 |  0 );
-  if (!SWIG_IsOK(res13)) {
-    SWIG_exception_fail(SWIG_ArgError(res13), "in method '" "ben_ideal_interpolation" "', argument " "13"" of type '" "T const []""'"); 
-  } 
-  arg13 = reinterpret_cast< T * >(argp13);
-  ecode14 = SWIG_AsVal_int(obj13, &val14);
-  if (!SWIG_IsOK(ecode14)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode14), "in method '" "ben_ideal_interpolation" "', argument " "14"" of type '" "int""'");
-  } 
-  arg14 = static_cast< int >(val14);
-  res15 = SWIG_ConvertPtr(obj14, &argp15,SWIGTYPE_p_I, 0 |  0 );
-  if (!SWIG_IsOK(res15)) {
-    SWIG_exception_fail(SWIG_ArgError(res15), "in method '" "ben_ideal_interpolation" "', argument " "15"" of type '" "I const []""'"); 
-  } 
-  arg15 = reinterpret_cast< I * >(argp15);
-  ecode16 = SWIG_AsVal_int(obj15, &val16);
-  if (!SWIG_IsOK(ecode16)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode16), "in method '" "ben_ideal_interpolation" "', argument " "16"" of type '" "int""'");
-  } 
-  arg16 = static_cast< int >(val16);
-  {
-    res17 = SWIG_ConvertPtr(obj16, &argp17, SWIGTYPE_p_I,  0  | 0);
-    if (!SWIG_IsOK(res17)) {
-      SWIG_exception_fail(SWIG_ArgError(res17), "in method '" "ben_ideal_interpolation" "', argument " "17"" of type '" "I const""'"); 
-    }  
-    if (!argp17) {
-      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "ben_ideal_interpolation" "', argument " "17"" of type '" "I const""'");
-    } else {
-      I * temp = reinterpret_cast< I * >(argp17);
-      arg17 = *temp;
-      if (SWIG_IsNewObj(res17)) delete temp;
-    }
-  }
-  {
-    res18 = SWIG_ConvertPtr(obj17, &argp18, SWIGTYPE_p_I,  0  | 0);
-    if (!SWIG_IsOK(res18)) {
-      SWIG_exception_fail(SWIG_ArgError(res18), "in method '" "ben_ideal_interpolation" "', argument " "18"" of type '" "I const""'"); 
-    }  
-    if (!argp18) {
-      SWIG_exception_fail(SWIG_ValueError, "invalid null reference " "in method '" "ben_ideal_interpolation" "', argument " "18"" of type '" "I const""'");
-    } else {
-      I * temp = reinterpret_cast< I * >(argp18);
-      arg18 = *temp;
-      if (SWIG_IsNewObj(res18)) delete temp;
-    }
-  }
-  result = ben_ideal_interpolation((I const (*))arg1,arg2,(I const (*))arg3,arg4,(T const (*))arg5,arg6,(I const (*))arg7,arg8,(I const (*))arg9,arg10,arg11,arg12,(T const (*))arg13,arg14,(I const (*))arg15,arg16,arg17,arg18);
+  result = ben_ideal_interpolation((int const (*))arg1,arg2,(int const (*))arg3,arg4,(double const (*))arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10);
   resultobj = swig::from(static_cast< std::pair<std::vector< int,std::allocator< int > >,std::vector< double,std::allocator< double > > > >(result));
   return resultobj;
 fail:
@@ -34292,7 +34203,7 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"PairVector_second_get", _wrap_PairVector_second_get, METH_VARARGS, (char *)"PairVector_second_get(PairVector self) -> DoubleVector"},
 	 { (char *)"delete_PairVector", _wrap_delete_PairVector, METH_VARARGS, (char *)"delete_PairVector(PairVector self)"},
 	 { (char *)"PairVector_swigregister", PairVector_swigregister, METH_VARARGS, NULL},
-	 { (char *)"ben_ideal_interpolation", _wrap_ben_ideal_interpolation, METH_VARARGS, (char *)"ben_ideal_interpolation(I const [] A_rowptr, int const A_rowptr_size, I const [] A_colinds, int const A_colinds_size, T const [] A_data, int const A_data_size, I const [] S_rowptr, int const S_rowptr_size, I const [] S_colinds, int const S_colinds_size, I [] P_rowptr, int const P_rowptr_size, T const [] B, int const B_size, I const [] Cpts, int const Cpts_size, I const n, I const num_bad_guys) -> PairVector"},
+	 { (char *)"ben_ideal_interpolation", _wrap_ben_ideal_interpolation, METH_VARARGS, (char *)"ben_ideal_interpolation(int const [] A_rowptr, int const A_rowptr_size, int const [] A_colinds, int const A_colinds_size, double const [] A_data, int const A_data_size, int const [] S_rowptr, int const S_rowptr_size, int const [] S_colinds, int const S_colinds_size) -> PairVector"},
 	 { (char *)"signof", _wrap_signof, METH_VARARGS, (char *)"\n"
 		"signof(int a) -> int\n"
 		"signof(float a) -> float\n"
@@ -34548,14 +34459,13 @@ static PyMethodDef SwigMethods[] = {
 
 /* -------- TYPE CONVERSION AND EQUIVALENCE RULES (BEGIN) -------- */
 
-static swig_type_info _swigt__p_I = {"_p_I", "I *", 0, 0, (void*)0, 0};
-static swig_type_info _swigt__p_T = {"_p_T", "T *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_allocator_type = {"_p_allocator_type", "allocator_type *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_char = {"_p_char", "char *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_difference_type = {"_p_difference_type", "difference_type *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_double = {"_p_double", "double *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_first_type = {"_p_first_type", "first_type *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_float = {"_p_float", "float *", 0, 0, (void*)0, 0};
+static swig_type_info _swigt__p_int = {"_p_int", "int *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_p_PyObject = {"_p_p_PyObject", "PyObject **", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_second_type = {"_p_second_type", "second_type *", 0, 0, (void*)0, 0};
 static swig_type_info _swigt__p_size_type = {"_p_size_type", "size_type *", 0, 0, (void*)0, 0};
@@ -34571,14 +34481,13 @@ static swig_type_info _swigt__p_swig__SwigPyIterator = {"_p_swig__SwigPyIterator
 static swig_type_info _swigt__p_value_type = {"_p_value_type", "value_type *", 0, 0, (void*)0, 0};
 
 static swig_type_info *swig_type_initial[] = {
-  &_swigt__p_I,
-  &_swigt__p_T,
   &_swigt__p_allocator_type,
   &_swigt__p_char,
   &_swigt__p_difference_type,
   &_swigt__p_double,
   &_swigt__p_first_type,
   &_swigt__p_float,
+  &_swigt__p_int,
   &_swigt__p_p_PyObject,
   &_swigt__p_second_type,
   &_swigt__p_size_type,
@@ -34594,14 +34503,13 @@ static swig_type_info *swig_type_initial[] = {
   &_swigt__p_value_type,
 };
 
-static swig_cast_info _swigc__p_I[] = {  {&_swigt__p_I, 0, 0, 0},{0, 0, 0, 0}};
-static swig_cast_info _swigc__p_T[] = {  {&_swigt__p_T, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_allocator_type[] = {  {&_swigt__p_allocator_type, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_char[] = {  {&_swigt__p_char, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_difference_type[] = {  {&_swigt__p_difference_type, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_double[] = {  {&_swigt__p_double, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_first_type[] = {  {&_swigt__p_first_type, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_float[] = {  {&_swigt__p_float, 0, 0, 0},{0, 0, 0, 0}};
+static swig_cast_info _swigc__p_int[] = {  {&_swigt__p_int, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_p_PyObject[] = {  {&_swigt__p_p_PyObject, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_second_type[] = {  {&_swigt__p_second_type, 0, 0, 0},{0, 0, 0, 0}};
 static swig_cast_info _swigc__p_size_type[] = {  {&_swigt__p_size_type, 0, 0, 0},{0, 0, 0, 0}};
@@ -34617,14 +34525,13 @@ static swig_cast_info _swigc__p_swig__SwigPyIterator[] = {  {&_swigt__p_swig__Sw
 static swig_cast_info _swigc__p_value_type[] = {  {&_swigt__p_value_type, 0, 0, 0},{0, 0, 0, 0}};
 
 static swig_cast_info *swig_cast_initial[] = {
-  _swigc__p_I,
-  _swigc__p_T,
   _swigc__p_allocator_type,
   _swigc__p_char,
   _swigc__p_difference_type,
   _swigc__p_double,
   _swigc__p_first_type,
   _swigc__p_float,
+  _swigc__p_int,
   _swigc__p_p_PyObject,
   _swigc__p_second_type,
   _swigc__p_size_type,

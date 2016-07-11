@@ -37,16 +37,16 @@ namespace std {
 
 /* Quick and dirty attempt at including ben_deal */
 std::pair<std::vector<int>, std::vector<double> > 
-     ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
-                             const I A_colinds[], const int A_colinds_size,
-                             const T A_data[], const int A_data_size,
-                             const I S_rowptr[], const int S_rowptr_size,
-                             const I S_colinds[], const int S_colinds_size,
-                             I P_rowptr[], const int P_rowptr_size,
-                             const T B[], const int B_size,
-                             const I Cpts[], const int Cpts_size,
-                             const I n,
-                             const I num_bad_guys );
+     ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
+                             const int A_colinds[], const int A_colinds_size,
+                             const double A_data[], const int A_data_size,
+                             const int S_rowptr[], const int S_rowptr_size,
+                             const int S_colinds[], const int S_colinds_size,
+                             int P_rowptr[], const int P_rowptr_size,
+                             const double B[], const int B_size,
+                             const int Cpts[], const int Cpts_size,
+                             const int n,
+                             const int num_bad_guys );
 
 /*
  * INPLACE types
@@ -78,7 +78,7 @@ std::pair<std::vector<int>, std::vector<double> >
     (const ctype S_rowptr [], const int S_rowptr_size),
     (const ctype S_colinds [], const int S_colinds_size),
     (      ctype P_rowptr [], const int P_rowptr_size),
-    (      ctype Cpts [], const Cpts_size)
+    (const ctype Cpts [], const Cpts_size)
 };
 %enddef
 
