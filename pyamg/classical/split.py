@@ -103,7 +103,7 @@ from pyamg.graph import vertex_coloring
 from pyamg import amg_core
 from pyamg.util.utils import remove_diagonal
 
-__all__ = ['RS', 'PMIS', 'PMISc', 'MIS']
+__all__ = ['RS', 'PMIS', 'PMISc', 'MIS', 'CLJP', 'CLJPc']
 __docformat__ = "restructuredtext en"
 
 

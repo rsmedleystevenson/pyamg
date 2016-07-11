@@ -12,6 +12,7 @@
 #include "smoothed_aggregation.h"
 #include "ruge_stuben.h"
 #include "evolution_strength.h"
+#include "ben_ideal.h"
 %}
 
 %feature("autodoc", "1");
@@ -21,6 +22,31 @@
 %init %{
     import_array();
 %}
+
+
+/* Specific packages for returning C++ vectors and pairs */
+%include "std_vector.i"
+%include "std_pair.i"
+// Instantiate templates used
+namespace std {
+   %template(IntVector) vector<int>;
+   %template(DoubleVector) vector<double>;
+   // %template(DoubleVVector) vector<vector<double> >;
+   %template(PairVector) pair<vector<int>, vector<double> >;
+}
+
+/* Quick and dirty attempt at including ben_deal */
+std::pair<std::vector<int>, std::vector<double> > 
+     ben_ideal_interpolation(const I A_rowptr[], const int A_rowptr_size,
+                             const I A_colinds[], const int A_colinds_size,
+                             const T A_data[], const int A_data_size,
+                             const I S_rowptr[], const int S_rowptr_size,
+                             const I S_colinds[], const int S_colinds_size,
+                             I P_rowptr[], const int P_rowptr_size,
+                             const T B[], const int B_size,
+                             const I Cpts[], const int Cpts_size,
+                             const I n,
+                             const I num_bad_guys );
 
 /*
  * INPLACE types
