@@ -169,7 +169,7 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
         Describes the sparsity pattern of the tentative prolongator.
         Has dimension (n, #aggregates)
     Cnodes : array-like
-        List of designated C-points
+        List of designated C-points, assumed to be passed in sorted.
     B : array
         The near-nullspace candidates stored in column-wise fashion.
         Has dimension (n, #candidates)
@@ -226,11 +226,11 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     num_Cnodes = len(Cnodes)
     num_bad_guys = B.shape[1]
 
-    # Sort C-points and form initial sparsity pattern
+    # Form initial sparsity pattern
+    #
     # TODO : forming rowptr is slow python loop, better way??
-    temp_inds = np.zeros((n,), dtype='intc')
-    temp_inds[Cnodes] = 1
-    Cnodes = np.where(temp_inds==1)[0]
+    # TODO : Bad to have all nodes not in initial sparsity.
+    #
     if AggOp == None:
         rowptr = np.zeros((n+1,),dtype='intc')
         for i in range(0,num_Cnodes-1):
@@ -242,9 +242,17 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     else:
         S = csr_matrix(AggOp, dtype='float64')
 
-    # Form sparsity pattern by multiplying SOC by AggOp
+    # Form sparsity pattern by multiplying SOC by AggOp. Estimate
+    # number of nonzeros in P by considering the increase each
+    # time the sparsity pattern is expanded (i.e. approximate
+    # the increase in nonzeros due to W = \hat{W}*A_{cc}). 
+    increase = []
     for i in range(0,d):
+        temp = float(S.nnz)
         S = SOC * S
+        increase.append(S.nnz / temp)
+
+    num_nnz = int(2*np.mean(increase)*S.nnz)
 
     # Filter sparsity pattern
     if 'theta' in prefilter and 'k' in prefilter:
@@ -262,24 +270,29 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     S.eliminate_zeros()
 
     # Form empty array for row pointer of P
-    P_rowptr = np.empty((n+1,),dtype='intc')
+    P_rowptr = np.zeros((n+1,), dtype='intc')
+    P_colinds = np.zeros((num_nnz,), dtype='intc')
+    P_data = np.zeros((num_nnz,), dtype='float64')
 
     # Ben ideal interpolation
     fn = amg_core.ben_ideal_interpolation
-    P_vecs = fn(A.indptr,
-                A.indices,
-                A.data,
-                S.indptr,
-                S.indices,
-                P_rowptr,
-                B.ravel(),
-                Cnodes,
-                n,
-                num_bad_guys )
+    fn(A.indptr,
+       A.indices,
+       A.data,
+       S.indptr,
+       S.indices,
+       P_rowptr,
+       P_colinds,
+       P_data,
+       B.ravel(),
+       Cnodes,
+       n,
+       num_bad_guys )
 
-    P = csr_matrix((np.array(P_vecs[1]), np.array(P_vecs[0]), \
-                    P_rowptr), shape=[n,num_Cnodes])
+    P = csr_matrix((P_data, P_colinds, P_rowptr), shape=[n,num_Cnodes])
     
+    print "Estimate nnz = ",num_nnz,", Actual nnz = ",P.nnz
+
     # Form coarse-grid bad guys as B restricted to coarse grid
     Bc = B[Cnodes,:]
 

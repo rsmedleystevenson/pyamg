@@ -23,31 +23,6 @@
     import_array();
 %}
 
-
-/* Specific packages for returning C++ vectors and pairs */
-%include "std_vector.i"
-%include "std_pair.i"
-// Instantiate templates used
-namespace std {
-   %template(IntVector) vector<int>;
-   %template(DoubleVector) vector<double>;
-   // %template(DoubleVVector) vector<vector<double> >;
-   %template(PairVector) pair<vector<int>, vector<double> >;
-}
-
-/* Quick and dirty attempt at including ben_deal */
-std::pair<std::vector<int>, std::vector<double> > 
-     ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
-                             const int A_colinds[], const int A_colinds_size,
-                             const double A_data[], const int A_data_size,
-                             const int S_rowptr[], const int S_rowptr_size,
-                             const int S_colinds[], const int S_colinds_size,
-                             int P_rowptr[], const int P_rowptr_size,
-                             const double B[], const int B_size,
-                             const int Cpts[], const int Cpts_size,
-                             const int n,
-                             const int num_bad_guys );
-
 /*
  * INPLACE types
  */
@@ -78,7 +53,8 @@ std::pair<std::vector<int>, std::vector<double> >
     (const ctype S_rowptr [], const int S_rowptr_size),
     (const ctype S_colinds [], const int S_colinds_size),
     (      ctype P_rowptr [], const int P_rowptr_size),
-    (const ctype Cpts [], const Cpts_size)
+    (      ctype P_colinds [], const int P_colinds_size),
+    (const ctype Cpts [], const int Cpts_size)
 };
 %enddef
 
@@ -108,7 +84,8 @@ std::pair<std::vector<int>, std::vector<double> >
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
     (      ctype cost [], const int cost_size),
-    (const ctype A_data [], A_data_size)
+    (      ctype P_data [], const int P_data_size),
+    (const ctype A_data [], const int A_data_size)
 };
 %enddef
 
@@ -260,3 +237,17 @@ INSTANTIATE_INDEXDATA(min_blocks)
 
 INSTANTIATE_INDEXDATA_COMPLEX(evolution_strength_helper)
 INSTANTIATE_INDEXDATA_COMPLEX(incomplete_mat_mult_csr)
+
+/*----------------------------------------------------------------------------
+  evolution_strength.h
+  ---------------------------------------------------------------------------*/
+%include "ben_ideal.h"
+INSTANTIATE_INDEXDATA(constrained_least_squares)
+INSTANTIATE_INDEXDATA(least_squares)
+INSTANTIATE_INDEXDATA(lower_tri_solve)
+INSTANTIATE_INDEXDATA(upper_tri_solve)
+INSTANTIATE_INDEXDATA(get_csc_submatrix)
+INSTANTIATE_INDEXDATA(QR)
+INSTANTIATE_INDEXDATA(ben_ideal_interpolation)
+
+

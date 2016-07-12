@@ -353,23 +353,28 @@ def extend_hierarchy(levels, strength, aggregate, splitting,
     # fn, kwargs = unpack_arg(splitting[len(levels)-1])
     fn, kwargs = unpack_arg(splitting)
     if fn == 'RS':
-        Cnodes = RS(C, **kwargs)
+        splitting = RS(C, **kwargs)
     elif fn == 'PMIS':
-        Cnodes = PMIS(C, **kwargs)
+        splitting = PMIS(C, **kwargs)
     elif fn == 'PMISc':
-        Cnodes = PMISc(C, **kwargs)
+        splitting = PMISc(C, **kwargs)
     elif fn == 'CLJP':
-        Cnodes = CLJP(C, **kwargs)
+        splitting = CLJP(C, **kwargs)
     elif fn == 'CLJPc':
-        Cnodes = CLJPc(C, **kwargs)
+        splitting = CLJPc(C, **kwargs)
     elif fn == 'CR':
-        Cnodes = CR(C, **kwargs)
+        splitting = CR(C, **kwargs)
     elif fn == None and AggOp == None:
         raise ValueError('Must provide either aggregation routine ' \
                          'or CF splitting routine.')
+    elif fn == None:
+        # Ensure C-points are sorted
+        splitting = np.zeros((A.shape[0],), dtype='intc')
+        splitting[Cnodes] = 1
     else:
-        raise ValueError('unknown C/F splitting method (%s)' % CF)
-
+        raise ValueError('unknown C/F splitting method (%s)' % splitting)
+    
+    Cnodes = np.array(np.where(splitting == 1)[0], dtype='intc')
     levels[-1].complexity['CF'] = kwargs['cost'][0]
 
     # Compute prolongation operator.

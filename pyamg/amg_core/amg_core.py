@@ -90,570 +90,6 @@ except AttributeError:
     _newclass = 0
 
 
-class SwigPyIterator(_object):
-    """Proxy of C++ swig::SwigPyIterator class"""
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, SwigPyIterator, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, SwigPyIterator, name)
-
-    def __init__(self, *args, **kwargs):
-        raise AttributeError("No constructor defined - class is abstract")
-    __repr__ = _swig_repr
-    __swig_destroy__ = _amg_core.delete_SwigPyIterator
-    __del__ = lambda self: None
-
-    def value(self):
-        """value(SwigPyIterator self) -> PyObject *"""
-        return _amg_core.SwigPyIterator_value(self)
-
-
-    def incr(self, n=1):
-        """
-        incr(SwigPyIterator self, size_t n=1) -> SwigPyIterator
-        incr(SwigPyIterator self) -> SwigPyIterator
-        """
-        return _amg_core.SwigPyIterator_incr(self, n)
-
-
-    def decr(self, n=1):
-        """
-        decr(SwigPyIterator self, size_t n=1) -> SwigPyIterator
-        decr(SwigPyIterator self) -> SwigPyIterator
-        """
-        return _amg_core.SwigPyIterator_decr(self, n)
-
-
-    def distance(self, x):
-        """distance(SwigPyIterator self, SwigPyIterator x) -> ptrdiff_t"""
-        return _amg_core.SwigPyIterator_distance(self, x)
-
-
-    def equal(self, x):
-        """equal(SwigPyIterator self, SwigPyIterator x) -> bool"""
-        return _amg_core.SwigPyIterator_equal(self, x)
-
-
-    def copy(self):
-        """copy(SwigPyIterator self) -> SwigPyIterator"""
-        return _amg_core.SwigPyIterator_copy(self)
-
-
-    def next(self):
-        """next(SwigPyIterator self) -> PyObject *"""
-        return _amg_core.SwigPyIterator_next(self)
-
-
-    def __next__(self):
-        """__next__(SwigPyIterator self) -> PyObject *"""
-        return _amg_core.SwigPyIterator___next__(self)
-
-
-    def previous(self):
-        """previous(SwigPyIterator self) -> PyObject *"""
-        return _amg_core.SwigPyIterator_previous(self)
-
-
-    def advance(self, n):
-        """advance(SwigPyIterator self, ptrdiff_t n) -> SwigPyIterator"""
-        return _amg_core.SwigPyIterator_advance(self, n)
-
-
-    def __eq__(self, x):
-        """__eq__(SwigPyIterator self, SwigPyIterator x) -> bool"""
-        return _amg_core.SwigPyIterator___eq__(self, x)
-
-
-    def __ne__(self, x):
-        """__ne__(SwigPyIterator self, SwigPyIterator x) -> bool"""
-        return _amg_core.SwigPyIterator___ne__(self, x)
-
-
-    def __iadd__(self, n):
-        """__iadd__(SwigPyIterator self, ptrdiff_t n) -> SwigPyIterator"""
-        return _amg_core.SwigPyIterator___iadd__(self, n)
-
-
-    def __isub__(self, n):
-        """__isub__(SwigPyIterator self, ptrdiff_t n) -> SwigPyIterator"""
-        return _amg_core.SwigPyIterator___isub__(self, n)
-
-
-    def __add__(self, n):
-        """__add__(SwigPyIterator self, ptrdiff_t n) -> SwigPyIterator"""
-        return _amg_core.SwigPyIterator___add__(self, n)
-
-
-    def __sub__(self, *args):
-        """
-        __sub__(SwigPyIterator self, ptrdiff_t n) -> SwigPyIterator
-        __sub__(SwigPyIterator self, SwigPyIterator x) -> ptrdiff_t
-        """
-        return _amg_core.SwigPyIterator___sub__(self, *args)
-
-    def __iter__(self):
-        return self
-SwigPyIterator_swigregister = _amg_core.SwigPyIterator_swigregister
-SwigPyIterator_swigregister(SwigPyIterator)
-
-class IntVector(_object):
-    """Proxy of C++ std::vector<(int)> class"""
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, IntVector, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, IntVector, name)
-    __repr__ = _swig_repr
-
-    def iterator(self):
-        """iterator(IntVector self) -> SwigPyIterator"""
-        return _amg_core.IntVector_iterator(self)
-
-    def __iter__(self):
-        return self.iterator()
-
-    def __nonzero__(self):
-        """__nonzero__(IntVector self) -> bool"""
-        return _amg_core.IntVector___nonzero__(self)
-
-
-    def __bool__(self):
-        """__bool__(IntVector self) -> bool"""
-        return _amg_core.IntVector___bool__(self)
-
-
-    def __len__(self):
-        """__len__(IntVector self) -> std::vector< int >::size_type"""
-        return _amg_core.IntVector___len__(self)
-
-
-    def pop(self):
-        """pop(IntVector self) -> std::vector< int >::value_type"""
-        return _amg_core.IntVector_pop(self)
-
-
-    def __getslice__(self, i, j):
-        """__getslice__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::difference_type j) -> IntVector"""
-        return _amg_core.IntVector___getslice__(self, i, j)
-
-
-    def __setslice__(self, *args):
-        """
-        __setslice__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::difference_type j, IntVector v)
-        __setslice__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::difference_type j)
-        """
-        return _amg_core.IntVector___setslice__(self, *args)
-
-
-    def __delslice__(self, i, j):
-        """__delslice__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::difference_type j)"""
-        return _amg_core.IntVector___delslice__(self, i, j)
-
-
-    def __delitem__(self, *args):
-        """
-        __delitem__(IntVector self, std::vector< int >::difference_type i)
-        __delitem__(IntVector self, PySliceObject * slice)
-        """
-        return _amg_core.IntVector___delitem__(self, *args)
-
-
-    def __getitem__(self, *args):
-        """
-        __getitem__(IntVector self, PySliceObject * slice) -> IntVector
-        __getitem__(IntVector self, std::vector< int >::difference_type i) -> std::vector< int >::value_type const &
-        """
-        return _amg_core.IntVector___getitem__(self, *args)
-
-
-    def __setitem__(self, *args):
-        """
-        __setitem__(IntVector self, PySliceObject * slice, IntVector v)
-        __setitem__(IntVector self, PySliceObject * slice)
-        __setitem__(IntVector self, std::vector< int >::difference_type i, std::vector< int >::value_type const & x)
-        """
-        return _amg_core.IntVector___setitem__(self, *args)
-
-
-    def append(self, x):
-        """append(IntVector self, std::vector< int >::value_type const & x)"""
-        return _amg_core.IntVector_append(self, x)
-
-
-    def empty(self):
-        """empty(IntVector self) -> bool"""
-        return _amg_core.IntVector_empty(self)
-
-
-    def size(self):
-        """size(IntVector self) -> std::vector< int >::size_type"""
-        return _amg_core.IntVector_size(self)
-
-
-    def clear(self):
-        """clear(IntVector self)"""
-        return _amg_core.IntVector_clear(self)
-
-
-    def swap(self, v):
-        """swap(IntVector self, IntVector v)"""
-        return _amg_core.IntVector_swap(self, v)
-
-
-    def get_allocator(self):
-        """get_allocator(IntVector self) -> std::vector< int >::allocator_type"""
-        return _amg_core.IntVector_get_allocator(self)
-
-
-    def begin(self):
-        """begin(IntVector self) -> std::vector< int >::iterator"""
-        return _amg_core.IntVector_begin(self)
-
-
-    def end(self):
-        """end(IntVector self) -> std::vector< int >::iterator"""
-        return _amg_core.IntVector_end(self)
-
-
-    def rbegin(self):
-        """rbegin(IntVector self) -> std::vector< int >::reverse_iterator"""
-        return _amg_core.IntVector_rbegin(self)
-
-
-    def rend(self):
-        """rend(IntVector self) -> std::vector< int >::reverse_iterator"""
-        return _amg_core.IntVector_rend(self)
-
-
-    def pop_back(self):
-        """pop_back(IntVector self)"""
-        return _amg_core.IntVector_pop_back(self)
-
-
-    def erase(self, *args):
-        """
-        erase(IntVector self, std::vector< int >::iterator pos) -> std::vector< int >::iterator
-        erase(IntVector self, std::vector< int >::iterator first, std::vector< int >::iterator last) -> std::vector< int >::iterator
-        """
-        return _amg_core.IntVector_erase(self, *args)
-
-
-    def __init__(self, *args):
-        """
-        __init__(std::vector<(int)> self) -> IntVector
-        __init__(std::vector<(int)> self, IntVector arg2) -> IntVector
-        __init__(std::vector<(int)> self, std::vector< int >::size_type size) -> IntVector
-        __init__(std::vector<(int)> self, std::vector< int >::size_type size, std::vector< int >::value_type const & value) -> IntVector
-        """
-        this = _amg_core.new_IntVector(*args)
-        try:
-            self.this.append(this)
-        except:
-            self.this = this
-
-    def push_back(self, x):
-        """push_back(IntVector self, std::vector< int >::value_type const & x)"""
-        return _amg_core.IntVector_push_back(self, x)
-
-
-    def front(self):
-        """front(IntVector self) -> std::vector< int >::value_type const &"""
-        return _amg_core.IntVector_front(self)
-
-
-    def back(self):
-        """back(IntVector self) -> std::vector< int >::value_type const &"""
-        return _amg_core.IntVector_back(self)
-
-
-    def assign(self, n, x):
-        """assign(IntVector self, std::vector< int >::size_type n, std::vector< int >::value_type const & x)"""
-        return _amg_core.IntVector_assign(self, n, x)
-
-
-    def resize(self, *args):
-        """
-        resize(IntVector self, std::vector< int >::size_type new_size)
-        resize(IntVector self, std::vector< int >::size_type new_size, std::vector< int >::value_type const & x)
-        """
-        return _amg_core.IntVector_resize(self, *args)
-
-
-    def insert(self, *args):
-        """
-        insert(IntVector self, std::vector< int >::iterator pos, std::vector< int >::value_type const & x) -> std::vector< int >::iterator
-        insert(IntVector self, std::vector< int >::iterator pos, std::vector< int >::size_type n, std::vector< int >::value_type const & x)
-        """
-        return _amg_core.IntVector_insert(self, *args)
-
-
-    def reserve(self, n):
-        """reserve(IntVector self, std::vector< int >::size_type n)"""
-        return _amg_core.IntVector_reserve(self, n)
-
-
-    def capacity(self):
-        """capacity(IntVector self) -> std::vector< int >::size_type"""
-        return _amg_core.IntVector_capacity(self)
-
-    __swig_destroy__ = _amg_core.delete_IntVector
-    __del__ = lambda self: None
-IntVector_swigregister = _amg_core.IntVector_swigregister
-IntVector_swigregister(IntVector)
-
-class DoubleVector(_object):
-    """Proxy of C++ std::vector<(double)> class"""
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, DoubleVector, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, DoubleVector, name)
-    __repr__ = _swig_repr
-
-    def iterator(self):
-        """iterator(DoubleVector self) -> SwigPyIterator"""
-        return _amg_core.DoubleVector_iterator(self)
-
-    def __iter__(self):
-        return self.iterator()
-
-    def __nonzero__(self):
-        """__nonzero__(DoubleVector self) -> bool"""
-        return _amg_core.DoubleVector___nonzero__(self)
-
-
-    def __bool__(self):
-        """__bool__(DoubleVector self) -> bool"""
-        return _amg_core.DoubleVector___bool__(self)
-
-
-    def __len__(self):
-        """__len__(DoubleVector self) -> std::vector< double >::size_type"""
-        return _amg_core.DoubleVector___len__(self)
-
-
-    def pop(self):
-        """pop(DoubleVector self) -> std::vector< double >::value_type"""
-        return _amg_core.DoubleVector_pop(self)
-
-
-    def __getslice__(self, i, j):
-        """__getslice__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::difference_type j) -> DoubleVector"""
-        return _amg_core.DoubleVector___getslice__(self, i, j)
-
-
-    def __setslice__(self, *args):
-        """
-        __setslice__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::difference_type j, DoubleVector v)
-        __setslice__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::difference_type j)
-        """
-        return _amg_core.DoubleVector___setslice__(self, *args)
-
-
-    def __delslice__(self, i, j):
-        """__delslice__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::difference_type j)"""
-        return _amg_core.DoubleVector___delslice__(self, i, j)
-
-
-    def __delitem__(self, *args):
-        """
-        __delitem__(DoubleVector self, std::vector< double >::difference_type i)
-        __delitem__(DoubleVector self, PySliceObject * slice)
-        """
-        return _amg_core.DoubleVector___delitem__(self, *args)
-
-
-    def __getitem__(self, *args):
-        """
-        __getitem__(DoubleVector self, PySliceObject * slice) -> DoubleVector
-        __getitem__(DoubleVector self, std::vector< double >::difference_type i) -> std::vector< double >::value_type const &
-        """
-        return _amg_core.DoubleVector___getitem__(self, *args)
-
-
-    def __setitem__(self, *args):
-        """
-        __setitem__(DoubleVector self, PySliceObject * slice, DoubleVector v)
-        __setitem__(DoubleVector self, PySliceObject * slice)
-        __setitem__(DoubleVector self, std::vector< double >::difference_type i, std::vector< double >::value_type const & x)
-        """
-        return _amg_core.DoubleVector___setitem__(self, *args)
-
-
-    def append(self, x):
-        """append(DoubleVector self, std::vector< double >::value_type const & x)"""
-        return _amg_core.DoubleVector_append(self, x)
-
-
-    def empty(self):
-        """empty(DoubleVector self) -> bool"""
-        return _amg_core.DoubleVector_empty(self)
-
-
-    def size(self):
-        """size(DoubleVector self) -> std::vector< double >::size_type"""
-        return _amg_core.DoubleVector_size(self)
-
-
-    def clear(self):
-        """clear(DoubleVector self)"""
-        return _amg_core.DoubleVector_clear(self)
-
-
-    def swap(self, v):
-        """swap(DoubleVector self, DoubleVector v)"""
-        return _amg_core.DoubleVector_swap(self, v)
-
-
-    def get_allocator(self):
-        """get_allocator(DoubleVector self) -> std::vector< double >::allocator_type"""
-        return _amg_core.DoubleVector_get_allocator(self)
-
-
-    def begin(self):
-        """begin(DoubleVector self) -> std::vector< double >::iterator"""
-        return _amg_core.DoubleVector_begin(self)
-
-
-    def end(self):
-        """end(DoubleVector self) -> std::vector< double >::iterator"""
-        return _amg_core.DoubleVector_end(self)
-
-
-    def rbegin(self):
-        """rbegin(DoubleVector self) -> std::vector< double >::reverse_iterator"""
-        return _amg_core.DoubleVector_rbegin(self)
-
-
-    def rend(self):
-        """rend(DoubleVector self) -> std::vector< double >::reverse_iterator"""
-        return _amg_core.DoubleVector_rend(self)
-
-
-    def pop_back(self):
-        """pop_back(DoubleVector self)"""
-        return _amg_core.DoubleVector_pop_back(self)
-
-
-    def erase(self, *args):
-        """
-        erase(DoubleVector self, std::vector< double >::iterator pos) -> std::vector< double >::iterator
-        erase(DoubleVector self, std::vector< double >::iterator first, std::vector< double >::iterator last) -> std::vector< double >::iterator
-        """
-        return _amg_core.DoubleVector_erase(self, *args)
-
-
-    def __init__(self, *args):
-        """
-        __init__(std::vector<(double)> self) -> DoubleVector
-        __init__(std::vector<(double)> self, DoubleVector arg2) -> DoubleVector
-        __init__(std::vector<(double)> self, std::vector< double >::size_type size) -> DoubleVector
-        __init__(std::vector<(double)> self, std::vector< double >::size_type size, std::vector< double >::value_type const & value) -> DoubleVector
-        """
-        this = _amg_core.new_DoubleVector(*args)
-        try:
-            self.this.append(this)
-        except:
-            self.this = this
-
-    def push_back(self, x):
-        """push_back(DoubleVector self, std::vector< double >::value_type const & x)"""
-        return _amg_core.DoubleVector_push_back(self, x)
-
-
-    def front(self):
-        """front(DoubleVector self) -> std::vector< double >::value_type const &"""
-        return _amg_core.DoubleVector_front(self)
-
-
-    def back(self):
-        """back(DoubleVector self) -> std::vector< double >::value_type const &"""
-        return _amg_core.DoubleVector_back(self)
-
-
-    def assign(self, n, x):
-        """assign(DoubleVector self, std::vector< double >::size_type n, std::vector< double >::value_type const & x)"""
-        return _amg_core.DoubleVector_assign(self, n, x)
-
-
-    def resize(self, *args):
-        """
-        resize(DoubleVector self, std::vector< double >::size_type new_size)
-        resize(DoubleVector self, std::vector< double >::size_type new_size, std::vector< double >::value_type const & x)
-        """
-        return _amg_core.DoubleVector_resize(self, *args)
-
-
-    def insert(self, *args):
-        """
-        insert(DoubleVector self, std::vector< double >::iterator pos, std::vector< double >::value_type const & x) -> std::vector< double >::iterator
-        insert(DoubleVector self, std::vector< double >::iterator pos, std::vector< double >::size_type n, std::vector< double >::value_type const & x)
-        """
-        return _amg_core.DoubleVector_insert(self, *args)
-
-
-    def reserve(self, n):
-        """reserve(DoubleVector self, std::vector< double >::size_type n)"""
-        return _amg_core.DoubleVector_reserve(self, n)
-
-
-    def capacity(self):
-        """capacity(DoubleVector self) -> std::vector< double >::size_type"""
-        return _amg_core.DoubleVector_capacity(self)
-
-    __swig_destroy__ = _amg_core.delete_DoubleVector
-    __del__ = lambda self: None
-DoubleVector_swigregister = _amg_core.DoubleVector_swigregister
-DoubleVector_swigregister(DoubleVector)
-
-class PairVector(_object):
-    """Proxy of C++ std::pair<(std::vector<(int)>,std::vector<(double)>)> class"""
-    __swig_setmethods__ = {}
-    __setattr__ = lambda self, name, value: _swig_setattr(self, PairVector, name, value)
-    __swig_getmethods__ = {}
-    __getattr__ = lambda self, name: _swig_getattr(self, PairVector, name)
-    __repr__ = _swig_repr
-
-    def __init__(self, *args):
-        """
-        __init__(std::pair<(std::vector<(int)>,std::vector<(double)>)> self) -> PairVector
-        __init__(std::pair<(std::vector<(int)>,std::vector<(double)>)> self, IntVector first, DoubleVector second) -> PairVector
-        __init__(std::pair<(std::vector<(int)>,std::vector<(double)>)> self, PairVector p) -> PairVector
-        """
-        this = _amg_core.new_PairVector(*args)
-        try:
-            self.this.append(this)
-        except:
-            self.this = this
-    __swig_setmethods__["first"] = _amg_core.PairVector_first_set
-    __swig_getmethods__["first"] = _amg_core.PairVector_first_get
-    if _newclass:
-        first = _swig_property(_amg_core.PairVector_first_get, _amg_core.PairVector_first_set)
-    __swig_setmethods__["second"] = _amg_core.PairVector_second_set
-    __swig_getmethods__["second"] = _amg_core.PairVector_second_get
-    if _newclass:
-        second = _swig_property(_amg_core.PairVector_second_get, _amg_core.PairVector_second_set)
-    def __len__(self):
-        return 2
-    def __repr__(self):
-        return str((self.first, self.second))
-    def __getitem__(self, index): 
-        if not (index % 2):
-            return self.first
-        else:
-            return self.second
-    def __setitem__(self, index, val):
-        if not (index % 2):
-            self.first = val
-        else:
-            self.second = val
-    __swig_destroy__ = _amg_core.delete_PairVector
-    __del__ = lambda self: None
-PairVector_swigregister = _amg_core.PairVector_swigregister
-PairVector_swigregister(PairVector)
-
-
-def ben_ideal_interpolation(A_rowptr, A_rowptr_size, A_colinds, A_colinds_size, A_data, A_data_size, S_rowptr, S_rowptr_size, S_colinds, S_colinds_size):
-    """ben_ideal_interpolation(int const [] A_rowptr, int const A_rowptr_size, int const [] A_colinds, int const A_colinds_size, double const [] A_data, int const A_data_size, int const [] S_rowptr, int const S_rowptr_size, int const [] S_colinds, int const S_colinds_size) -> PairVector"""
-    return _amg_core.ben_ideal_interpolation(A_rowptr, A_rowptr_size, A_colinds, A_colinds_size, A_data, A_data_size, S_rowptr, S_rowptr_size, S_colinds, S_colinds_size)
 
 def signof(*args):
     """
@@ -1071,6 +507,81 @@ def incomplete_mat_mult_csr(*args):
     incomplete_mat_mult_csr(int const [] Ap, int const [] Aj, std::complex< double > const [] Ax, int const [] Bp, int const [] Bj, std::complex< double > const [] Bx, int const [] Sp, int const [] Sj, std::complex< double > [] Sx, int const num_rows)
     """
     return _amg_core.incomplete_mat_mult_csr(*args)
+
+def row_major(row, col, num_cols):
+    """row_major(int const & row, int const & col, int const & num_cols) -> int"""
+    return _amg_core.row_major(row, col, num_cols)
+
+def col_major(row, col, num_rows):
+    """col_major(int const & row, int const & col, int const & num_rows) -> int"""
+    return _amg_core.col_major(row, col, num_rows)
+
+def get_ind_split(Cpts, numCpts, n):
+    """get_ind_split(int const [] Cpts, int const & numCpts, int const & n) -> std::vector< int >"""
+    return _amg_core.get_ind_split(Cpts, numCpts, n)
+
+def get_col_ptr(A_rowptr, A_colinds, n, is_col_ind, is_row_ind, colptr, num_cols, row_scale=1, col_scale=1):
+    """
+    get_col_ptr(int const [] A_rowptr, int const [] A_colinds, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int const & num_cols, int const & row_scale=1, int const & col_scale=1) -> int
+    get_col_ptr(int const [] A_rowptr, int const [] A_colinds, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int const & num_cols, int const & row_scale=1) -> int
+    get_col_ptr(int const [] A_rowptr, int const [] A_colinds, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int const & num_cols) -> int
+    """
+    return _amg_core.get_col_ptr(A_rowptr, A_colinds, n, is_col_ind, is_row_ind, colptr, num_cols, row_scale, col_scale)
+
+def constrained_least_squares(*args):
+    """
+    constrained_least_squares(std::vector< float > & A, std::vector< float > & b, std::vector< float > & C, std::vector< float > & d, int const & m, int const & n, int const & s) -> std::vector< float >
+    constrained_least_squares(std::vector< double > & A, std::vector< double > & b, std::vector< double > & C, std::vector< double > & d, int const & m, int const & n, int const & s) -> std::vector< double >
+    """
+    return _amg_core.constrained_least_squares(*args)
+
+def least_squares(A, b, x, m, n, is_col_major=0):
+    """
+    least_squares(float [] A, float [] b, float [] x, int const & m, int const & n, int const is_col_major=0)
+    least_squares(float [] A, float [] b, float [] x, int const & m, int const & n)
+    least_squares(double [] A, double [] b, double [] x, int const & m, int const & n, int const is_col_major=0)
+    least_squares(double [] A, double [] b, double [] x, int const & m, int const & n)
+    """
+    return _amg_core.least_squares(A, b, x, m, n, is_col_major)
+
+def lower_tri_solve(*args):
+    """
+    lower_tri_solve(float const [] L, float const [] rhs, float [] x, int const & m, int const & n, int const is_col_major)
+    lower_tri_solve(double const [] L, double const [] rhs, double [] x, int const & m, int const & n, int const is_col_major)
+    """
+    return _amg_core.lower_tri_solve(*args)
+
+def upper_tri_solve(*args):
+    """
+    upper_tri_solve(float const [] R, float const [] rhs, float [] x, int const & m, int const & n, int const is_col_major)
+    upper_tri_solve(double const [] R, double const [] rhs, double [] x, int const & m, int const & n, int const is_col_major)
+    """
+    return _amg_core.upper_tri_solve(*args)
+
+def get_csc_submatrix(A_rowptr, A_colinds, A_data, n, is_col_ind, is_row_ind, colptr, rowinds, data, num_cols, row_scale=1, col_scale=1):
+    """
+    get_csc_submatrix(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int [] rowinds, float [] data, int const & num_cols, int const & row_scale=1, int const & col_scale=1)
+    get_csc_submatrix(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int [] rowinds, float [] data, int const & num_cols, int const & row_scale=1)
+    get_csc_submatrix(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int [] rowinds, float [] data, int const & num_cols)
+    get_csc_submatrix(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int [] rowinds, double [] data, int const & num_cols, int const & row_scale=1, int const & col_scale=1)
+    get_csc_submatrix(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int [] rowinds, double [] data, int const & num_cols, int const & row_scale=1)
+    get_csc_submatrix(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const & n, int const [] is_col_ind, int const [] is_row_ind, int [] colptr, int [] rowinds, double [] data, int const & num_cols)
+    """
+    return _amg_core.get_csc_submatrix(A_rowptr, A_colinds, A_data, n, is_col_ind, is_row_ind, colptr, rowinds, data, num_cols, row_scale, col_scale)
+
+def QR(*args):
+    """
+    QR(float [] A, int const & m, int const & n, int const is_col_major) -> std::vector< float >
+    QR(double [] A, int const & m, int const & n, int const is_col_major) -> std::vector< double >
+    """
+    return _amg_core.QR(*args)
+
+def ben_ideal_interpolation(*args):
+    """
+    ben_ideal_interpolation(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] S_rowptr, int const [] S_colinds, int [] P_rowptr, int [] P_colinds, float [] P_data, float const [] B, int const [] Cpts, int const n, int const num_bad_guys)
+    ben_ideal_interpolation(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] S_rowptr, int const [] S_colinds, int [] P_rowptr, int [] P_colinds, double [] P_data, double const [] B, int const [] Cpts, int const n, int const num_bad_guys)
+    """
+    return _amg_core.ben_ideal_interpolation(*args)
 # This file is compatible with both classic and new-style classes.
 
 
