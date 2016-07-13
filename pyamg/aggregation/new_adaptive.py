@@ -147,8 +147,7 @@ def global_ritz_process(A, B1, B2, sap_tol, level, max_bad_guys,
 
     cost[0] += float(V.shape[0] * num_candidates) / A.nnz
 
-    if level == 0:
-        pdb.set_trace()
+    print tabs(level), "Glob cand - ", num_candidates, ", max norm = ", np.dot(V[:,0].T,V[:,0]) # targets = ","%.2f"%av_num, \
 
     # Only allow for for max_bad_guys to be kept
     num_candidates = np.min((num_candidates,max_bad_guys))
@@ -680,7 +679,7 @@ def try_solve(A, levels,
                              str(fn))
         
         current.R = current.P.H
-        complexity[level]['smooth_P'] += kwargs['cost'][0] * chi
+        complexity[level]['smooth_P'] += kwargs['cost'][0] * chi        
 
         # Form coarse grid operator, get complexity
         complexity[level]['RAP'] += mat_mat_complexity(current.R, current.A) / float(levels[0].A.nnz)
