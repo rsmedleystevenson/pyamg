@@ -147,6 +147,9 @@ def global_ritz_process(A, B1, B2, sap_tol, level, max_bad_guys,
 
     cost[0] += float(V.shape[0] * num_candidates) / A.nnz
 
+    if level == 0:
+        pdb.set_trace()
+
     # Only allow for for max_bad_guys to be kept
     num_candidates = np.min((num_candidates,max_bad_guys))
     return V[:, 0:num_candidates]
@@ -641,6 +644,10 @@ def try_solve(A, levels,
                                         max_bad_guys=max_bad_guys, \
                                         verbose=verbose, cost=temp_cost)
         complexity[level]['global_ritz'] += temp_cost[0] * chi
+        
+        if level == 0:
+            pdb.set_trace()
+
         temp_cost[0] = 0 
         current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp, \
                                                 B=current.B, sap_tol=sap_tol, \

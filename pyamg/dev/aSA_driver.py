@@ -17,7 +17,7 @@ from pyamg.aggregation.adaptive import adaptive_sa_solver
 from pyamg.aggregation.new_adaptive import asa_solver
 from pyamg.util.utils import symmetric_rescaling
 
-from poisson import get_poisson
+# from poisson import get_poisson
 
 
 def A_norm(x, A):
@@ -149,7 +149,7 @@ relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.7 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.6 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
@@ -189,17 +189,29 @@ keep = False
 
 # Poisson
 # -------
-n0 = 700
+n0 = 500
 eps = 0.01
 theta = 3*np.pi / 14.0
-A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
+
+# A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
+# n = A.shape[0]
+# x0 = np.random.rand(n,1)
+# b = np.zeros((n,1))
+
+# 2d Poisson pyAMG gallery
+grid_dims = [n0,n0]
+stencil = diffusion_stencil_2d(eps,theta)
+A = stencil_grid(stencil, grid_dims, format='csr')
+
+# Vectors and additional variables
 n = A.shape[0]
-x0 = np.random.rand(n,1)
 b = np.zeros((n,1))
+x0 = np.random.rand(n,1)
 
 [D, dum, dum] = symmetric_rescaling(A, copy=False)
 bad_guy = np.ones((n,1))
 bad_guy[:,0] = D * bad_guy[:,0]
+
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
