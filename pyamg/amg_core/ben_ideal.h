@@ -230,9 +230,6 @@ std::vector<T> QR(T A[],
         Q[get_ind(i,i,m)] = 1;
     }
 
-
-    std::cout << "\t\t\tStarting QR loop - ";
-
     // Loop over columns of A using Householder reflections
     for (I j=0; j<n; j++) {
 
@@ -292,9 +289,6 @@ std::vector<T> QR(T A[],
                 Q[get_ind(i,k+j,m)] -= tau * v[k] * Qv_i;
             }
         }
-
-        std::cout << j << ", ";
-
     }
 
     return Q;
@@ -575,8 +569,6 @@ std::vector<T> constrained_least_squares(std::vector<T> &A,
     // and Q is returned in column major. 
     std::vector<T> Qc = QR(&C[0],n,s,1);
 
-    std::cout << "\t\tQR" << std::endl;
-
     // Form matrix product S = A^T * Q. For A passed in as row
     // major, perform S = A * Q, assuming that A is in column major
     // (A^T row major = A column major).
@@ -593,8 +585,6 @@ std::vector<T> constrained_least_squares(std::vector<T> &A,
             A[col_major(i,j,m)] = temp_vec[j];
         }
     }
-
-    std::cout << "\t\tMat prod" << std::endl;
 
     // Change R to R^T. Probably dirtier, cheaper ways to use R^T
     // in place, don't think it's worth it.
@@ -614,13 +604,9 @@ std::vector<T> constrained_least_squares(std::vector<T> &A,
         b[i] -= val;
     }
 
-    std::cout << "\t\tLower tri solve" << std::endl;
-
     // Call LS on reduced system
     I temp_ind = n-s;
     least_squares(&A[col_major(0,s,m)], &b[0], &temp_vec[s], m, temp_ind, 1);
-
-    std::cout << "\t\tLS" << std::endl;
 
     // Form x = Q*z
     std::vector<T> x(n,0);
@@ -696,9 +682,6 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
                              const I n,
                              const I num_bad_guys )
 {
-    std::cout << "started\n";
-
-    /* ------ tested ----- */
     // Get splitting of points in one vector, Cpts enumerated in positive,
     // one-indexed ordering and Fpts in negative. 
     //         E.g., [-1,1,2,-2,-3] <-- Fpts = [0,3,4], Cpts = [1,2]
@@ -787,7 +770,7 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
     // Preallocate storage for submatrix used in minimization process
     // Generally much larger than necessary, but may be needed in certain
     // cases. 
-    I max_size = max_rows * (max_rows * max_rows); 
+    I max_size = max_rows * (max_cols * max_rows); 
     std::vector<T> sub_matrix(max_size, 0);
 
     // Allocate pair of vectors to store P.col_inds and P.data. Use
@@ -799,15 +782,11 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
 
     /* ------------------ */
 
-    std::cout << "starting loop - submat size = " << max_size << "\n";
-
     // Form P row-by-row
     P_rowptr[0] = 0;
     I numCpts = 0;
     I data_ind = 0;
     for (I row_P=0; row_P<n; row_P++) {
-
-        std::cout << row_P << std::endl;
 
         // Check if row is a C-point (>0 in splitting vector).
         // If so, add identity to P. Recall, enumeration of C-points
@@ -846,8 +825,10 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
             // Fill in row major data array for submatrix
             I submat_ind = 0;
 
-            if ( (submat_n == 0) || (submat_m == 0) ) {
+            if (submat_m == 0) {
                 P_rowptr[row_P+1] = P_rowptr[row_P];
+                std::cout << "Warning - empty sparsity pattern for row " <<
+                            row_P << " of P will result in zero-row.\n";
                 continue;
             }
 
@@ -877,8 +858,6 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
                     submat_ind += 1;
                 }
             }
-
-            std::cout << "\tformed submatrix, " <<  submat_m << " x " << submat_n << std::endl;
 
             // Make right hand side basis vector for this row of W, which is
             // the current F-point.
@@ -910,20 +889,15 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
                 constraint_rhs[k] = B[col_major(row_P,k,n)];
             }
 
-            std::cout << "\tformed rhs and constraints" << std::endl;
-
             // Solve constrained least sqaures, store solution in w_l. 
             std::vector<T> w_l = constrained_least_squares(sub_matrix,
-                                                                sub_rhs,
-                                                                sub_constraint,
-                                                                constraint_rhs,
-                                                                submat_m,
-                                                                submat_n,
-                                                                num_bad_guys);
-
-            std::cout << "\tsolved CLS" << std::endl;
+                                                           sub_rhs,
+                                                           sub_constraint,
+                                                           constraint_rhs,
+                                                           submat_n,
+                                                           submat_m,
+                                                           num_bad_guys);
             
-            /* ---------- tested ---------- */
             // Loop over each jth column of Acc, taking inner product
             //         (w_l)_j = \hat{w}_l * (Acc)_j
             // to form w_l := \hat{w}_l*Acc.
@@ -965,9 +939,6 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
             // Set row pointer for next row in P
             P_rowptr[row_P+1] = P_rowptr[row_P] + row_length;
             row_inds = NULL;
-
-            std::cout << "\tAdded row to P" << std::endl;
-
         }
 
         if (data_ind > P_data_size) {
@@ -975,11 +946,6 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
             break;
         }
     }
-    
-
-    std::cout << "Finished Loop" << std::endl;
-
-
 
     // Check that all C-points were added to P. 
     if (numCpts != Cpts_size) {

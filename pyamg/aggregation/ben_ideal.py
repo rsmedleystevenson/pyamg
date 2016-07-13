@@ -399,7 +399,7 @@ def extend_hierarchy(levels, strength, aggregate, splitting,
     levels[-1].complexity['RAP'] = mat_mat_complexity(R,A) / float(A.nnz)
     RA = R * A
     levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P) / float(A.nnz)
-    A = RA * P      # Galerkin operator, Ac = RAP
+    A = csr_matrix(RA * P)      # Galerkin operator, Ac = RAP
     A.symmetry = symmetry
 
     # Scale diagonal of coarse grid operator

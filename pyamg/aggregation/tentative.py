@@ -252,7 +252,7 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
         S = SOC * S
         increase.append(S.nnz / temp)
 
-    num_nnz = int(2*np.mean(increase)*S.nnz)
+    num_nnz = int(10*np.mean(increase)*S.nnz)
 
     # Filter sparsity pattern
     if 'theta' in prefilter and 'k' in prefilter:
@@ -268,11 +268,12 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
         raise ValueError("Unrecognized prefilter option")
 
     S.eliminate_zeros()
+    S.sort_indices()
 
     # Form empty array for row pointer of P
-    P_rowptr = np.zeros((n+1,), dtype='intc')
-    P_colinds = np.zeros((num_nnz,), dtype='intc')
-    P_data = np.zeros((num_nnz,), dtype='float64')
+    P_rowptr = np.empty((n+1,), dtype='intc')
+    P_colinds = np.empty((num_nnz,), dtype='intc')
+    P_data = np.empty((num_nnz,), dtype='float64')
 
     # Ben ideal interpolation
     fn = amg_core.ben_ideal_interpolation
