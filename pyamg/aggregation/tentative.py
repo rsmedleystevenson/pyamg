@@ -220,6 +220,8 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
         except:
             raise TypeError("Incompatible matrix type A.")
     
+    Cnodes = np.array(Cnodes)
+
     # Sort indices of A
     A.sort_indices()
     n = A.shape[0]
@@ -227,31 +229,37 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     num_bad_guys = B.shape[1]
 
     # Form initial sparsity pattern
-    #
-    # TODO : forming rowptr is slow python loop, better way??
-    # TODO : Bad to have all nodes not in initial sparsity.
-    #
     if AggOp == None:
         rowptr = np.zeros((n+1,),dtype='intc')
-        for i in range(0,num_Cnodes-1):
-            rowptr[(Cnodes[i]+1):(Cnodes[i+1]+1)] = i+1
-
-        rowptr[(1+Cnodes[-1]):] = rowptr[Cnodes[-1]]+1
+        rowptr[Cnodes+1] = 1
+        np.cumsum(rowptr, out=rowptr)
         S = csr_matrix((np.ones((num_Cnodes,), dtype='intc'),
-                        np.arange(0,Cnodes), rowptr), dtype='float64')
+                        np.arange(0,num_Cnodes),
+                        rowptr),
+                       dtype='float64')
     else:
         S = csr_matrix(AggOp, dtype='float64')
 
-    # Form sparsity pattern by multiplying SOC by AggOp. Estimate
-    # number of nonzeros in P by considering the increase each
-    # time the sparsity pattern is expanded (i.e. approximate
-    # the increase in nonzeros due to W = \hat{W}*A_{cc}). 
+    # Expand sparsity pattern by multiplying with SOC 
     increase = []
     for i in range(0,d):
         temp = float(S.nnz)
         S = SOC * S
         increase.append(S.nnz / temp)
 
+    # Make sure all rows have at least one nonzero. If not, 
+    # 
+    #   TODO :  Then what? 
+    #
+    missing = np.where( np.ediff1d(S.indptr) == 0)[0]
+    for row in missing:
+
+
+
+    # Estimate number of nonzeros in P by considering the
+    # increase each time the sparsity pattern is expanded
+    # (i.e. approximate the increase in nonzeros due to
+    # W = \hat{W}*A_{cc})
     num_nnz = int(10*np.mean(increase)*S.nnz)
 
     # Filter sparsity pattern
