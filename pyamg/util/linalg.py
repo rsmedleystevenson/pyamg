@@ -14,7 +14,7 @@ __all__ = ['approximate_spectral_radius', 'infinity_norm', 'norm',
            'pinv_array']
 
 
-def norm(x, pnorm='2'):
+def norm(x, pnorm='2', sqrt=True):
     """
     2-norm of a vector
 
@@ -47,12 +47,19 @@ def norm(x, pnorm='2'):
     # TODO check dimensions of x
     # TODO speedup complex case
 
-    x = np.ravel(x)
+    if len(x.shape) > 1:
+        x = np.ravel(x)
 
     if pnorm == '2':
-        return np.sqrt(np.inner(x.conj(), x).real)
+        if sqrt:
+            return np.sqrt(np.inner(x.conj(), x).real)
+        else:
+            return np.inner(x.conj(), x).real
     elif pnorm == 'inf':
-        return np.max(np.abs(x))
+        if sqrt:
+            return np.max(np.abs(x))
+        else:
+            return np.max(np.abs(x))**2
     else:
         raise ValueError('Only the 2-norm and infinity-norm are supported')
 
