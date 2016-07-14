@@ -3,6 +3,7 @@
 #include <cmath>
 #include <vector>
 #include <set>
+#include <iomanip>
 
 
 
@@ -21,6 +22,32 @@ inline int row_major(const int &row, const int &col, const int &num_cols)
 inline int col_major(const int &row, const int &col, const int &num_rows) 
 {
     return col*num_rows + row;
+}
+
+
+void print_mat(double vec[], const int m, const int n,
+                     const bool is_col_major=0) 
+{
+    if (is_col_major) {
+        for (int i=0; i<m; i++) {
+            for (int j=0; j<n; j++) {
+                double val = vec[col_major(i,j,m)];
+                if (std::abs(val) < 1e-12) { val = 0; }
+                std::cout << std::setprecision(4) << std::setw(8) << val << ", ";
+            }
+            std::cout << std::endl;
+        }
+    }
+    else {
+        for (int i=0; i<m; i++) {
+            for (int j=0; j<n; j++) {
+                double val = vec[row_major(i,j,n)];
+                if (std::abs(val) < 1e-12) { val = 0; }
+                std::cout << std::setprecision(4) << std::setw(8) << val << ", ";
+            }
+            std::cout << std::endl;
+        }
+    }
 }
 
 
@@ -230,9 +257,6 @@ std::vector<double> QR(double A[],
         Q[get_ind(i,i,m)] = 1;
     }
 
-
-    std::cout << "\t\t\tStarting QR loop - ";
-
     // Loop over columns of A using Householder reflections
     for (int j=0; j<n; j++) {
 
@@ -292,9 +316,6 @@ std::vector<double> QR(double A[],
                 Q[get_ind(i,k+j,m)] -= tau * v[k] * Qv_i;
             }
         }
-
-        std::cout << j << ", ";
-
     }
 
     return Q;
@@ -514,20 +535,20 @@ void least_squares(double A[],
  *     1. Suppose we want to solve
  *        x = argmin || xA - b || s.t. xC = d                 (1)
  *     Let C = QR, and make the change of variable z := xQ.
- *     doublehen (1) is equivalent to
- *        z = argmin || zQ^doubleA - b ||   s.t. zR = d
- *          = argmin || A^doubleQz^double - b || s.t. R^doublez^double = d         (2)
- *     doublehis is solved by passing in A in *row major* and
+ *     Then (1) is equivalent to
+ *        z = argmin || zQ^TA - b ||   s.t. zR = d
+ *          = argmin || A^TQz^T - b || s.t. R^Tz^T = d         (2)
+ *     This is solved by passing in A in *row major* and
  *     C in *column major.*
  *        - A is nxm
  *        - C is mxs
  *
  *     2. Suppose we want to solve
  *        x = argmin || Ax - b || s.t. Cx = d                 (3)
- *     Let C^double = QR, and make the change of variable z := Q^doublex.
- *     doublehen (1) is equivalent to
- *        z = argmin || AQx - b ||   s.t. R^doublez = d             (4)
- *     doublehis is solved by passing in A in *column major* and
+ *     Let C^T = QR, and make the change of variable z := Q^Tx.
+ *     Then (1) is equivalent to
+ *        z = argmin || AQx - b ||   s.t. R^Tz = d             (4)
+ *     This is solved by passing in A in *column major* and
  *     C in *row major.* 
  *        - A is mxn
  *        - C is sxn
@@ -571,8 +592,6 @@ std::vector<double> constrained_least_squares(std::vector<double> &A,
     // and Q is returned in column major. 
     std::vector<double> Qc = QR(&C[0],n,s,1);
 
-    std::cout << "\t\tQR" << std::endl;
-
     // Form matrix product S = A^double * Q. For A passed in as row
     // major, perform S = A * Q, assuming that A is in column major
     // (A^double row major = A column major).
@@ -589,8 +608,6 @@ std::vector<double> constrained_least_squares(std::vector<double> &A,
             A[col_major(i,j,m)] = temp_vec[j];
         }
     }
-
-    std::cout << "\t\tMat prod" << std::endl;
 
     // Change R to R^double. Probably dirtier, cheaper ways to use R^double
     // in place, don't think it's worth it.
@@ -610,13 +627,9 @@ std::vector<double> constrained_least_squares(std::vector<double> &A,
         b[i] -= val;
     }
 
-    std::cout << "\t\tLower tri solve" << std::endl;
-
     // Call LS on reduced system
     int temp_ind = n-s;
     least_squares(&A[col_major(0,s,m)], &b[0], &temp_vec[s], m, temp_ind, 1);
-
-    std::cout << "\t\tLS" << std::endl;
 
     // Form x = Q*z
     std::vector<double> x(n,0);
@@ -874,6 +887,16 @@ void ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
             }
 
             std::cout << "\tformed submatrix, " <<  submat_m << " x " << submat_n << std::endl;
+            print_mat(&sub_matrix[0],submat_m,submat_n,0);
+            std::cout << "\trow inds\n\t";
+            for (int i=0; i<submat_m; i++) {
+                std::cout << row_inds[i] << ", ";
+            }
+            std::cout << "\n\tcol inds\n\t";
+            for (auto it=col_inds.begin(); it!=col_inds.end(); ++it) {
+                std::cout << *it << ", ";
+            }
+            std::cout << "\n";
 
             // Make right hand side basis vector for this row of W, which is
             // the current F-point.
@@ -888,6 +911,9 @@ void ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
                 }
             }
 
+            std::cout << "\tformed sub rhs\n";
+            print_mat(&sub_rhs[0],1,submat_n,0);
+
             // Restrict constraint vector to sparsity pattern
             std::vector<double> sub_constraint;
             sub_constraint.reserve(submat_m * num_bad_guys);
@@ -898,6 +924,10 @@ void ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
                 }
             }
 
+
+            std::cout << "\tformed sub constraint\n";
+            print_mat(&sub_constraint[0],1,submat_m,0);
+
             // Get rhs of constraint - this is just the (f_row)th row of B_f,
             // which is the (row_P)th row of B.
             std::vector<double> constraint_rhs(num_bad_guys,0);
@@ -905,19 +935,21 @@ void ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
                 constraint_rhs[k] = B[col_major(row_P,k,n)];
             }
 
-            std::cout << "\tformed rhs and constraints" << std::endl;
+
+            std::cout << "\tformed constraint rhs = " << constraint_rhs[0] << "\n";
 
             // Solve constrained least sqaures, store solution in w_l. 
             std::vector<double> w_l = constrained_least_squares(sub_matrix,
                                                                 sub_rhs,
                                                                 sub_constraint,
                                                                 constraint_rhs,
-                                                                submat_m,
                                                                 submat_n,
+                                                                submat_m,
                                                                 num_bad_guys);
 
             std::cout << "\tsolved CLS" << std::endl;
-            
+            print_mat(&w_l[0],1,w_l.size(),0);
+
             /* ---------- tested ---------- */
             // Loop over each jth column of Acc, taking inner product
             //         (w_l)_j = \hat{w}_l * (Acc)_j
@@ -930,6 +962,9 @@ void ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
                 // Note, both have ordered, unique indices.
                 for (int k=Acc_colptr[j]; k<Acc_colptr[j+1]; k++) {
                     for (int i=temp_v0; i<submat_m; i++) {
+
+                        std::cout << "Acc col " << j << ", Acc row " << Acc_rowinds[k] << ", w_l ind " << row_inds[i] << "\n";
+
                         // Can break here because indices are sorted increasing
                         if ( row_inds[i] > Acc_rowinds[k] ) {
                             break;
@@ -955,6 +990,7 @@ void ben_ideal_interpolation(const int A_rowptr[], const int A_rowptr_size,
                     row_length += 1;
                     data_ind += 1;
                 }
+                std::cout << "\t\tval = " << temp_prod << "\n";
             }
 
             // Set row pointer for next row in P
@@ -995,7 +1031,7 @@ int main(int argc, char *argv[])
                                 2,-1,-1, 2,-1,-1,2,-1,-1,2,-1,-1,2,-1,-1,2,-1,-1,
                                 2,-1,-1,2,-1,-1,2,-1,-1,2,-1,-1,2,-1,-1,2,-1,-1,2};
     std::vector<int> S_rowptr {0,1,3,5,5,7,9,9,11,13,13,15,17,17,19,21,21,23,25,25,26};
-    std::vector<int> S_colinds {0,1,0,1,0,2,1,2,1,3,2,3,2,4,3,4,3,5,4,5,4,6,5,6,5,6};
+    std::vector<int> S_colinds {0,0,1,0,1,1,2,1,2,2,3,2,3,3,4,3,4,4,5,4,5,5,6,5,6,6};
     std::vector<int> Cpts {0,3,6,9,12,15,18};
  
     int numCpts = Cpts.size();
@@ -1021,6 +1057,21 @@ int main(int argc, char *argv[])
                             &Cpts[0], Cpts.size(),
                              n,
                              num_bad_guys );
+
+    std::cout << "P_rowptr = \n\t";
+    for (auto it=P_rowptr.begin(); it!=P_rowptr.end(); ++it) {
+        std::cout << *it << ", ";
+    }
+    std::cout << "\nP_colinds = \n\t";
+    for (auto it=P_colinds.begin(); it!=P_colinds.end(); ++it) {
+        std::cout << *it << ", ";
+    }
+    std::cout << "\nP_data = \n\t";
+    for (auto it=P_data.begin(); it!=P_data.end(); ++it) {
+        std::cout << *it << ", ";
+    }
+
+
 
 
 }
