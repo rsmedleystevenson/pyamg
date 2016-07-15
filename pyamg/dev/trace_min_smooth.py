@@ -1,8 +1,8 @@
 from pyamg.utils.linalg import norm
+from scipy.sparse import csr_matrix, hstack
 
 
-
-def trace_min_cg(A, B, Sp, Cpts, Fpts, maxit, tol, debug=False):
+def trace_min_cg(A, B, Sp, Cpts, Fpts, maxit, tol, tau, debug=False):
 	""""
 	CG to minimize trace functional. Fill this in. 
 
@@ -26,94 +26,100 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxit, tol, debug=False):
     n = A.shape[0]
 	nc = length(Cpts) 
     nf = length(Fpts)
+    nb = B.shape[1]
   	permute = eye(n,format='csr')
     permute.indices = np.concatenate((Fpts,Cpts))
-    permute = permute.T;
+    permute = permute.T
 
-    # These appear fixed. Should restrict C0 sparsity pattern now. 
-    # Also, is it worth saving Xct / Xf if they are not used again? 
-    #
-    #	TODO: restrict C0 to sparsity
-    #		  New function for incomplete mat mul from dense arrays? 
-    #		  C is dense... this is not good. 
-    #
-    tau = X.shape[1] / nc;
-    Xf = X[Fpts,:];
-    Xct = X[Cpts,:].T;
-    C0 = Xf*Xct - tau*A[Fpts,:][:,Cpts];
-    C = Xct.T * Xct; 
-    
-	# Zero initial guess for W, empty matrices with sparsity pattern
-	#
-	#	TODO : Can we do better? All ones? Something? Note, if
-	#		   this changes, need to fix initial residual and D
-	#
+	# Zero initial guess for W, empty matrices with appropriate
+	# sparsity pattern and sorted indices. 
+    Sp.sort_indices()
+    correction1 = Sp 		# Reference to Sp (can overwrite, don't need Sp.data)
+    correction2 = csr_matrix((np.ones((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape)
     W = csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape)
-    temp1 = csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape)
-    temp2 = Sp
+    R = csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape)
+    C0 = csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape)
+
+    # Form RHS, C0 = Bf*Bc^T - tau*Afc
+    Bc = B[Cpts,:]
+	incomplete_mat_mult_dense2sparse(B[Fpts,:].ravel(order='C'),
+                                     Bc.ravel(order='C'),
+                                     C0.indptr,
+                                     C0.indices,
+                                     C0.data,
+                                     nf,
+                                     nb,
+                                     nc)
+
+	# C0 -= tau*Afc restricted to sparsity pattern
+	# 	TODO : More efficient to hard code this in C
+	temp = A[Fpts,:][:,Cpts].multiply(correction2)
+	temp.eliminate_zeros()
+    C0 -= tau * temp
+    C0.sort_indices()
 
 	# Initial residual
     Aff = A[Fpts,:][:,Fpts]
-    D = C0;
-    rold = norm(C0.data, sqrt=False);
-    it = 0;
+    D = csr_matrix((C0.data, C0.indices, C0.indptr), shape=C0.shape)
+    rold = norm(C0.data, sqrt=False)
+    it = 0
 
     # Construct matrices only used for debugging purposes
     if debug:
 	    I = eye(n=n, format='csr');
-	    R = csr_matrix(permute * eye(m=nc, n=n))
+	    Rc = csr_matrix( (np.ones((nc,)),
+	    				  np.array(Cpts),
+	    				  np.arange(0,nc)), shape=[nc,n])
 	    funcval = []
 
 	# Do CG iterations until residual tolerance or maximum
 	# number of iterations reached
     while it < maxiter and rold > tol:
 
-    	# Compute and add correction
-    	#
-    	# 	TODO : This can maybe be optimized more using fancy trace stuff?
-	    #
-	    App = tau*get_trace(D.T*Aff*D) + get_trace(D*C*D.T);
-	    alpha = rold / App;
-	    W = W + alpha*D;
+    	# Compute and add correction, where 
+    	# 		App = tau * Tr(D^TAD) + Tr(DCD^T)
+    	# Note, 
+	    #		Tr(DCD^T) = Tr(DBcBc^TD^T) = Tr(Bc^TD^TDBc) = ||DBc||_F^2
+	    # PyAMG vector 2-norm on a 2d array returns Frobenius
+	    temp = D * Bc
+	    App = tau*get_trace(D.T*Aff*D) + norm(temp, sqrt=False)
+	    alpha = rold / App
+	    W.data += alpha * D.data
 
 	    # Form matrix products
-	    # 	temp1 = W*C, restricted to sparsity pattern
-        pyamg.amg_core.incomplete_mat_mult_bsr(W.indptr,
-        									   W.indices,
-                                               W.data,
-                                               C.indptr,
-                                               C.indices,
-                                               C.data,
-                                               temp1.indptr,
-                                               temp1.indices,
-                                               temp1.data,
-                                               W.shape[0],
-                                               temp1.shape[1],
-                                               1, 1, 1)
-
-	    # 	temp2 = Aff*W, restricted to sparsity pattern
+	    # correction1 = Aff*W, restricted to sparsity pattern
         pyamg.amg_core.incomplete_mat_mult_bsr(Aff.indptr,
         									   Aff.indices,
                                                Aff.data,
                                                W.indptr,
                                                W.indices,
                                                W.data,
-                                               temp2.indptr,
-                                               temp2.indices,
-                                               temp2.data,
+                                               correction1.indptr,
+                                               correction1.indices,
+                                               correction1.data,
                                                Aff.shape[0],
-                                               temp2.shape[1],
+                                               correction1.shape[1],
                                                1, 1, 1)
 
-	    # Get residual. Note, these matrix additions can also be
-	    # 	optimized by just adding the data, if we make sure the
-	    # 	column indices are sorted. 
-	    R = C0 - temp1 - tau*temp2;
-	    rnew = norm(R.data, sqrt=False);
+	    # correction2 = WC = WBcBc^T, restricted to sparsity pattern
+	    temp = W * Bc
+		incomplete_mat_mult_dense2sparse(temp.ravel(order='C'),
+	                                     Bc.ravel(order='C'),
+	                                     correction2.indptr,
+	                                     correction2.indices,
+	                                     correction2.data,
+	                                     nf,
+	                                     nb,
+	                                     nc)
+
+	    # Get residual, R = C0 - tau*Aff*W - W*C
+	    R.data = C0.data - tau*correction1.data - correction2.data
+	    rnew = norm(R.data, sqrt=False)
 
 		# Get new search direction, increase iteration count    
-	    D = R + (rnew/rold)*D;
-	    rold = rnew;
+	    D.data *= (rnew/rold)
+	    D.data += R.data
+	    rold = rnew
 	    it += 1;
 
 	    # Evaluate functional (just for debugging)
@@ -123,13 +129,13 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxit, tol, debug=False):
 			P = csr_matrix(permute * P)
 
 			# Compute functionals
-		    F1P = get_trace(X.T * (I-R.T*P.T) * (I-P*R) * X);
-		    F2P = get_trace(P.T*A*P);
-		    FP = F1P/tau + F2P;
+		    F1P = get_trace(B.T * (I-Rc.T*P.T) * (I-P*Rc) * B)
+		    F2P = get_trace(P.T*A*P)
+		    FP = F1P/tau + F2P
 
 		    print 'Iter ',it,' - |Res| = %3.4f'%sqrt(rold),', F1(P) = %3.4f',F1P, \
 			', F2(P) = %3.4f',F2P,', F(P) = %3.4f',FP
-			funcval.append(FP);
+			funcval.append(FP)
 
 	# Form P = [W; I], reorder and return
 	P = stack(W, eye(nc, format='csr'))
@@ -138,7 +144,8 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxit, tol, debug=False):
 
 
 def trace_min(A, B, SOC, Cpts, Fpts=None, T=None,
-			  deg=1, maxit=100, tol=1e-8, debug=False):
+			  deg=1, maxit=100, tol=1e-8, 
+			  diagonal_dominance=False, debug=False):
 	""" 
 	Trace-minimization of P. Fill this in.
 
@@ -155,6 +162,9 @@ def trace_min(A, B, SOC, Cpts, Fpts=None, T=None,
 		temp[Cpts] = 1
 		Fpts = np.where(temp == 0)[0]
 		del temp
+
+	nf = len(Fpts)
+	nc = len(Cpts)
 
 	# Form initial sparsity pattern as identity along C-points
 	# if tentative operator is not passed in. 
@@ -173,20 +183,32 @@ def trace_min(A, B, SOC, Cpts, Fpts=None, T=None,
 	for i in range(0,deg):
 		S = SOC * S
 
-	# Check if any rows have empty sparsity pattern. If so,
-	missing = np.where( np.ediff1d(P.indptr) == 0)[0]
-	for row in missing:
-
+	# Check if any rows have empty sparsity pattern --> either
+	# boundary nodes or have no strong connections (diagonally
+	# dominant). Include diagonally dominant nodes in sparsity
+	# pattern if diagonal_dominance=False.
+	if not diagonal_dominance:
+		missing = np.where( np.ediff1d(P.indptr) == 0)[0]
+		for row in missing:
+			# Not connected to any other points, x[row]
+			# is fixed.
+			if (A.indptr[row+1] - A.indptr[row]) == 1:
+				pass
+			
+			# Diagonally dominant
+			# TODO : address this 
 
 
 	# Need to chop off S to be only fine grid rows, size
 	# nf x nc, before passing to trace_min_cg(). 
 	S = S[Fpts,:]
 
+	# Pick weghting parameter
+    tau = B.shape[1] / len(Cpts);
+
 	# Form P
 	P = trace_min_cg(A=A, B=B, Sp=S, Cpts=Cpts, Fpts=Fpts,
-					 maxit=maxit, tol=tol, debug=debug)
-
+					 maxit=maxit, tol=tol, tau=tau, debug=debug)
 
 	# How do we form coarse-grid bad guys? By injection? 
 	Bc = B[Cpts,:]

@@ -214,7 +214,6 @@ I standard_aggregation(const I n_row,
         next_aggregate++;
     }
 
-
     return next_aggregate; //number of aggregates
 }
 

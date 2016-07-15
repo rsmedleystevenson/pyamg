@@ -38,6 +38,8 @@ def norm(x, pnorm='2', sqrt=True):
       calls sqrt(numpy.sum(real((conjugate(x)*x)),axis=0)) resulting in an
       extra copy
     - only handles the 2-norm and infinity-norm for vectors
+    - If a dense, 2d-array is passed in, the 2-norm is actually
+      the Frobenius norm
 
     See Also
     --------
