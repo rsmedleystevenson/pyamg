@@ -1,5 +1,5 @@
 from pyamg.utils.linalg import norm
-from scipy.sparse import csr_matrix, hstack
+from scipy.sparse import csr_matrix
 
 
 def trace_min_cg(A, B, Sp, Cpts, Fpts, maxit, tol, tau, debug=False):
@@ -133,8 +133,8 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxit, tol, tau, debug=False):
 		    F2P = get_trace(P.T*A*P)
 		    FP = F1P/tau + F2P
 
-		    print 'Iter ',it,' - |Res| = %3.4f'%sqrt(rold),', F1(P) = %3.4f',F1P, \
-			', F2(P) = %3.4f',F2P,', F(P) = %3.4f',FP
+		    print('Iter ',it,' - |Res| = %3.4f'%sqrt(rold),', F1(P) = %3.4f',F1P, \
+			', F2(P) = %3.4f',F2P,', F(P) = %3.4f',FP)
 			funcval.append(FP)
 
 	# Form P = [W; I], reorder and return
@@ -144,14 +144,14 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxit, tol, tau, debug=False):
 
 
 def trace_min(A, B, SOC, Cpts, Fpts=None, T=None,
-			  deg=1, maxit=100, tol=1e-8, 
+			  deg=1, maxit=100, tol=1e-8, get_tau='size',
 			  diagonal_dominance=False, debug=False):
 	""" 
 	Trace-minimization of P. Fill this in.
 
 	"""
 	# Currently only implemented for CSR matrices
-    if not (isspmatrix_csr(A):
+    if not isspmatrix_csr(A):
         A = csr_matrix(A)
         warn("Implicit conversion of A to CSR", SparseEfficiencyWarning)
 
@@ -165,6 +165,12 @@ def trace_min(A, B, SOC, Cpts, Fpts=None, T=None,
 
 	nf = len(Fpts)
 	nc = len(Cpts)
+
+	# Form tau
+	if get_tau == 'size':
+		tau = B.shape[1] / nc
+	else:
+		raise ValueError("Unrecognized method to compute weight tau.")
 
 	# Form initial sparsity pattern as identity along C-points
 	# if tentative operator is not passed in. 
@@ -187,7 +193,8 @@ def trace_min(A, B, SOC, Cpts, Fpts=None, T=None,
 	# boundary nodes or have no strong connections (diagonally
 	# dominant). Include diagonally dominant nodes in sparsity
 	# pattern if diagonal_dominance=False.
-	if not diagonal_dominance:
+	# if not diagonal_dominance:
+	if not diagonal_dominance or False:
 		missing = np.where( np.ediff1d(P.indptr) == 0)[0]
 		for row in missing:
 			# Not connected to any other points, x[row]

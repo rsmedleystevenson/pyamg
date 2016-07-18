@@ -79,7 +79,7 @@ def _CRsweep(A, B, Findex, Cindex, nu, thetacr, method, cost):
     return rhok, e
 
 
-def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
+def CR(A, splitting=None, method='habituated', B=None, nu=3, thetacr=0.7,
         thetacs='auto', maxiter=20, verbose=False, cost=[0]):
     """Use Compatible Relaxation to compute a C/F splitting
 
@@ -87,6 +87,8 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
     ----------
     A : csr_matrix
         sparse matrix (n x n) usually matrix A of Ax=b
+    splitting : array
+        Initial C/F list of 1's (coarse pt) and 0's (fine pt) (n x 1)
     method : {'habituated','concurrent'}, Default 'habituated'
         Method used during relaxation:
             - concurrent: GS relaxation on F-points, leaving e_c = 0
@@ -164,14 +166,18 @@ def CR(A, method='habituated', B=None, nu=3, thetacr=0.7,
 
     target = B[:,0]
 
-    # 3.1a - Initialize all nodes as F points
-    splitting = np.zeros((n,), dtype='intc')
+    # 3.1a - Initialize all nodes as F points if initial splitting not provided
     indices = np.zeros((n+1,), dtype='intc')
     indices[0] = n
     indices[1:] = np.arange(0,n, dtype='intc')
-    Findex = indices[1:]
-    Cindex = np.empty((0,), dtype='intc')
     gamma = np.zeros((n,))
+    if splitting == None:
+        splitting = np.zeros((n,), dtype='intc')
+        Findex = indices[1:]
+        Cindex = np.empty((0,), dtype='intc')
+    else:
+        Findex = np.where(splitting == 0)
+        Cindex = np.where(splitting == 1)
 
     # 3.1b - Run initial smoothing sweep
     rho, e = _CRsweep(A, B, Findex, Cindex, nu, thetacr, method, cost)

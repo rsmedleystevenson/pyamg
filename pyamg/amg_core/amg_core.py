@@ -171,6 +171,20 @@ def pinv_array(*args):
     """
     return _amg_core.pinv_array(*args)
 
+def incomplete_mat_mult_dense2sparse(*args):
+    """
+    incomplete_mat_mult_dense2sparse(float const [] A, float const [] B, int const [] S_rowptr, int const [] S_colinds, float [] S_data, int const m, int const d, int const n)
+    incomplete_mat_mult_dense2sparse(double const [] A, double const [] B, int const [] S_rowptr, int const [] S_colinds, double [] S_data, int const m, int const d, int const n)
+    """
+    return _amg_core.incomplete_mat_mult_dense2sparse(*args)
+
+def incomplete_mat_subtract(*args):
+    """
+    incomplete_mat_subtract(int const [] S_rowptr, int const [] S_colinds, float [] S_data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float const tau)
+    incomplete_mat_subtract(int const [] S_rowptr, int const [] S_colinds, double [] S_data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double const tau)
+    """
+    return _amg_core.incomplete_mat_subtract(*args)
+
 def maximal_independent_set_serial(num_rows, Ap, Aj, active, C, F, x):
     """maximal_independent_set_serial(int const num_rows, int const [] Ap, int const [] Aj, int const active, int const C, int const F, int [] x) -> int"""
     return _amg_core.maximal_independent_set_serial(num_rows, Ap, Aj, active, C, F, x)

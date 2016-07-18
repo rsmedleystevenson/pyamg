@@ -10,11 +10,11 @@ import scipy.linalg as la
 from pyamg.util.utils import scale_rows, get_diagonal, get_block_diag, \
     UnAmal, filter_operator, compute_BtBinv, filter_matrix_rows, \
     truncate_rows, mat_mat_complexity
-from pyamg.util.linalg import approximate_spectral_radius
+from pyamg.util.linalg import approximate_spectral_radius, norm
 import pyamg.amg_core
 
 __all__ = ['jacobi_prolongation_smoother', 'richardson_prolongation_smoother',
-           'energy_prolongation_smoother']
+           'energy_prolongation_smoother', 'trace_minimization']
 
 
 # Satisfy_Constraints is a helper function for prolongation smoothing routines
@@ -1300,3 +1300,242 @@ def energy_prolongation_smoother(A, T, Atilde, B, Bf, Cpt_params,
                                          postfilter={'secondpass' : True}, cost=cost)
 
     return T
+
+
+def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
+    """"
+    CG to minimize trace functional. Fill this in. 
+
+    """
+    # Function to return trace
+    def get_trace(A):
+        return np.sum(A.diagonal())
+
+    # Function to efficiently stack two csr matrices. Note,
+    # does not check for CSR or matching dimensions. 
+    def stack(W, I):
+        temp = W.indptr[-1]
+        P = sparse.csr_matrix( (np.concatenate((W.data, I.data)),
+                         np.concatenate((W.indices, I.indices)),
+                         np.concatenate((W.indptr, temp+I.indptr[1:])) ),
+                        shape=[(W.shape[0]+I.shape[0]), W.shape[1]] )
+        return P
+
+    # Function pointers for C++ backend
+    mat_mult_d2s = pyamg.amg_core.incomplete_mat_mult_dense2sparse
+    mat_mult_s2s = pyamg.amg_core.incomplete_mat_mult_bsr
+    mat_subtract = pyamg.amg_core.incomplete_mat_subtract
+
+    # Get sizes and permutation matrix from [F, C] block
+    # ordering to natural matrix ordering.
+    n = A.shape[0]
+    nc = len(Cpts) 
+    nf = len(Fpts)
+    nb = B.shape[1]
+    permute = sparse.eye(n,format='csr')
+    permute.indices = np.concatenate((Fpts,Cpts))
+    permute = permute.T
+
+    # Zero initial guess for W, empty matrices with appropriate
+    # sparsity pattern and sorted indices. 
+    Sp.sort_indices()
+    correction1 = Sp        # Reference to Sp (can overwrite, don't need Sp.data)
+    correction2 = sparse.csr_matrix((np.ones((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
+    W = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
+    R = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
+    C0 = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
+
+    import pdb
+    pdb.set_trace()
+
+    # Form RHS, C0 = Bf*Bc^T - tau*Afc
+    Bc = B[Cpts,:]
+    mat_mult_d2s(B[Fpts,:].ravel(order='C'),
+                 Bc.ravel(order='C'),
+                 C0.indptr,
+                 C0.indices,
+                 C0.data,
+                 nf,
+                 nb,
+                 nc)
+
+    # C0 -= tau*Afc restricted to sparsity pattern of C0
+    temp = A[Fpts,:][:,Cpts]
+    temp.sort_indices()
+    mat_subtract(C0.indptr,
+                 C0.indices,
+                 C0.data,
+                 temp.indptr,
+                 temp.indices,
+                 temp.data,
+                 tau)
+
+    # Initial residual
+    Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
+    D = sparse.csr_matrix((C0.data, C0.indices, C0.indptr), shape=C0.shape, copy=True)
+    rold = norm(C0.data, sqrt=False)
+    it = 0
+
+    # Construct matrices only used for debugging purposes
+    if debug:
+        I = sparse.eye(n, format='csr');
+        Rc = sparse.csr_matrix( (np.ones((nc,)),
+                          np.array(Cpts),
+                          np.arange(0,nc+1)), shape=[nc,n])
+        funcval = []
+
+    # Do CG iterations until residual tolerance or maximum
+    # number of iterations reached
+    while it < maxiter and rold > tol:
+
+        # Compute and add correction, where 
+        #       App = tau * Tr(D^TAD) + Tr(DCD^T)
+        # Note, 
+        #       Tr(DCD^T) = Tr(DBcBc^TD^T) = Tr(Bc^TD^TDBc) = ||DBc||_F^2
+        # PyAMG vector 2-norm on a 2d array returns Frobenius
+        temp = D * Bc
+        App = tau*get_trace(D.T*Aff*D) + norm(temp, sqrt=False)
+        if App < 0:
+            import pdb
+            pbb.set_trace()
+        alpha = rold / App
+        W.data += alpha * D.data
+
+        # Form matrix products
+        # correction1 = Aff*W, restricted to sparsity pattern
+        mat_mult_s2s(Aff.indptr,
+                     Aff.indices,
+                     Aff.data,
+                     W.indptr,
+                     W.indices,
+                     W.data,
+                     correction1.indptr,
+                     correction1.indices,
+                     correction1.data,
+                     Aff.shape[0],
+                     correction1.shape[1],
+                     1, 1, 1)
+
+        # correction2 = W*C = W*Bc*Bc^T, restricted to sparsity pattern
+        temp = W * Bc
+        mat_mult_d2s(temp.ravel(order='C'),
+                     Bc.ravel(order='C'),
+                     correction2.indptr,
+                     correction2.indices,
+                     correction2.data,
+                     nf,
+                     nb,
+                     nc)
+
+        # Get residual, R = C0 - tau*Aff*W - W*C
+        # R.data = C0.data - tau*correction1.data - correction2.data
+        R.data -= alpha*(tau*correction1.data + correction2.data)
+        rnew = norm(R.data, sqrt=False)
+
+        # Get new search direction, increase iteration count    
+        D.data *= (rnew/rold)
+        D.data += R.data
+        rold = rnew
+        it += 1;
+
+        print('Iter ',it,' - |Res| = %3.4f'%np.sqrt(rold) )
+
+        # # Evaluate functional (just for debugging)
+        # if debug:
+        #     # Form P
+        #     P = stack(W, sparse.eye(nc, format='csr'))
+        #     P = sparse.csr_matrix(permute * P)
+
+        #     # Compute functionals
+        #     F1P = get_trace(B.T * (I-Rc.T*P.T) * (I-P*Rc) * B)
+        #     F2P = get_trace(P.T*A*P)
+        #     FP = F1P/tau + F2P
+
+        #     print('Iter ',it,' - |Res| = %3.4f'%np.sqrt(rold),', F1(P) = %3.4f'%F1P, \
+        #     ', F2(P) = %3.4f'%F2P,', F(P) = %3.4f'%FP)
+        #     funcval.append(FP)
+
+    # Form P = [W; I], reorder and return
+    P = stack(W, sparse.eye(nc, format='csr'))
+    P = sparse.csr_matrix(permute * P)
+    return P
+
+
+def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
+                       deg=1, maxiter=100, tol=1e-8, get_tau='size',
+                       diagonal_dominance=False, debug=False):
+    """ 
+    Trace-minimization of P. Fill this in.
+
+    """
+    # Currently only implemented for CSR matrices
+    if not sparse.isspmatrix_csr(A):
+        A = sparse.csr_matrix(A)
+        warn("Implicit conversion of A to CSR", SparseEfficiencyWarning)
+
+    # Make sure C-points are an array, get F-points
+    Cpts = np.array(Cpts)
+    if Fpts is None:
+        temp = np.zeros((A.shape[0],))
+        temp[Cpts] = 1
+        Fpts = np.where(temp == 0)[0]
+        del temp
+
+    nf = len(Fpts)
+    nc = len(Cpts)
+    n = A.shape[0]
+
+    # Form tau
+    if get_tau == 'size':
+        # tau = B.shape[1] / float(nc)
+        tau = 1.0
+    else:
+        raise ValueError("Unrecognized method to compute weight tau.")
+
+    # Form initial sparsity pattern as identity along C-points
+    # if tentative operator is not passed in. 
+    if T == None:
+        rowptr = np.zeros((n+1,),dtype='intc')
+        rowptr[Cpts+1] = 1
+        np.cumsum(rowptr, out=rowptr)
+        S = sparse.csr_matrix((np.ones((nc,), dtype='intc'),
+                        np.arange(0,nc),
+                        rowptr),
+                       dtype='float64')
+    else:
+        S = sparse.csr_matrix(T, dtype='float64')
+
+    # Expand sparsity pattern by multiplying with SOC matrix
+    for i in range(0,deg):
+        S = SOC * S
+
+    # Check if any rows have empty sparsity pattern --> either
+    # boundary nodes or have no strong connections (diagonally
+    # dominant). Include diagonally dominant nodes in sparsity
+    # pattern if diagonal_dominance=False.
+    # if not diagonal_dominance:
+    if not diagonal_dominance or False:
+        missing = np.where( np.ediff1d(S.indptr) == 0)[0]
+        for row in missing:
+            # Not connected to any other points, x[row]
+            # is fixed.
+            if (A.indptr[row+1] - A.indptr[row]) == 1:
+                pass
+            
+            # Diagonally dominant
+            # TODO : address this 
+
+
+    # Need to chop off S to be only fine grid rows, size
+    # nf x nc, before passing to trace_min_cg(). 
+    S = S[Fpts,:]
+
+    # Form P
+    P = trace_min_cg(A=A, B=B, Sp=S, Cpts=Cpts, Fpts=Fpts,
+                     maxiter=maxiter, tol=tol, tau=tau, debug=debug)
+
+    # How do we form coarse-grid bad guys? By injection? 
+    Bc = B[Cpts,:]
+
+    return P, Bc
+

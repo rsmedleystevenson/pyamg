@@ -48,13 +48,15 @@
     (      ctype splitting [], const int splitting_size),
     (      ctype indices [], const int indices_size),
     (const ctype A_rowptr [], const int A_rowptr_size),
-    (const ctype A_colinds [], const int A_colinds_size)
-
+    (const ctype A_colinds [], const int A_colinds_size),
+    (const ctype S_rowptr [], const int S_rowptr_size),
+    (const ctype S_colinds [], const int S_colinds_size)
 };
 %enddef
 
 %define T_INPLACE_ARRAY1( ctype )
 %apply (ctype* INPLACE_ARRAY1, int DIM1) {
+    (const ctype  A [], const int  A_size),
     (const ctype  B [], const int  B_size),
     (const ctype  b [], const int  b_size),
     (      ctype  e [], const int  e_size),
@@ -78,7 +80,9 @@
     (      ctype temp [], const int temp_size),
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
-    (      ctype cost [], const int cost_size)
+    (      ctype cost [], const int cost_size),
+    (const ctype A_data [], const int A_data_size),
+    (      ctype S_data [], const int S_data_size)
 };
 %enddef
 
@@ -139,6 +143,8 @@ DECLARE_DATA_TYPE( std::complex<double> )
   ---------------------------------------------------------------------------*/
 %include "linalg.h"
 INSTANTIATE_INDEXDATA_COMPLEX(pinv_array)
+INSTANTIATE_INDEXDATA(incomplete_mat_mult_dense2sparse)
+INSTANTIATE_INDEXDATA(incomplete_mat_subtract)
 
 /*----------------------------------------------------------------------------
   graph.h

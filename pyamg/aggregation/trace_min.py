@@ -15,19 +15,18 @@ from pyamg.util.utils import relaxation_as_linear_operator,\
     symmetric_rescaling, eliminate_diag_dom_nodes, blocksize, \
     levelize_strength_or_aggregation, mat_mat_complexity, \
     levelize_smooth_or_improve_candidates
+from pyamg.aggregation.smooth import trace_minimization
 from pyamg.strength import classical_strength_of_connection,\
     symmetric_strength_of_connection, evolution_strength_of_connection,\
     energy_based_strength_of_connection, distance_strength_of_connection,\
     algebraic_distance
 from aggregate import standard_aggregation, naive_aggregation, \
     lloyd_aggregation
-
 from pyamg.classical.split import RS, PMIS, PMISc, MIS, CLJP, CLJPc
 from pyamg.classical.cr import CR
-from tentative import ben_ideal_interpolation
 
 
-__all__ = ['ben_ideal_solver']
+__all__ = ['trace_min_solver']
 
 
 def trace_min_solver(A, B=None, BH=None,
@@ -35,6 +34,9 @@ def trace_min_solver(A, B=None, BH=None,
                     strength='symmetric',
                     aggregate=None,
                     splitting='RS',
+                    trace_min={'deg': 1, 'maxiter': 100,
+                               'tol': 1e-8, 'debug': False,
+                               'get_tau': 'size'},
                     presmoother=('block_gauss_seidel',
                                  {'sweep': 'symmetric'}),
                     postsmoother=('block_gauss_seidel',
@@ -42,8 +44,6 @@ def trace_min_solver(A, B=None, BH=None,
                     improve_candidates=('block_gauss_seidel',
                                         {'sweep': 'symmetric',
                                          'iterations': 4}),
-                    trace_min={'deg': 1, 'max_iter': 100,
-                               'tol': 1e-8, 'debug': False}
                     max_levels = 10, max_coarse = 10,
                     diagonal_dominance=False,
                     keep=False, **kwargs):
@@ -90,6 +90,9 @@ def trace_min_solver(A, B=None, BH=None,
         predefined aggregation on each level. Method-specific parameters may be
         passed in using a tuple, e.g. aggregate=('pairwise',{'num_matchings': 2 })
     splitting : {list} : 
+
+
+    trace_min : {dict}
 
 
     presmoother : {tuple, string, list} : default ('block_gauss_seidel',
@@ -231,7 +234,7 @@ def trace_min_solver(A, B=None, BH=None,
 
     while len(levels) < max_levels and \
             levels[-1].A.shape[0]/blocksize(levels[-1].A) > max_coarse:
-        extend_hierarchy(levels, strength, aggregate, splitting,
+        extend_hierarchy(levels, strength, aggregate, splitting, trace_min,
                     improve_candidates, diagonal_dominance, keep)
 
     ml = multilevel_solver(levels, **kwargs)
@@ -239,7 +242,7 @@ def trace_min_solver(A, B=None, BH=None,
     return ml
 
 
-def extend_hierarchy(levels, strength, aggregate, splitting,
+def extend_hierarchy(levels, strength, aggregate, splitting, trace_min,
                      improve_candidates, diagonal_dominance, keep):
     """Service routine to implement the strength of connection, aggregation,
     tentative prolongation construction, and prolongation smoothing.  Called by
@@ -369,8 +372,8 @@ def extend_hierarchy(levels, strength, aggregate, splitting,
     levels[-1].complexity['CF'] = kwargs['cost'][0]
 
     # Compute prolongation operator.
-    P, Bc = trace_min(A=A, B=B, SOC=C, Cpts=Cnodes, 
-                      Fpts=Fnodes, T=AggOp, **trace_min)
+    P, Bc = trace_minimization(A=A, B=B, SOC=C, Cpts=Cnodes, 
+                               Fpts=Fnodes, T=AggOp, **trace_min)
 
     # Compute the restriction matrix R, which interpolates from the fine-grid
     # to the coarse-grid.  If A is nonsymmetric, then R must be constructed
