@@ -15,7 +15,7 @@ from pyamg.gallery.stencil import stencil_grid
 from pyamg.util.utils import symmetric_rescaling
 from pyamg.aggregation.trace_min import trace_min_solver
 
-from poisson import get_poisson
+# from poisson import get_poisson
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -146,7 +146,7 @@ relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 250
+N 			= 100
 epsilon 	= 1.00			# 'Strength' of aniostropy (only for 2d)
 theta 		= 1.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 

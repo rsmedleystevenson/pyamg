@@ -1342,11 +1342,13 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
     correction1 = Sp        # Reference to Sp (can overwrite, don't need Sp.data)
     correction2 = sparse.csr_matrix((np.ones((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
     W = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
-    R = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
     C0 = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
 
     import pdb
     pdb.set_trace()
+
+    test_scale = 1.0 / ( norm( np.dot(B.T, A*B), sqrt=False) * B.shape[1] )
+    tau = 0.0
 
     # Form RHS, C0 = Bf*Bc^T - tau*Afc
     Bc = B[Cpts,:]
@@ -1358,6 +1360,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
                  nf,
                  nb,
                  nc)
+    C0.data *= (2.0 * test_scale)
 
     # C0 -= tau*Afc restricted to sparsity pattern of C0
     temp = A[Fpts,:][:,Cpts]
@@ -1370,9 +1373,10 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
                  temp.data,
                  tau)
 
-    # Initial residual
+    # Initial residual, given zero initial guess
+    R = sparse.csr_matrix(C0, copy=True)
     Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
-    D = sparse.csr_matrix((C0.data, C0.indices, C0.indptr), shape=C0.shape, copy=True)
+    D = sparse.csr_matrix(C0, copy=True)
     rold = norm(C0.data, sqrt=False)
     it = 0
 
@@ -1394,7 +1398,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
         #       Tr(DCD^T) = Tr(DBcBc^TD^T) = Tr(Bc^TD^TDBc) = ||DBc||_F^2
         # PyAMG vector 2-norm on a 2d array returns Frobenius
         temp = D * Bc
-        App = tau*get_trace(D.T*Aff*D) + norm(temp, sqrt=False)
+        App = tau*get_trace(D.T*Aff*D) + test_scale*norm(temp, sqrt=False)
         if App < 0:
             import pdb
             pbb.set_trace()
@@ -1429,7 +1433,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
 
         # Get residual, R = C0 - tau*Aff*W - W*C
         # R.data = C0.data - tau*correction1.data - correction2.data
-        R.data -= alpha*(tau*correction1.data + correction2.data)
+        R.data -= alpha*(tau*correction1.data + test_scale*correction2.data)
         rnew = norm(R.data, sqrt=False)
 
         # Get new search direction, increase iteration count    
@@ -1455,6 +1459,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
         #     ', F2(P) = %3.4f'%F2P,', F(P) = %3.4f'%FP)
         #     funcval.append(FP)
 
+    pdb.set_trace()
     # Form P = [W; I], reorder and return
     P = stack(W, sparse.eye(nc, format='csr'))
     P = sparse.csr_matrix(permute * P)
