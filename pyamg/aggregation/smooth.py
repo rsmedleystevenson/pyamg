@@ -1344,11 +1344,10 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
     W = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
     C0 = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape, copy=True)
 
-    import pdb
-    pdb.set_trace()
-
-    test_scale = 1.0 / ( norm( np.dot(B.T, A*B), sqrt=False) * B.shape[1] )
-    tau = 0.0
+    # Normalize B in euclidean and scale WAP term by energy,
+    # 1 / ||B||_A^2, and average over columns of B, 1 / B.shape[1]
+    B /= norm(B)
+    scale_norm = 1.0 / ( norm( np.dot(B.T, A*B), sqrt=False) * B.shape[1] )
 
     # Form RHS, C0 = Bf*Bc^T - tau*Afc
     Bc = B[Cpts,:]
@@ -1360,7 +1359,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
                  nf,
                  nb,
                  nc)
-    C0.data *= (2.0 * test_scale)
+    C0.data *= scale_norm
 
     # C0 -= tau*Afc restricted to sparsity pattern of C0
     temp = A[Fpts,:][:,Cpts]
@@ -1375,53 +1374,35 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
 
     # Initial residual, given zero initial guess
     R = sparse.csr_matrix(C0, copy=True)
-    Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
     D = sparse.csr_matrix(C0, copy=True)
+    Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
     rold = norm(C0.data, sqrt=False)
     it = 0
 
-    # Construct matrices only used for debugging purposes
-    if debug:
-        I = sparse.eye(n, format='csr');
-        Rc = sparse.csr_matrix( (np.ones((nc,)),
-                          np.array(Cpts),
-                          np.arange(0,nc+1)), shape=[nc,n])
-        funcval = []
-
     # Do CG iterations until residual tolerance or maximum
     # number of iterations reached
-    while it < maxiter and rold > tol:
-
-        # Compute and add correction, where 
-        #       App = tau * Tr(D^TAD) + Tr(DCD^T)
-        # Note, 
-        #       Tr(DCD^T) = Tr(DBcBc^TD^T) = Tr(Bc^TD^TDBc) = ||DBc||_F^2
-        # PyAMG vector 2-norm on a 2d array returns Frobenius
-        temp = D * Bc
-        App = tau*get_trace(D.T*Aff*D) + test_scale*norm(temp, sqrt=False)
-        if App < 0:
-            import pdb
-            pbb.set_trace()
-        alpha = rold / App
-        W.data += alpha * D.data
+    while it < maxiter and rold > tol**2:
 
         # Form matrix products
-        # correction1 = Aff*W, restricted to sparsity pattern
+        # correction1 = Aff*D, restricted to sparsity pattern
+        #   - Important to set data to zero before calling
+        correction1.data[:] = 0
         mat_mult_s2s(Aff.indptr,
                      Aff.indices,
                      Aff.data,
-                     W.indptr,
-                     W.indices,
-                     W.data,
+                     D.indptr,
+                     D.indices,
+                     D.data,
                      correction1.indptr,
                      correction1.indices,
                      correction1.data,
                      Aff.shape[0],
                      correction1.shape[1],
                      1, 1, 1)
+        correction1.data *= tau
 
-        # correction2 = W*C = W*Bc*Bc^T, restricted to sparsity pattern
-        temp = W * Bc
+        # correction2 = D*C = D*Bc*Bc^T, restricted to sparsity pattern
+        temp = D * Bc
         mat_mult_d2s(temp.ravel(order='C'),
                      Bc.ravel(order='C'),
                      correction2.indptr,
@@ -1430,10 +1411,17 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
                      nf,
                      nb,
                      nc)
+        correction2.data *= scale_norm
 
-        # Get residual, R = C0 - tau*Aff*W - W*C
-        # R.data = C0.data - tau*correction1.data - correction2.data
-        R.data -= alpha*(tau*correction1.data + test_scale*correction2.data)
+        # Compute and add correction, where 
+        #       App = tau * Tr(D^TAD) + Tr(DBcBc^TD^T)
+        #       alpha = ||r|| / App
+        App = get_trace(D.T*correction1) + get_trace(correction2*D.T)
+        alpha = rold / App
+        W.data += alpha * D.data
+
+        # Get residual, R = C0 - tau*Aff*D - D*Bc*Bc^T
+        R.data -= alpha * (correction1.data + correction2.data)
         rnew = norm(R.data, sqrt=False)
 
         # Get new search direction, increase iteration count    
@@ -1442,32 +1430,18 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau, debug=False):
         rold = rnew
         it += 1;
 
-        print('Iter ',it,' - |Res| = %3.4f'%np.sqrt(rold) )
+        if debug:
+            print('Iter ',it,' - |Res| = %3.4f'%np.sqrt(rold) )
 
-        # # Evaluate functional (just for debugging)
-        # if debug:
-        #     # Form P
-        #     P = stack(W, sparse.eye(nc, format='csr'))
-        #     P = sparse.csr_matrix(permute * P)
-
-        #     # Compute functionals
-        #     F1P = get_trace(B.T * (I-Rc.T*P.T) * (I-P*Rc) * B)
-        #     F2P = get_trace(P.T*A*P)
-        #     FP = F1P/tau + F2P
-
-        #     print('Iter ',it,' - |Res| = %3.4f'%np.sqrt(rold),', F1(P) = %3.4f'%F1P, \
-        #     ', F2(P) = %3.4f'%F2P,', F(P) = %3.4f'%FP)
-        #     funcval.append(FP)
-
-    pdb.set_trace()
     # Form P = [W; I], reorder and return
     P = stack(W, sparse.eye(nc, format='csr'))
     P = sparse.csr_matrix(permute * P)
+
     return P
 
 
 def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
-                       deg=1, maxiter=100, tol=1e-8, get_tau='size',
+                       deg=1, maxiter=100, tol=1e-8, get_tau=1,
                        diagonal_dominance=False, debug=False):
     """ 
     Trace-minimization of P. Fill this in.
@@ -1492,10 +1466,12 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
 
     # Form tau
     if get_tau == 'size':
-        # tau = B.shape[1] / float(nc)
-        tau = 1.0
+        tau = B.shape[1] / float(nc)
     else:
-        raise ValueError("Unrecognized method to compute weight tau.")
+        try:
+            tau = float(get_tau)
+        except:
+            raise ValueError("Unrecognized weight tau.")
 
     # Form initial sparsity pattern as identity along C-points
     # if tentative operator is not passed in. 

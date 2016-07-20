@@ -1001,7 +1001,7 @@ void incomplete_mat_mult_dense2sparse(const T A[], const int A_size,
                                       const I n)
 {
     // Loop over each row in S
-    for (I i=0; i<n; i++) {
+    for (I i=0; i<m; i++) {
 
         // Loop over each nonzero column in sparsity
         // pattern for this row

@@ -44,7 +44,8 @@ keep = False
 #		+ block_flag (F)- True / False for block matrices
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
-strength = ('classical', {'theta': 0.1} )
+strength = ('classical', {'theta': 0.25} )
+# strength = ('evolution', {'k': 2, 'epsilon': 5.0})
 
 # AMG CF-splitting 
 # ----------------
@@ -91,9 +92,9 @@ aggregate = None
 
 # Trace-minimization parameters
 # -----------------------------
-trace_min={'deg': 1, 'maxiter': 20,
-           'tol': 1e-8, 'debug': True,
-           'get_tau': 'size'}
+trace_min={'deg': 1, 'maxiter': 10,
+           'tol': 1e-8, 'debug': False,
+           'get_tau': 1.0}
 
 
 # Relaxation
@@ -133,8 +134,8 @@ trace_min={'deg': 1, 'maxiter': 20,
 # Note, Schwarz relaxation, polynomial relaxation, Cimmino relaxation,
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
-# relaxation = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
-relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+relaxation = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
+# relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 # ----------------------------------------------------------------------------- #
@@ -146,9 +147,9 @@ relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 100
-epsilon 	= 1.00			# 'Strength' of aniostropy (only for 2d)
-theta 		= 1.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
+N 			= 1000
+epsilon 	= 0.00			# 'Strength' of aniostropy (only for 2d)
+theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # 1d Poisson 
 if problem_dim == 1:
@@ -214,7 +215,7 @@ for i in range(1,len(residuals)-1):
 
 CF = np.mean(conv_factors)
 
-print "Ruge Stuben"
+print "Trace-min, problem size ",A.shape[0]," x ",A.shape[0],", ",A.nnz," nonzeros"
 print "\tSetup time 		 = ",setup_time
 # print "\tSetup complexity 	 = ",SC
 print "\tSolve time 		 = ",solve_time
