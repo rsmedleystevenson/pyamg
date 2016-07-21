@@ -68,6 +68,7 @@ strength = ('classical', {'theta': 0.25} )
 #		+ 
 #		+ 
 splitting = 'RS'
+# splitting = None
 
 # Aggregation 
 # -----------
@@ -92,9 +93,9 @@ aggregate = None
 
 # Trace-minimization parameters
 # -----------------------------
-trace_min={'deg': 1, 'maxiter': 10,
+trace_min={'deg': 1, 'maxiter': 5,
            'tol': 1e-8, 'debug': False,
-           'get_tau': 1.0}
+           'get_tau': 3.0}
 
 
 # Relaxation
@@ -137,6 +138,8 @@ trace_min={'deg': 1, 'maxiter': 10,
 relaxation = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
 # relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
+
+improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -196,7 +199,8 @@ residuals = []
 start = time.clock()
 ml = trace_min_solver(A=A, strength=strength, splitting=splitting, aggregate=aggregate,
 					  trace_min=trace_min, presmoother=relaxation, postsmoother=relaxation,
-                      max_levels=max_levels, max_coarse=max_coarse, keep=keep)
+                      improve_candidates=improve_candidates, max_levels=max_levels,
+                      max_coarse=max_coarse, keep=keep)
 end = time.clock()
 setup_time = end-start;
 
@@ -207,7 +211,7 @@ solve_time = end-start
 
 OC = ml.operator_complexity()
 CC = ml.cycle_complexity()
-# SC = ml.setup_complexity()
+SC = ml.setup_complexity()
 
 conv_factors = np.zeros((len(residuals)-1,1))
 for i in range(1,len(residuals)-1):
@@ -217,8 +221,8 @@ CF = np.mean(conv_factors)
 
 print "Trace-min, problem size ",A.shape[0]," x ",A.shape[0],", ",A.nnz," nonzeros"
 print "\tSetup time 		 = ",setup_time
-# print "\tSetup complexity 	 = ",SC
 print "\tSolve time 		 = ",solve_time
+print "\tSetup complexity 	 = ",SC
 print "\tOperator complexity 	 = ",OC
 print "\tCycle complexity 	 = ",CC
 print "\tConvergence factor 	 = ",CF

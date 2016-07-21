@@ -345,6 +345,8 @@ def extend_hierarchy(levels, strength, aggregate, splitting, trace_min,
     #
     # fn, kwargs = unpack_arg(splitting[len(levels)-1])
     fn, kwargs = unpack_arg(splitting)
+    if fn is not None and AggOp is not None:
+        raise ValueError("Must choose CF coarsening or aggregation - not both.")
     if fn == 'RS':
         splitting = RS(C, **kwargs)
     elif fn == 'PMIS':
@@ -372,8 +374,11 @@ def extend_hierarchy(levels, strength, aggregate, splitting, trace_min,
     levels[-1].complexity['CF'] = kwargs['cost'][0]
 
     # Compute prolongation operator.
+    temp_cost = [0]
     P, Bc = trace_minimization(A=A, B=B, SOC=C, Cpts=Cnodes, 
-                               Fpts=Fnodes, T=AggOp, **trace_min)
+                               Fpts=Fnodes, T=AggOp, cost=temp_cost,
+                               **trace_min)
+    levels[-1].complexity['trace_min'] = temp_cost[0]
 
     # Compute the restriction matrix R, which interpolates from the fine-grid
     # to the coarse-grid.  If A is nonsymmetric, then R must be constructed
