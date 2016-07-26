@@ -93,7 +93,7 @@ aggregate = None
 
 # Trace-minimization parameters
 # -----------------------------
-trace_min={'deg': 1, 'maxiter': 5,
+trace_min={'deg': 2, 'maxiter': 5,
            'tol': 1e-8, 'debug': False,
            'get_tau': 3.0}
 
@@ -135,8 +135,8 @@ trace_min={'deg': 1, 'maxiter': 5,
 # Note, Schwarz relaxation, polynomial relaxation, Cimmino relaxation,
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
-relaxation = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
-# relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+# relaxation = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
+relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})

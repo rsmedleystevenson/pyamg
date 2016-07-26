@@ -1425,8 +1425,9 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
         #       App = tau * <AD, D>_F + scale * <DBcBc^T, D>
         #       alpha = ||r|| / App
         # App = get_trace(D.T*correction1) + get_trace(correction2*D.T)
-        App = (D.conjugate().multiply(correction1)).sum() +\
-                D.conjugate().multiply(correction2).sum()
+        # App = (D.conjugate().multiply(correction1)).sum() +\
+        #         D.conjugate().multiply(correction2).sum()
+        App = np.dot(D.data.conjugate(), correction1.data + correction2.data)
         alpha = rold / App
         W.data += alpha * D.data
         cost[0] += 2*D.nnz / float(A.nnz)
