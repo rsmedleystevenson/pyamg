@@ -18,6 +18,19 @@
 %feature("autodoc", "1");
 
 %include "numpy.i"
+%include "std_vector.i"
+%include "std_pair.i"
+
+// Instantiate templates used for returning standard vectors
+namespace std {
+   %template(IntVector) vector<int>;
+   %template(FloatVector) vector<float>;
+   %template(DoubleVector) vector<double>;
+   %template(ComplexFloatVector) vector<std::complex<float>>;
+   %template(ComplexDoubleVector) vector<std::complex<double>>;
+   %template(PairVectorDouble) pair< vector<int>, vector<double> >;
+   %template(PairVectorFloat) pair< vector<int>, vector<float> >;
+}
 
 %init %{
     import_array();
@@ -53,7 +66,6 @@
     (const ctype S_rowptr [], const int S_rowptr_size),
     (const ctype S_colinds [], const int S_colinds_size),
     (      ctype P_rowptr [], const int P_rowptr_size),
-    (      ctype P_colinds [], const int P_colinds_size),
     (const ctype Cpts [], const int Cpts_size)
 };
 %enddef
@@ -84,7 +96,6 @@
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
     (      ctype cost [], const int cost_size),
-    (      ctype P_data [], const int P_data_size),
     (const ctype A_data [], const int A_data_size)
 };
 %enddef

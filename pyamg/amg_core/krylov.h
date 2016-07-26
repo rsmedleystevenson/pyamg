@@ -3,6 +3,7 @@
 
 #include "linalg.h"
 
+
 /* Apply |start-stop| Householder reflectors in B to z
  *
  * Implements the below python

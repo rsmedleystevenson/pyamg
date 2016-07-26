@@ -668,15 +668,13 @@ std::vector<T> constrained_least_squares(std::vector<T> &A,
 //        --> Use get_sub_mat testing function in sparse.cpp
 //
 template<class I, class T>
-// std::pair<std::vector<int>, std::vector<T> > 
-void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
+std::pair<std::vector<I>, std::vector<T> > 
+    ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
                              const I A_colinds[], const I A_colinds_size,
                              const T A_data[], const I A_data_size,
                              const I S_rowptr[], const I S_rowptr_size,
                              const I S_colinds[], const I S_colinds_size,
                              I P_rowptr[], const I P_rowptr_size,
-                             I P_colinds[], const I P_colinds_size,
-                             T P_data[], const I P_data_size,
                              const T B[], const I B_size,
                              const I Cpts[], const I Cpts_size,
                              const I n,
@@ -776,9 +774,9 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
     // Allocate pair of vectors to store P.col_inds and P.data. Use
     // size of sparsity pattern as estimate for number of nonzeros. 
     // Pair returned by the function through SWIG.
-    // std::pair<std::vector<int>, std::vector<T> > P_vecs;
-    // std::get<0>(P_vecs).reserve(S_colinds_size);
-    // std::get<1>(P_vecs).reserve(S_colinds_size);
+    std::pair<std::vector<int>, std::vector<T> > P_vecs;
+    std::get<0>(P_vecs).reserve(S_colinds_size);
+    std::get<1>(P_vecs).reserve(S_colinds_size);
 
     /* ------------------ */
 
@@ -792,11 +790,11 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
         // If so, add identity to P. Recall, enumeration of C-points
         // in splitting is one-indexed. 
         if (splitting[row_P] > 0) {
-            // std::get<0>(P_vecs).push_back(splitting[row_P]-1);
-            // std::get<1>(P_vecs).push_back(1.0);
+            std::get<0>(P_vecs).push_back(splitting[row_P]-1);
+            std::get<1>(P_vecs).push_back(1.0);
             P_rowptr[row_P+1] = P_rowptr[row_P] + 1;
-            P_colinds[data_ind] = splitting[row_P]-1;
-            P_data[data_ind] = 1.0;
+            // P_colinds[data_ind] = splitting[row_P]-1;
+            // P_data[data_ind] = 1.0;
             data_ind += 1;
             numCpts +=1 ;
         }
@@ -927,10 +925,10 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
                 // If dot product of column of Acc and vector \hat{w}_l is nonzero,
                 // add to sparse structure of P.
                 if (std::abs(temp_prod) > 1e-12) {
-                    // std::get<0>(P_vecs).push_back(j);
-                    // std::get<1>(P_vecs).push_back(temp_prod);
-                    P_colinds[data_ind] = j;
-                    P_data[data_ind] = temp_prod;
+                    std::get<0>(P_vecs).push_back(j);
+                    std::get<1>(P_vecs).push_back(temp_prod);
+                    // P_colinds[data_ind] = j;
+                    // P_data[data_ind] = temp_prod;
                     row_length += 1;
                     data_ind += 1;
                 }
@@ -940,11 +938,6 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
             P_rowptr[row_P+1] = P_rowptr[row_P] + row_length;
             row_inds = NULL;
         }
-
-        if (data_ind > P_data_size) {
-            std::cout << "Warning - more nonzeros in P than allocated - breaking early.\n";
-            break;
-        }
     }
 
     // Check that all C-points were added to P. 
@@ -952,7 +945,7 @@ void ben_ideal_interpolation(const I A_rowptr[], const I A_rowptr_size,
         std::cout << "Warning - C-points missed in constructing P.\n";
     }
 
-    // return P_vecs;
+    return P_vecs;
 }
 
 #endif

@@ -128,8 +128,8 @@ def fit_candidates(AggOp, B, tol=1e-10):
         raise ValueError('expected 2d array for argument B')
 
     if B.shape[0] % AggOp.shape[0] != 0:
-        raise ValueError('dimensions of AggOp %s and B %s are \
-                          incompatible' % (AggOp.shape, B.shape))
+        raise ValueError('dimensions of AggOp %s and B %s are '
+                         'incompatible' % (AggOp.shape, B.shape))
 
     N_fine, N_coarse = AggOp.shape
 
@@ -199,9 +199,6 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     if ('theta' in prefilter) and (prefilter['theta'] == 0):
         prefilter.pop('theta', None)
 
-    if not isspmatrix_csr(AggOp):
-        raise TypeError('expected csr_matrix for argument AggOp')
-
     B = np.asarray(B)
     if B.dtype not in ['float32', 'float64', 'complex64', 'complex128']:
         B = np.asarray(B, dtype='float64')
@@ -209,9 +206,10 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     if len(B.shape) != 2:
         raise ValueError('expected 2d array for argument B')
 
-    if B.shape[0] % AggOp.shape[0] != 0:
-        raise ValueError('dimensions of AggOp %s and B %s are \
-                          incompatible' % (AggOp.shape, B.shape))
+    # What if AggOp is none
+    # if B.shape[0] % AggOp.shape[0] != 0:
+    #     raise ValueError('dimensions of AggOp %s and B %s are \
+    #                       incompatible' % (AggOp.shape, B.shape))
 
     if not isspmatrix_csr(A):
         try: 
@@ -240,27 +238,20 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     else:
         S = csr_matrix(AggOp, dtype='float64')
 
+    import pdb
+    # pdb.set_trace()
+
     # Expand sparsity pattern by multiplying with SOC 
-    increase = []
     for i in range(0,d):
-        temp = float(S.nnz)
         S = SOC * S
-        increase.append(S.nnz / temp)
 
     # Make sure all rows have at least one nonzero. If not, 
     # 
     #   TODO :  Then what? 
     #
     missing = np.where( np.ediff1d(S.indptr) == 0)[0]
-    for row in missing:
+    # for row in missing:
 
-
-
-    # Estimate number of nonzeros in P by considering the
-    # increase each time the sparsity pattern is expanded
-    # (i.e. approximate the increase in nonzeros due to
-    # W = \hat{W}*A_{cc})
-    num_nnz = int(10*np.mean(increase)*S.nnz)
 
     # Filter sparsity pattern
     if 'theta' in prefilter and 'k' in prefilter:
@@ -280,29 +271,30 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
 
     # Form empty array for row pointer of P
     P_rowptr = np.empty((n+1,), dtype='intc')
-    P_colinds = np.empty((num_nnz,), dtype='intc')
-    P_data = np.empty((num_nnz,), dtype='float64')
 
     # Ben ideal interpolation
     fn = amg_core.ben_ideal_interpolation
-    fn(A.indptr,
-       A.indices,
-       A.data,
-       S.indptr,
-       S.indices,
-       P_rowptr,
-       P_colinds,
-       P_data,
-       B.ravel(),
-       Cnodes,
-       n,
-       num_bad_guys )
+    output = fn(A.indptr,
+                A.indices,
+                A.data,
+                S.indptr,
+                S.indices,
+                P_rowptr,
+                B.ravel(),
+                Cnodes,
+                n,
+                num_bad_guys )
 
-    P = csr_matrix((P_data, P_colinds, P_rowptr), shape=[n,num_Cnodes])
-    
-    print "Estimate nnz = ",num_nnz,", Actual nnz = ",P.nnz
+    # P = csr_matrix((P_data, P_colinds, P_rowptr), shape=[n,num_Cnodes])
+    P = csr_matrix((np.array(output[1]),
+                    np.array(output[0]),
+                    P_rowptr),
+                   shape=[n,num_Cnodes])
 
     # Form coarse-grid bad guys as B restricted to coarse grid
     Bc = B[Cnodes,:]
+
+    # import pdb
+    # pdb.set_trace()
 
     return P, Bc
