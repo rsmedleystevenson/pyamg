@@ -39,7 +39,7 @@ is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
-accel = None
+accel = 'cg'
 keep = False
 
 # Strength of connection 
@@ -55,7 +55,9 @@ keep = False
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
 # strength = ('symmetric', {'theta': 0} )
-strength =  ('evolution', {'k': 2, 'epsilon': 4.0, 'symmetrize_measure':True})	# 'symmetric', 'classical', 'evolution'
+# strength = ('symmetric', {'theta': 0} )
+# strength =  ('evolution', {'k': 2, 'epsilon': 4.0, 'symmetrize_measure':True})	# 'symmetric', 'classical', 'evolution'
+strength = ('classical', {'theta': 0.15} )
 
 
 # Aggregation 
@@ -75,12 +77,12 @@ strength =  ('evolution', {'k': 2, 'epsilon': 4.0, 'symmetrize_measure':True})	#
 #	        ~ inv  - G[i,j] = 1.0/abs(C[i,j])
 #	        ~ same - G[i,j] = C[i,j]
 #	        ~ sub  - G[i,j] = C[i,j] - min(C)
-aggregate = ('standard')
+# aggregate = ('standard')
 # aggregate = ('pairwise', {'matchings': 3, 'algorithm': 'drake'})
-# aggregate = None
+aggregate = None
 
-# splitting = 'RS'
-splitting = None
+splitting = 'RS'
+# splitting = None
 
 # Relaxation
 # ---------- 
@@ -130,6 +132,8 @@ improve_candidates = [('gauss_seidel', {'sweep': 'symmetric', 'iterations': 4})]
 # improve_candidates = [('jacobi', {'omega': 2.0/3.0, 'iterations': 4})]
 # improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
 
+sparsity = {'deg': 1, 'prefilter': {'k':2 } }
+
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
@@ -139,9 +143,9 @@ improve_candidates = [('gauss_seidel', {'sweep': 'symmetric', 'iterations': 4})]
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 200
-epsilon 	= 1.0				# 'Strength' of aniostropy (only for 2d)
-theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
+N 			= 250
+epsilon 	= 0.1				# 'Strength' of aniostropy (only for 2d)
+theta 		= 4.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
 sa_residuals = []
@@ -194,13 +198,13 @@ sa_residuals = []
 
 # Form classical root node multilevel solver object
 start = time.clock()
-ml_rn = ben_ideal_solver(A, B=None, strength=strength, aggregate=aggregate,
+ml_rn = ben_ideal_solver(A, B=None, strength=strength, aggregate=aggregate, sparsity=sparsity,
 						 splitting=splitting, max_levels=max_levels, max_coarse=max_coarse,
 						 presmoother=relaxation, postsmoother=relaxation,
 						 improve_candidates=improve_candidates, keep=keep,
 						 setup_complexity=True )
 
-sol = ml_rn.solve(b, x0, tol, residuals=rn_residuals)
+sol = ml_rn.solve(b, x0, tol, residuals=rn_residuals, accel=accel)
 setup = ml_rn.setup_complexity()
 cycle = ml_rn.cycle_complexity()
 
