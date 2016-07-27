@@ -24,7 +24,7 @@ from aggregate import standard_aggregation, naive_aggregation, \
 
 from pyamg.classical.split import RS, PMIS, PMISc, MIS, CLJP, CLJPc
 from pyamg.classical.cr import CR
-from tentative import ben_ideal_interpolation
+from tentative import ben_ideal_interpolation, test_ideal_interpolation
 
 
 __all__ = ['ben_ideal_solver']
@@ -35,6 +35,7 @@ def ben_ideal_solver(A, B=None, BH=None,
                     strength='symmetric',
                     aggregate=None,
                     splitting='RS',
+                    sparsity={'deg': 1, 'prefilter': {'k':3} },
                     presmoother=('block_gauss_seidel',
                                  {'sweep': 'symmetric'}),
                     postsmoother=('block_gauss_seidel',
@@ -241,7 +242,7 @@ def ben_ideal_solver(A, B=None, BH=None,
 
     while len(levels) < max_levels and \
             levels[-1].A.shape[0]/blocksize(levels[-1].A) > max_coarse:
-        extend_hierarchy(levels, strength, aggregate, splitting,
+        extend_hierarchy(levels, strength, aggregate, splitting, sparsity,
                     improve_candidates, diagonal_dominance, keep)
 
     ml = multilevel_solver(levels, **kwargs)
@@ -249,7 +250,7 @@ def ben_ideal_solver(A, B=None, BH=None,
     return ml
 
 
-def extend_hierarchy(levels, strength, aggregate, splitting,
+def extend_hierarchy(levels, strength, aggregate, splitting, sparsity,
                      improve_candidates, diagonal_dominance, keep):
     """Service routine to implement the strength of connection, aggregation,
     tentative prolongation construction, and prolongation smoothing.  Called by
@@ -327,16 +328,16 @@ def extend_hierarchy(levels, strength, aggregate, splitting,
     # denotes the fine-grid nodes agglomerated into k-th coarse-grid node.
     fn, kwargs = unpack_arg(aggregate[len(levels)-1])
     if fn == 'standard':
-        AggOp, Cnodes = standard_aggregation(C, **kwargs)
+        AggOp, Cpts = standard_aggregation(C, **kwargs)
     elif fn == 'naive':
-        AggOp, Cnodes = naive_aggregation(C, **kwargs)
+        AggOp, Cpts = naive_aggregation(C, **kwargs)
     elif fn == 'lloyd':
-        AggOp, Cnodes = lloyd_aggregation(C, **kwargs)
+        AggOp, Cpts = lloyd_aggregation(C, **kwargs)
     elif fn == 'pairwise':
-        AggOp, Cnodes = pairwise_aggregation(A, B, **kwargs)
+        AggOp, Cpts = pairwise_aggregation(A, B, **kwargs)
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
-        Cnodes = kwargs['Cnodes']
+        Cpts = kwargs['Cpts']
     elif fn == None:
         AggOp = None
     else:
@@ -370,19 +371,26 @@ def extend_hierarchy(levels, strength, aggregate, splitting,
     elif fn == None:
         # Ensure C-points are sorted
         splitting = np.zeros((A.shape[0],), dtype='intc')
-        splitting[Cnodes] = 1
+        splitting[Cpts] = 1
     else:
         raise ValueError('unknown C/F splitting method (%s)' % splitting)
     
-    Cnodes = np.array(np.where(splitting == 1)[0], dtype='intc')
+    Cpts = np.array(np.where(splitting == 1)[0], dtype='intc')
     levels[-1].complexity['CF'] = kwargs['cost'][0]
 
     # Compute prolongation operator.
     # 
     #   TODO : Add in degree of sparsity and filtering option
     #
-    P, Bc = ben_ideal_interpolation(A=A, B=B, SOC=C, Cnodes=Cnodes, AggOp=AggOp)
-  
+    # import pdb
+    # pdb.set_trace()
+    P, Bc = ben_ideal_interpolation(A=A, B=B, SOC=C, Cpts=Cpts, AggOp=AggOp, **sparsity)
+    # P, Bc = test_ideal_interpolation(A=A, B=B, SOC=C, Cpts=Cpts, AggOp=AggOp)
+
+    # import matplotlib.pyplot as plt
+
+
+
     # Compute the restriction matrix R, which interpolates from the fine-grid
     # to the coarse-grid.  If A is nonsymmetric, then R must be constructed
     # based on A.H.  Otherwise R = P.H or P.T.
@@ -421,7 +429,7 @@ def extend_hierarchy(levels, strength, aggregate, splitting,
 
     levels[-1].P = P                            # smoothed prolongator
     levels[-1].R = R                            # restriction operator
-    levels[-1].Cpts = Cnodes                    # Cpts (i.e., rootnodes)
+    levels[-1].Cpts = Cpts                    # Cpts (i.e., rootnodes)
 
     # Add new level to hierarchy
     levels.append(multilevel_solver.level())

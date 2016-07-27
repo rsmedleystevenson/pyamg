@@ -569,8 +569,8 @@ std::vector<T> constrained_least_squares(std::vector<T> &A,
     // and Q is returned in column major. 
     std::vector<T> Qc = QR(&C[0],n,s,1);
 
-    // Form matrix product S = A^T * Q. For A passed in as row
-    // major, perform S = A * Q, assuming that A is in column major
+    // Form matrix product S = A^T * Q. If A is passed in as row
+    // major, perform S = A * Q, pretending that A is in column major
     // (A^T row major = A column major).
     std::vector<T> temp_vec(n,0);
     for (I i=0; i<m; i++) {
@@ -739,7 +739,8 @@ std::pair<std::vector<I>, std::vector<T> >
             // F-index is negative and 1-indexed in splitting. 
             if (splitting[col] < 0) {
                 Acf_colinds.push_back(abs(splitting[col]) - 1);
-                Acf_data.push_back(A_data[k]);
+                // Acf_data.push_back(A_data[k]);
+                Acf_data.push_back(-A_data[k]);
                 nnz += 1;
             }
         }
@@ -895,7 +896,7 @@ std::pair<std::vector<I>, std::vector<T> >
                                                            submat_n,
                                                            submat_m,
                                                            num_bad_guys);
-            
+
             // Loop over each jth column of Acc, taking inner product
             //         (w_l)_j = \hat{w}_l * (Acc)_j
             // to form w_l := \hat{w}_l*Acc.

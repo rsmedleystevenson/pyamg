@@ -3,8 +3,10 @@
 __docformat__ = "restructuredtext en"
 
 import numpy as np
-from scipy.sparse import isspmatrix_csr, bsr_matrix, csr_matrix
+from scipy.sparse import isspmatrix_csr, bsr_matrix, csr_matrix, vstack, identity
+from pyamg.util.utils import filter_matrix_rows, truncate_rows
 from pyamg import amg_core
+import pdb
 
 __all__ = ['fit_candidates','ben_ideal_interpolation']
 
@@ -156,7 +158,7 @@ def fit_candidates(AggOp, B, tol=1e-10):
     return Q, R
 
 
-def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
+def ben_ideal_interpolation(A, B, SOC, Cpts, AggOp=None, deg=1, prefilter={}):
     """ Ben ideal interpolation - form P = [W; I] via minimizing 
 
             ||I - WAcc^{-1}Acf||_F,  s.t.  PBc = B            
@@ -168,7 +170,7 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
     AggOp : csr_matrix
         Describes the sparsity pattern of the tentative prolongator.
         Has dimension (n, #aggregates)
-    Cnodes : array-like
+    Cpts : array-like
         List of designated C-points, assumed to be passed in sorted.
     B : array
         The near-nullspace candidates stored in column-wise fashion.
@@ -218,31 +220,30 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
         except:
             raise TypeError("Incompatible matrix type A.")
     
-    Cnodes = np.array(Cnodes)
+    Cpts = np.array(Cpts)
 
     # Sort indices of A
     A.sort_indices()
     n = A.shape[0]
-    num_Cnodes = len(Cnodes)
+    num_Cpts = len(Cpts)
     num_bad_guys = B.shape[1]
 
     # Form initial sparsity pattern
     if AggOp == None:
         rowptr = np.zeros((n+1,),dtype='intc')
-        rowptr[Cnodes+1] = 1
+        rowptr[Cpts+1] = 1
         np.cumsum(rowptr, out=rowptr)
-        S = csr_matrix((np.ones((num_Cnodes,), dtype='intc'),
-                        np.arange(0,num_Cnodes),
+        S = csr_matrix((np.ones((num_Cpts,), dtype='intc'),
+                        np.arange(0,num_Cpts),
                         rowptr),
                        dtype='float64')
     else:
         S = csr_matrix(AggOp, dtype='float64')
 
-    import pdb
     # pdb.set_trace()
 
     # Expand sparsity pattern by multiplying with SOC 
-    for i in range(0,d):
+    for i in range(0,deg):
         S = SOC * S
 
     # Make sure all rows have at least one nonzero. If not, 
@@ -281,20 +282,153 @@ def ben_ideal_interpolation(A, B, SOC, Cnodes, AggOp=None, d=1, prefilter={}):
                 S.indices,
                 P_rowptr,
                 B.ravel(),
-                Cnodes,
+                Cpts,
                 n,
                 num_bad_guys )
 
-    # P = csr_matrix((P_data, P_colinds, P_rowptr), shape=[n,num_Cnodes])
+    # P = csr_matrix((P_data, P_colinds, P_rowptr), shape=[n,num_Cpts])
     P = csr_matrix((np.array(output[1]),
                     np.array(output[0]),
                     P_rowptr),
-                   shape=[n,num_Cnodes])
+                   shape=[n,num_Cpts])
 
     # Form coarse-grid bad guys as B restricted to coarse grid
-    Bc = B[Cnodes,:]
+    Bc = B[Cpts,:]
 
-    # import pdb
     # pdb.set_trace()
 
     return P, Bc
+
+
+
+def test_ideal_interpolation(A, B, SOC, Cpts, AggOp=None, d=1, prefilter={}):
+    """ 
+    Test python implementation
+
+    """
+
+    if ('theta' in prefilter) and (prefilter['theta'] == 0):
+        prefilter.pop('theta', None)
+
+    B = np.asarray(B)
+    if B.dtype not in ['float32', 'float64', 'complex64', 'complex128']:
+        B = np.asarray(B, dtype='float64')
+
+    if len(B.shape) != 2:
+        raise ValueError('expected 2d array for argument B')
+
+    if not isspmatrix_csr(A):
+        try: 
+            A = A.tocsr()
+            warnings.warn("Warning, implicit conversion of A to csr.")
+        except:
+            raise TypeError("Incompatible matrix type A.")
+    
+    Cpts = np.array(Cpts)
+    splitting = np.zeros((A.shape[0],))
+    splitting[Cpts] = 1
+    Fpts = np.where(splitting == 0)[0]
+
+    # Sort indices of A
+    A.sort_indices()
+    n = A.shape[0]
+    num_Cpts = len(Cpts)
+    num_Fpts = len(Fpts)
+    num_bad_guys = B.shape[1]
+
+    # Form initial sparsity pattern
+    if AggOp == None:
+        rowptr = np.zeros((n+1,),dtype='intc')
+        rowptr[Cpts+1] = 1
+        np.cumsum(rowptr, out=rowptr)
+        S = csr_matrix((np.ones((num_Cpts,), dtype='intc'),
+                        np.arange(0,num_Cpts),
+                        rowptr),
+                       dtype='float64')
+    else:
+        S = csr_matrix(AggOp, dtype='float64')
+
+    # Expand sparsity pattern by multiplying with SOC 
+    for i in range(0,d):
+        S = SOC * S
+
+    S = csr_matrix(S[Fpts,:])
+    S.eliminate_zeros()
+    S.sort_indices()
+
+    # pdb.set_trace()
+
+    # Submatrices 
+    Acc = A[Cpts,:][:,Cpts]
+    Acf = -A[Cpts,:][:,Fpts]
+    Bf = B[Fpts,:]
+    Bc = B[Cpts,:]
+    Bc_hat = Acc * Bc
+
+    # Form empty array for row pointer of P
+    P_rowptr = np.empty((n+1,), dtype='intc')
+
+    # Ben ideal interpolation
+    # solve minimization for every row
+    for row in range(0,num_Fpts):
+
+        # get indices for rows / columns of A needed for the sparsity pattern of this row
+        row_ind = S.indices[ S.indptr[row]:S.indptr[row+1] ]
+        col_ind = np.concatenate([Acf[i,:].indices for i in row_ind])
+        col_ind = np.array(sorted(list(set(col_ind))) )
+
+        if len(row_ind) > 0:
+            # compute right hand side vectors 
+            rhs = np.zeros((1,len(col_ind)))
+            l_ind = np.where(col_ind == row)[0]
+            if len(l_ind) > 0:
+                rhs[0,l_ind[0]] = 1.0
+            else:
+                print "row ",row," not in sparsity"
+                # pdb.set_trace()
+
+            # form least squares operator
+            operator = Acf[row_ind,:][:,col_ind].todense()
+
+            # form constraint
+            constraint = Bc_hat[row_ind,:]
+            constraint_rhs = Bf[row,:]
+
+        # No rows in sparsity
+        else: 
+            pdb.set_trace()
+
+        # Solve constraint exactly
+        qc, rc = np.linalg.qr(constraint, mode='complete')
+        con_sol = np.linalg.solve(rc[0:num_bad_guys,0:num_bad_guys].T, constraint_rhs).T
+
+        # Move to rhs
+        new_op = np.dot(operator.T, qc)
+        rhs -= np.dot(new_op[:,0:num_bad_guys], con_sol)
+
+        # solve reduced least squares
+        if new_op.shape[1] > num_bad_guys:  
+            new_op = new_op[:,num_bad_guys:]
+            q, r = np.linalg.qr(new_op)
+            rhs = np.dot(q.T, rhs.T)
+            lq_sol = np.array(np.linalg.solve(r, rhs))
+        else:
+            lq_sol = np.array(())
+
+        # form final solution
+        S.data[ S.indptr[row]:S.indptr[row+1] ] = np.dot(qc, np.concatenate([con_sol.ravel(),lq_sol.ravel()]) )
+
+
+    P = vstack([ S*Acc, identity(num_Cpts)], 'csr')
+ 
+    # Arrange rows of P in proper order
+    permute = identity(A.shape[0],format='csr')
+    permute.indices = np.concatenate((Fpts,Cpts))
+    permute = permute.T;
+    P = csr_matrix(permute*P)
+    P.sort_indices()
+
+    # pdb.set_trace()
+
+    return P, Bc
+
