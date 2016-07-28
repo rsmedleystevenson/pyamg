@@ -7,6 +7,7 @@ import numpy as np
 import scipy as sp
 import scipy.sparse as sparse
 import scipy.linalg as la
+from warnings import warn
 from pyamg.util.utils import scale_rows, get_diagonal, get_block_diag, \
     UnAmal, filter_operator, compute_BtBinv, filter_matrix_rows, \
     truncate_rows, mat_mat_complexity
@@ -1348,7 +1349,9 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
     # Normalize B in euclidean and scale WAP term by energy,
     # 1 / ||B||_A^2, and average over columns of B, 1 / B.shape[1]
     B /= norm(B)
-    scale_norm = 1.0 / ( norm( np.dot(B.T, A*B), sqrt=False) * B.shape[1] )
+    # THIS IS NOT STABLE
+    # scale_norm = 1.0 / ( norm( np.dot(B.T, A*B), sqrt=False) * B.shape[1] )
+    scale_norm = 1.0 / B.shape[1]
     cost[0] += 1.0
 
     # Form RHS, C0 = Bf*Bc^T - tau*Afc
@@ -1365,23 +1368,23 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
     cost[0] += B.shape[1] * C0.nnz / float(A.nnz)
 
     # C0 -= tau*Afc restricted to sparsity pattern of C0
-    temp = A[Fpts,:][:,Cpts]
-    temp.sort_indices()
-    mat_subtract(C0.indptr,
-                 C0.indices,
-                 C0.data,
-                 temp.indptr,
-                 temp.indices,
-                 temp.data,
-                 tau)
     if tau != 0:
+        temp = A[Fpts,:][:,Cpts]
+        temp.sort_indices()
+        mat_subtract(C0.indptr,
+                     C0.indices,
+                     C0.data,
+                     temp.indptr,
+                     temp.indices,
+                     temp.data,
+                     tau)
         cost[0] += temp.nnz / float(A.nnz)
 
     # Initial residual, given zero initial guess
     R = sparse.csr_matrix(C0, copy=True)
     D = sparse.csr_matrix(C0, copy=True)
     Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
-    rold = norm(C0.data, sqrt=False)
+    rold = norm(R.data, sqrt=False)
     it = 0
 
     # Do CG iterations until residual tolerance or maximum
@@ -1408,7 +1411,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
         if tau != 0:
             cost[0] += mat_mat_complexity(Aff,D,incomplete=True) / float(A.nnz)
 
-        # correction2 = D*C = D*Bc*Bc^T, restricted to sparsity pattern
+        # correction2 = D*Bc*Bc^T, restricted to sparsity pattern
         temp = D * Bc
         mat_mult_d2s(temp.ravel(order='C'),
                      Bc.ravel(order='C'),
@@ -1424,10 +1427,9 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
         # Compute and add correction, where 
         #       App = tau * <AD, D>_F + scale * <DBcBc^T, D>
         #       alpha = ||r|| / App
-        # App = get_trace(D.T*correction1) + get_trace(correction2*D.T)
-        # App = (D.conjugate().multiply(correction1)).sum() +\
-        #         D.conjugate().multiply(correction2).sum()
-        App = np.dot(D.data.conjugate(), correction1.data + correction2.data)
+        App = np.multiply( D.data.conjugate(), correction1.data).sum() +\
+                np.multiply(D.data.conjugate(), correction2.data).sum()
+
         alpha = rold / App
         W.data += alpha * D.data
         cost[0] += 2*D.nnz / float(A.nnz)
@@ -1444,13 +1446,16 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
         # Get new search direction, increase iteration count    
         D.data *= (rnew/rold)
         D.data += R.data
+        if rnew > rold:
+            print "Warning, CG r_new > r_old, likely due to overflow."
+
         rold = rnew
         it += 1;
         cost[0] += D.nnz / float(A.nnz)
 
         if debug:
-            print('Iter ',it,' - |Res| = %3.4f'%np.sqrt(rold) )
-
+            print('Iter ',it,' - |Res| = %3.7f'%np.sqrt(rold) )
+    
     # Form P = [W; I], reorder and return
     P = stack(W, sparse.eye(nc, format='csr'))
     P = sparse.csr_matrix(permute * P)
@@ -1469,7 +1474,7 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
     # Currently only implemented for CSR matrices
     if not sparse.isspmatrix_csr(A):
         A = sparse.csr_matrix(A)
-        warn("Implicit conversion of A to CSR", SparseEfficiencyWarning)
+        warn("Implicit conversion of A to CSR", sparse.SparseEfficiencyWarning)
 
     # Make sure C-points are an array, get F-points
     Cpts = np.array(Cpts)

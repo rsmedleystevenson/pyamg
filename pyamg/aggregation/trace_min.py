@@ -165,11 +165,10 @@ def trace_min_solver(A, B=None, BH=None,
             mat_mat_complexity.__detailed__ = True
         del kwargs['setup_complexity']
 
-    if not (isspmatrix_csr(A) or isspmatrix_bsr(A)):
+    if not isspmatrix_csr(A):
+        warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
         try:
             A = csr_matrix(A)
-            warn("Implicit conversion of A to CSR",
-                 SparseEfficiencyWarning)
         except:
             raise TypeError('Argument A must have type csr_matrix, \
                              bsr_matrix, or be convertible to csr_matrix')

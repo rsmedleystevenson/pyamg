@@ -91,13 +91,6 @@ aggregate = ('standard')
 aggregate = None
 
 
-# Trace-minimization parameters
-# -----------------------------
-trace_min={'deg': 2, 'maxiter': 5,
-           'tol': 1e-8, 'debug': False,
-           'get_tau': 3.0}
-
-
 # Relaxation
 # ---------- 
 # 	- jacobi
@@ -141,6 +134,13 @@ relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 
 improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
 
+
+# Trace-minimization parameters
+# -----------------------------
+trace_min={'deg': 2, 'maxiter': 5,
+           'tol': 1e-8, 'debug': False,
+           'get_tau': 3.0}
+
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
@@ -151,7 +151,7 @@ rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
 N 			= 1000
-epsilon 	= 0.00			# 'Strength' of aniostropy (only for 2d)
+epsilon 	= 1.00			# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # 1d Poisson 

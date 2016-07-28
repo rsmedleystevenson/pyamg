@@ -40,7 +40,7 @@ def get_elasticity_bar(nx, ny, nz):
 
     # Load mesh and define function space
     corner1 = Point (0.0, 0.0, 0.0)
-    corner2 = Point (0.01, 0.1, 0.01)
+    corner2 = Point (0.1, 1.0, 0.1)
     mesh = BoxMesh(corner1, corner2, nx, ny, nz)
 
     def leftside(x, on_boundary):
@@ -50,10 +50,10 @@ def get_elasticity_bar(nx, ny, nz):
     f = Expression(("0.0", "0.0", "-val*x[1]*x[1]/100.0"), val=1e8)
 
     # Elasticity parameters
-    # E = 117.0e9     # young's modulus for copper (GPa)
-    # nu = 0.33       # poisson ratio for copper
-    E = 0.01e9      # rubber -- really hard for amg
-    nu = 0.499      # rubber
+    E = 117.0e9     # young's modulus for copper (GPa)
+    nu = 0.33       # poisson ratio for copper
+    # E = 0.01e9      # rubber -- really hard for amg
+    # nu = 0.499      # rubber
     mu = E/(2.0*(1.0 + nu))
     lmbda = E*nu/((1.0 + nu)*(1.0 - 2.0*nu))
 
