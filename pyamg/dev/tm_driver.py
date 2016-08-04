@@ -44,8 +44,8 @@ keep = False
 #		+ block_flag (F)- True / False for block matrices
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
-strength = ('classical', {'theta': 0.25} )
-# strength = ('evolution', {'k': 2, 'epsilon': 5.0})
+# strength = ('classical', {'theta': 0.35} )
+strength = ('evolution', {'k': 2, 'epsilon': 5.0})
 
 # AMG CF-splitting 
 # ----------------
@@ -133,13 +133,14 @@ relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
+# improve_candidates = ('jacobi', {'omega': 4.0/3.0, 'iterations': 4})
 
 
 # Trace-minimization parameters
 # -----------------------------
-trace_min={'deg': 2, 'maxiter': 5,
+trace_min={'deg': 1, 'maxiter': 10,
            'tol': 1e-8, 'debug': False,
-           'get_tau': 3.0}
+           'get_tau': 1.0, 'precondition': True}
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -151,7 +152,7 @@ rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
 N 			= 1000
-epsilon 	= 1.00			# 'Strength' of aniostropy (only for 2d)
+epsilon 	= 0.00			# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # 1d Poisson 

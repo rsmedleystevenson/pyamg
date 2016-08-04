@@ -1304,7 +1304,7 @@ def energy_prolongation_smoother(A, T, Atilde, B, Bf, Cpt_params,
 
 
 def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
-                 cost, debug=False):
+                 cost, precondition, debug=False):
     """"
     CG to minimize trace functional. Fill this in. 
 
@@ -1327,6 +1327,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
     mat_mult_d2s = pyamg.amg_core.incomplete_mat_mult_dense2sparse
     mat_mult_s2s = pyamg.amg_core.incomplete_mat_mult_bsr
     mat_subtract = pyamg.amg_core.incomplete_mat_subtract
+    precondition = pyamg.amg_core.tracemin_preconditioner
 
     # Get sizes and permutation matrix from [F, C] block
     # ordering to natural matrix ordering.
@@ -1338,76 +1339,102 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
     permute.indices = np.concatenate((Fpts,Cpts))
     permute = permute.T
 
-    # Zero initial guess for W, empty matrices with appropriate
-    # sparsity pattern and sorted indices. 
+    # Save structure of sparsity pattern by reference
     Sp.sort_indices()
-    correction1 = Sp        # Reference to Sp (can overwrite, don't need Sp.data)
-    correction2 = sparse.csr_matrix((np.ones((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape)
-    W = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape)
-    C0 = sparse.csr_matrix((np.zeros((len(Sp.data),)), Sp.indices, Sp.indptr), shape=Sp.shape)
+    indptr = Sp.indptr
+    indices = Sp.indices
+    sp_nnz = Sp.nnz
+
+    # Initialize arrays used in CG
+    Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
+    correction1 = np.zeros((len(Sp.data),))
+    correction2 = np.ones((len(Sp.data),))
+    C0 = np.zeros((len(Sp.data),))
+    W = np.zeros((len(Sp.data),))
+    D = Sp      # Reference to Sp (can overwrite, don't need Sp.data)
 
     # Normalize B in euclidean and scale WAP term by energy,
     # 1 / ||B||_A^2, and average over columns of B, 1 / B.shape[1]
     B /= norm(B)
-    # THIS IS NOT STABLE
-    # scale_norm = 1.0 / ( norm( np.dot(B.T, A*B), sqrt=False) * B.shape[1] )
-    scale_norm = 1.0 / B.shape[1]
+    # TODO - THIS IS NOT STABLE. Seems necessary for good converegnce...
+    scale_norm = 1.0 / ( norm( np.dot(B.T, A*B), sqrt=False) * B.shape[1] )
+    # scale_norm = 1.0 / B.shape[1]
     cost[0] += 1.0
 
     # Form RHS, C0 = Bf*Bc^T - tau*Afc
     Bc = B[Cpts,:]
     mat_mult_d2s(B[Fpts,:].ravel(order='C'),
                  Bc.ravel(order='C'),
-                 C0.indptr,
-                 C0.indices,
-                 C0.data,
+                 indptr,
+                 indices,
+                 C0,
                  nf,
                  nb,
                  nc)
-    C0.data *= scale_norm
-    cost[0] += B.shape[1] * C0.nnz / float(A.nnz)
+    C0 *= scale_norm
+    cost[0] += B.shape[1] * sp_nnz / float(A.nnz)
 
     # C0 -= tau*Afc restricted to sparsity pattern of C0
     if tau != 0:
         temp = A[Fpts,:][:,Cpts]
         temp.sort_indices()
-        mat_subtract(C0.indptr,
-                     C0.indices,
-                     C0.data,
+        mat_subtract(indptr,
+                     indices,
+                     C0,
                      temp.indptr,
                      temp.indices,
                      temp.data,
                      tau)
-        cost[0] += temp.nnz / float(A.nnz)
+        cost[0] += (nf + B.shape[1]*nc + sp_nnz) / float(A.nnz)
+        # cost[0] += (2*nf + B.shape[1]*nc + sp_nnz) / float(A.nnz) # If we include Mff
 
-    # Initial residual, given zero initial guess
-    R = sparse.csr_matrix(C0, copy=True)
-    D = sparse.csr_matrix(C0, copy=True)
-    Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
-    rold = norm(R.data, sqrt=False)
+    # Get preconditioner
+    if precondition:
+        Pre = np.zeros((len(Sp.data),))
+        precondition(indptr,
+                     indices,
+                     Pre,
+                     Aff.diagonal(),
+                     Bc.ravel(order='C'),
+                     tau,
+                     scale_norm,
+                     nc,
+                     nb)
+        cost[0] += sp_nnz / float(A.nnz)
+    else:
+        Pre = np.ones((len(Sp.data),))
+
+    # Initial residual given zero initial guess, form Z0 = Pre*R0
+    R = np.array(C0, copy=True)
+    Z = np.array(R, copy=True)
+    Z *= Pre
+    D.data[:] = Z[:]
+    rzold = np.dot(Z, R)
+    res = float("inf")
     it = 0
+    cost[0] += 2 * sp_nnz / float(A.nnz)
 
     # Do CG iterations until residual tolerance or maximum
     # number of iterations reached
-    while it < maxiter and rold > tol**2:
+    while it < maxiter and res > tol:
 
         # Form matrix products
         # correction1 = Aff*D, restricted to sparsity pattern
         #   - Important to set data to zero before calling
-        correction1.data[:] = 0
+        correction1[:] = 0
         mat_mult_s2s(Aff.indptr,
                      Aff.indices,
                      Aff.data,
                      D.indptr,
                      D.indices,
                      D.data,
-                     correction1.indptr,
-                     correction1.indices,
-                     correction1.data,
+                     indptr,
+                     indices,
+                     correction1,
                      Aff.shape[0],
-                     correction1.shape[1],
+                     Sp.shape[1],
                      1, 1, 1)
-        correction1.data *= tau
+        correction1 *= tau
         if tau != 0:
             cost[0] += mat_mat_complexity(Aff,D,incomplete=True) / float(A.nnz)
 
@@ -1415,49 +1442,48 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
         temp = D * Bc
         mat_mult_d2s(temp.ravel(order='C'),
                      Bc.ravel(order='C'),
-                     correction2.indptr,
-                     correction2.indices,
-                     correction2.data,
+                     indptr,
+                     indices,
+                     correction2,
                      nf,
                      nb,
                      nc)
-        correction2.data *= scale_norm
-        cost[0] += B.shape[1] * (D.nnz + correction2.nnz) / float(A.nnz)
+        correction2 *= scale_norm
+        cost[0] += 2 * B.shape[1] * sp_nnz / float(A.nnz)
 
         # Compute and add correction, where 
         #       App = tau * <AD, D>_F + scale * <DBcBc^T, D>
         #       alpha = ||r|| / App
-        App = np.multiply( D.data.conjugate(), correction1.data).sum() +\
-                np.multiply(D.data.conjugate(), correction2.data).sum()
-
-        alpha = rold / App
-        W.data += alpha * D.data
-        cost[0] += 2*D.nnz / float(A.nnz)
+        correction1 += correction2
+        App = np.multiply(D.data, correction1).sum()
+        alpha = rzold / App
+        W += alpha * D.data
+        cost[0] += 2 * sp_nnz / float(A.nnz)
         if tau != 0:
-            cost[0] += D.nnz / float(A.nnz)
+            cost[0] += sp_nnz / float(A.nnz)
 
-        # Get residual, R = C0 - tau*Aff*D - D*Bc*Bc^T
-        R.data -= alpha * (correction1.data + correction2.data)
-        rnew = norm(R.data, sqrt=False)
-        cost[0] += R.nnz / float(A.nnz)
-        if tau != 0:
-            cost[0] += R.nnz / float(A.nnz)
+        # Get residual, R_{k+1} = R_k - tau*Aff*D - D*Bc*Bc^T
+        R -= alpha * correction1
+        Z = R * Pre
+        rznew = np.dot(Z, R)
+        res = norm(R, sqrt=True)
+        cost[0] += 2 * sp_nnz / float(A.nnz)
+        if precondition:
+            cost[0] += sp_nnz / float(A.nnz)
 
         # Get new search direction, increase iteration count    
-        D.data *= (rnew/rold)
-        D.data += R.data
-        if rnew > rold:
-            print "Warning, CG r_new > r_old, likely due to overflow."
-
-        rold = rnew
+        D.data *= (rznew/rzold)
+        D.data += Z
+        rzold = rznew
         it += 1;
-        cost[0] += D.nnz / float(A.nnz)
+        cost[0] += sp_nnz / float(A.nnz)
 
         if debug:
-            print('Iter ',it,' - |Res| = %3.7f'%np.sqrt(rold) )
-    
+            print('Iter ',it,' - |Res| = %3.7f'%res )
+
     # Form P = [W; I], reorder and return
-    P = stack(W, sparse.eye(nc, format='csr'))
+    D.data[:] = W[:]
+    P = stack(D, sparse.eye(nc, format='csr'))
     P = sparse.csr_matrix(permute * P)
 
     return P
@@ -1465,8 +1491,8 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
 
 def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
                        deg=1, maxiter=100, tol=1e-8, get_tau=1,
-                       diagonal_dominance=False, debug=False,
-                       cost=[0]):
+                       diagonal_dominance=False, precondition=False,
+                       prefilter={}, debug=False, cost=[0]):
     """ 
     Trace-minimization of P. Fill this in.
 
@@ -1535,11 +1561,23 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
     # Need to chop off S to be only fine grid rows, size
     # nf x nc, before passing to trace_min_cg(). 
     S = S[Fpts,:]
+    if 'k' in prefilter:
+        cost[0] += (S.nnz / float(S.shape[0]) +  np.log2(S.nnz /
+                    float(S.shape[0])) ) / float(A.nnz)
+        S = truncate_rows(S, prefilter['k'])
+    elif 'theta' in prefilter:
+        cost[0] += 2.0 * S.nnz / float(A.nnz)
+        S = filter_matrix_rows(S, prefilter['theta'])
+    elif 'k' in prefilter and 'theta' in prefilter:
+        raise ValueError("Cannot k-filter and theta-filter.")
+    elif len(prefilter) > 0:
+        raise ValueError("Unrecognized postfilter option")
 
     # Form P
     P = trace_min_cg(A=A, B=B, Sp=S, Cpts=Cpts, Fpts=Fpts,
                      maxiter=maxiter, tol=tol, tau=tau,
-                     debug=debug, cost=cost)
+                     precondition=precondition, debug=debug,
+                     cost=cost)
 
     # How do we form coarse-grid bad guys? By injection? 
     Bc = B[Cpts,:]

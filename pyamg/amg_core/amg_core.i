@@ -58,6 +58,7 @@
 %apply (ctype* INPLACE_ARRAY1, int DIM1) {
     (const ctype  A [], const int  A_size),
     (const ctype  B [], const int  B_size),
+    (const ctype  Bc [], const int  Bc_size),
     (const ctype  b [], const int  b_size),
     (      ctype  e [], const int  e_size),
     (      ctype  w [], const int  w_size),
@@ -82,7 +83,9 @@
     (const ctype omega [], const int omega_size),
     (      ctype cost [], const int cost_size),
     (const ctype A_data [], const int A_data_size),
-    (      ctype S_data [], const int S_data_size)
+    (      ctype S_data [], const int S_data_size),
+    (const ctype Aff_diag [], const int Aff_diag_size),
+    (const ctype Mff_diag [], const int Mff_diag_size)
 };
 %enddef
 
@@ -172,6 +175,7 @@ INSTANTIATE_INDEX_ONLY(connected_components)
 INSTANTIATE_INDEXDATA_COMPLEX(apply_householders)
 INSTANTIATE_INDEXDATA_COMPLEX(householder_hornerscheme)
 INSTANTIATE_INDEXDATA_COMPLEX(apply_givens)
+INSTANTIATE_INDEXDATA(tracemin_preconditioner)
 
 /*----------------------------------------------------------------------------
   relaxation.h

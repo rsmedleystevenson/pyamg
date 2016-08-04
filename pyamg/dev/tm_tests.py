@@ -28,28 +28,30 @@ max_coarse 		   = 20 		# Max points allowed on coarse grid
 tol 			   = 1e-8		# Residual convergence tolerance
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
-accel = 'gmres'
+accel = 'cg'
 keep = False
 
 
-strength = ('classical', {'theta': 0.5} )
-# strength = ('evolution', {'k': 2, 'epsilon': 3.0})
+strength = ('symmetric', {'theta': 0.25} )
+# strength = ('classical', {'theta': 0.35} )
+# strength = ('evolution', {'k': 2, 'epsilon': 4.0})
 
 # split_agg = [ ['RS', None], [None, 'standard'] ]
 split_agg = ['RS', None]
 # split_agg = [None, 'standard']
 
-trace_min={'deg': 2, 'maxiter': 15,
-           'tol': 1e-8, 'debug': False,
-           'get_tau': 100.0}
+trace_min={'deg': 2, 'maxiter': 10,
+           'tol': 1e-8, 'prefilter': {'theta': 0.1},
+           'get_tau': 4.0, 'precondition': True,
+           'debug': False}
 
-relaxation1 = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
-relaxation2 = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
-improve_candidates = ('jacobi', {'omega': 4.0/3.0, 'iterations': 4})
+# relaxation1 = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
+# relaxation2 = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
+# improve_candidates = ('jacobi', {'omega': 4.0/3.0, 'iterations': 4})
 
-# relaxation1 = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
-# relaxation2 = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
-# improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
+relaxation1 = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+relaxation2 = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
 # GS_NR/NE seem to be unstable with CG
 # relaxation1 = ('gauss_seidel_nr', {'sweep': 'forward', 'iterations': 1} )
 # relaxation2 = ('gauss_seidel_nr', {'sweep': 'backward', 'iterations': 1} )
@@ -79,20 +81,19 @@ improve_candidates = ('jacobi', {'omega': 4.0/3.0, 'iterations': 4})
 
 # Dolfin?
 # -------
-# eps = 0.0
-# theta = 3.0*math.pi/16.0
-# n0 = 500
-# A, b = get_poisson(n=n0,eps=eps,theta=theta,rand=True)
-# x0 = np.random.rand(A.shape[0],1)
-# [d,d,A] = symmetric_rescaling(A)
-# B = None
-
-nx = 10
-ny = 100
-nz = 10
-A, b, B = get_elasticity_bar(nx=nx, ny=ny, nz=nz)
+eps = 0.0
+theta = 4.0*math.pi/16.0
+n0 = 500
+A, b = get_poisson(n=n0,eps=eps,theta=theta,rand=True)
 x0 = np.random.rand(A.shape[0],1)
-A, B, d = symmetric_rescaling_sa(A, B)
+[d,d,A] = symmetric_rescaling(A)
+B = None
+
+# nx = 10
+# ny = 100
+# nz = 10
+# A, b, B = get_elasticity_bar(nx=nx, ny=ny, nz=nz)
+# x0 = np.random.rand(A.shape[0],1)
 
 
 # ----------------------------------------------------------------------------- #
@@ -132,7 +133,7 @@ print "\tSolve time 		 = ",solve_time
 print "\tSetup complexity 	 = ",SC
 print "\tOperator complexity 	 = ",OC
 print "\tCycle complexity 	 = ",CC
-print "\tAverage con. factor 	= ",CF
+print "\tAverage con. factor 	 = ",CF
 print "\tFinal con. factor 	 = ",CF2
 
 

@@ -2,6 +2,10 @@
 #define KRYLOV_H
 
 #include "linalg.h"
+#include <algorithm>
+#include <iostream>
+#include <vector>
+#include <cmath>
 
 /* Apply |start-stop| Householder reflectors in B to z
  *
@@ -171,5 +175,48 @@ void apply_givens(const T B[], const int B_size,
         ind4 +=4;
     }
 }
+
+
+/* Get preconditioner for trace-minimization. Preconditioner
+ * given by taking Haddarmard product with D, where 
+ *
+ *  D_{ij} = 1 / (tau*Aff_ii + K * (BcBc^T)_jj * Mff_ii),
+ * 
+ * for (i,j) in the fixed sparsity pattern over which we
+ * are minimizing. 
+ */
+template<class I, class T>
+void tracemin_preconditioner(const I S_rowptr[], const int S_rowptr_size,
+                             const I S_colinds[], const int S_colinds_size,
+                             T S_data[], const int S_data_size,
+                             const T Aff_diag[], const int Aff_diag_size,
+                             // // const T Mff_diag[], const int Mff_diag_size,
+                             const T Bc[], const int Bc_size,
+                             const T tau,
+                             const T K, 
+                             const I nc,
+                             const I nb )
+{
+    // // Get (BcBc^T)_{jj} for j=0,...,nc-1
+    std::vector<T> BcBct(nc,0);
+    for (I j=0; j<nc; j++) {
+        for (I k=0; k<nb; k++) {
+            I temp = k*nc + j;
+            BcBct[j] += Bc[temp]*Bc[temp];
+        }
+    }
+
+    // Loop over sparsity pattern and form preconditioner
+    for (I i=0; i<(S_rowptr_size-1); i++) {
+        for (I k=S_rowptr[i]; k<S_rowptr[i+1]; k++) {
+            I j = S_colinds[k];
+            // S_data[k] = 1.0 / (tau * Aff_diag[i] + K * BcBct[j] * Mff_diag[i]);
+            S_data[k] = 1.0 / (tau * Aff_diag[i] + K * BcBct[j]);
+            // std::cout << 1.0 / (tau * Aff_diag[i] + K * BcBct[j]) << std::endl;
+        }
+    }
+}
+
+
 
 #endif
