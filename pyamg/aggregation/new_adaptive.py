@@ -415,6 +415,7 @@ def asa_solver(A, B=None,
         complexity.append( {'RAP': 0.0,
                             'aggregation': 0.0,
                             'strength': 0.0,
+                            'candidates': 0.0,
                             'test_solve': 0.0,
                             'global_ritz': 0.0,
                             'local_ritz': 0.0,
@@ -574,6 +575,7 @@ def try_solve(A, levels,
                             current.A, b) * current.B
 
     kwargs['iterations'] = temp
+    complexity[level]['candidates'] += improvement_iters * B.shape[1]
 
     # Compute the strength-of-connection matrix C, where larger
     # C[i,j] denote stronger couplings between i and j.

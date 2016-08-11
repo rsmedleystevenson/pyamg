@@ -44,7 +44,8 @@ def A_norm(x, A):
 #		+ block_flag (F)- True / False for block matrices
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
-strength = ('symmetric', {'theta': 0.0} )
+# strength = ('symmetric', {'theta': 0.0} )
+strength = ('classical', {'theta': 0.2} )
 # strength = ('evolution', {'epsilon': 4.0, 'k' : 2} )
 
 
@@ -151,15 +152,15 @@ relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.6 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.3 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
 # -----------------------
-weak_tol 		 	 = 0.0			# new aSA 
+weak_tol 		 	 = 10.0			# new aSA 
 max_bad_guys		 = 10
 max_bullets			 = 8
-max_level_iterations = 1
+max_level_iterations = 5
 improvement_iters 	 = 10		# number of times a target bad guy is improved
 num_targets 		 = 1		# number of near null space candidates to generate
 
@@ -191,7 +192,7 @@ keep = False
 # Poisson
 # -------
 n0 = 500
-eps = 0.01
+eps = 0.1
 theta = 3*np.pi / 14.0
 
 # A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
@@ -209,26 +210,23 @@ n = A.shape[0]
 b = np.zeros((n,1))
 x0 = np.random.rand(n,1)
 
-# bad_guy = np.ones((n,1))
+bad_guy = np.ones((n,1))
 # bad_guy = None
 # bad_guy = np.array((np.sin(np.linspace(0,1,A.shape[0])*np.pi),)).T
 
 # Elasticity 
 # ----------
-nx = 2
-ny = 100
-nz = 5
-A, b, bad_guy = get_elasticity_bar(nx=nx, ny=ny, nz=nz)
-A.eliminate_zeros()
-n = A.shape[0]
-x0 = np.random.rand(n,1)
-# bad_guy = None
+# nx = 2
+# ny = 100
+# nz = 5
+# A, b, bad_guy = get_elasticity_bar(nx=nx, ny=ny, nz=nz)
+# A.eliminate_zeros()
+# n = A.shape[0]
+# x0 = np.random.rand(n,1)
+# # bad_guy = None
 
-pdb.set_trace()
->>>>>>> 7065cdef78a1df183b58bd79a47b9cb858c5ee0a
-
-[D, dum, dum] = symmetric_rescaling(A, copy=False)
-bad_guy[:,0] = D * bad_guy[:,0]
+# [D, dum, dum] = symmetric_rescaling(A, copy=False)
+# bad_guy[:,0] = D * bad_guy[:,0]
 
 
 # ----------------------------------------------------------------------------- #
@@ -334,7 +332,7 @@ new_asa_time = end-start
 # Get complexities
 OC = ml_new_asa.operator_complexity()
 CC = ml_new_asa.cycle_complexity()
-SC = ml_new_asa.setup_complexity(verbose=True)
+SC = ml_new_asa.setup_complexity(verbose=False)
 
 # Convergence factors 
 new_asa_conv_factors = np.zeros((len(new_asa_residuals)-1,1))
