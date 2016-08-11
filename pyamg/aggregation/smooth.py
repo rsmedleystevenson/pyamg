@@ -1327,7 +1327,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
     mat_mult_d2s = pyamg.amg_core.incomplete_mat_mult_dense2sparse
     mat_mult_s2s = pyamg.amg_core.incomplete_mat_mult_bsr
     mat_subtract = pyamg.amg_core.incomplete_mat_subtract
-    precondition = pyamg.amg_core.tracemin_preconditioner
+    preconditioner = pyamg.amg_core.tracemin_preconditioner
 
     # Get sizes and permutation matrix from [F, C] block
     # ordering to natural matrix ordering.
@@ -1345,21 +1345,27 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
     indices = Sp.indices
     sp_nnz = Sp.nnz
 
-    # Initialize arrays used in CG
+    # Initialize arrays used in CG. Include tau in Aff to avoid
+    # multiplying correction by tau each CG iteration.
     Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
+    Aff.data *= tau
     correction1 = np.zeros((len(Sp.data),))
     correction2 = np.ones((len(Sp.data),))
     C0 = np.zeros((len(Sp.data),))
     W = np.zeros((len(Sp.data),))
     D = Sp      # Reference to Sp (can overwrite, don't need Sp.data)
 
+    # import pdb
+    # pdb.set_trace()
+
     # Normalize B in euclidean and scale WAP term by energy,
     # 1 / ||B||_A^2, and average over columns of B, 1 / B.shape[1]
+    scale_norm = (1.0 - tau)
     B /= norm(B)
-    # TODO - THIS IS NOT STABLE. Seems necessary for good converegnce...
-    scale_norm = 1.0 / ( norm( np.dot(B.T, A*B), sqrt=False) * B.shape[1] )
-    # scale_norm = 1.0 / B.shape[1]
-    cost[0] += 1.0
+    for col in range(0, B.shape[1]):
+        B[:,col] *= np.sqrt(1.0-tau) / np.sqrt(np.dot(B[:,col].T, A*B[:,col]))
+
+    cost[0] += B.shape[1] * (2*B.shape[0] + A.nnz) / float(A.nnz)
 
     # Form RHS, C0 = Bf*Bc^T - tau*Afc
     Bc = B[Cpts,:]
@@ -1371,7 +1377,6 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
                  nf,
                  nb,
                  nc)
-    C0 *= scale_norm
     cost[0] += B.shape[1] * sp_nnz / float(A.nnz)
 
     # C0 -= tau*Afc restricted to sparsity pattern of C0
@@ -1391,15 +1396,15 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
     # Get preconditioner
     if precondition:
         Pre = np.zeros((len(Sp.data),))
-        precondition(indptr,
-                     indices,
-                     Pre,
-                     Aff.diagonal(),
-                     Bc.ravel(order='C'),
-                     tau,
-                     scale_norm,
-                     nc,
-                     nb)
+        preconditioner(indptr,
+                       indices,
+                       Pre,
+                       Aff.diagonal(),
+                       Bc.ravel(order='C'),
+                       1.0,
+                       1.0,
+                       nc,
+                       nb)
         cost[0] += sp_nnz / float(A.nnz)
     else:
         Pre = np.ones((len(Sp.data),))
@@ -1422,20 +1427,19 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
         # correction1 = Aff*D, restricted to sparsity pattern
         #   - Important to set data to zero before calling
         correction1[:] = 0
-        mat_mult_s2s(Aff.indptr,
-                     Aff.indices,
-                     Aff.data,
-                     D.indptr,
-                     D.indices,
-                     D.data,
-                     indptr,
-                     indices,
-                     correction1,
-                     Aff.shape[0],
-                     Sp.shape[1],
-                     1, 1, 1)
-        correction1 *= tau
         if tau != 0:
+            mat_mult_s2s(Aff.indptr,
+                         Aff.indices,
+                         Aff.data,
+                         D.indptr,
+                         D.indices,
+                         D.data,
+                         indptr,
+                         indices,
+                         correction1,
+                         Aff.shape[0],
+                         Sp.shape[1],
+                         1, 1, 1)
             cost[0] += mat_mat_complexity(Aff,D,incomplete=True) / float(A.nnz)
 
         # correction2 = D*Bc*Bc^T, restricted to sparsity pattern
@@ -1448,7 +1452,6 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
                      nf,
                      nb,
                      nc)
-        correction2 *= scale_norm
         cost[0] += 2 * B.shape[1] * sp_nnz / float(A.nnz)
 
         # Compute and add correction, where 
@@ -1530,9 +1533,10 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
         rowptr[Cpts+1] = 1
         np.cumsum(rowptr, out=rowptr)
         S = sparse.csr_matrix((np.ones((nc,), dtype='intc'),
-                        np.arange(0,nc),
-                        rowptr),
-                       dtype='float64')
+                               np.arange(0,nc),
+                               rowptr),
+                              shape=[n, nc],
+                              dtype='float64')
     else:
         S = sparse.csr_matrix(T, dtype='float64')
 

@@ -32,25 +32,25 @@ accel = 'cg'
 keep = False
 
 
-strength = ('symmetric', {'theta': 0.25} )
+# strength = ('symmetric', {'theta': 0.25} )
 # strength = ('classical', {'theta': 0.35} )
-# strength = ('evolution', {'k': 2, 'epsilon': 4.0})
+strength = ('evolution', {'k': 2, 'epsilon': 3.0})
 
 # split_agg = [ ['RS', None], [None, 'standard'] ]
 split_agg = ['RS', None]
 # split_agg = [None, 'standard']
 
-trace_min={'deg': 2, 'maxiter': 10,
-           'tol': 1e-8, 'prefilter': {'theta': 0.1},
-           'get_tau': 4.0, 'precondition': True,
+trace_min={'deg': 2, 'maxiter': 5,
+           'tol': 1e-8, 'prefilter': {'theta': 0.3},
+           'get_tau': 0.0001, 'precondition': True,
            'debug': False}
 
 # relaxation1 = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
 # relaxation2 = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
 # improve_candidates = ('jacobi', {'omega': 4.0/3.0, 'iterations': 4})
 
-relaxation1 = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
-relaxation2 = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+relaxation1 = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
+relaxation2 = ('gauss_seidel', {'sweep': 'backward', 'iterations': 1} )
 improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
 # GS_NR/NE seem to be unstable with CG
 # relaxation1 = ('gauss_seidel_nr', {'sweep': 'forward', 'iterations': 1} )
@@ -81,10 +81,10 @@ improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
 
 # Dolfin?
 # -------
-eps = 0.0
+eps = 0.00
 theta = 4.0*math.pi/16.0
-n0 = 500
-A, b = get_poisson(n=n0,eps=eps,theta=theta,rand=True)
+n0 = 1500
+A, b = get_poisson(n=n0,eps=eps,theta=theta,rand=False)
 x0 = np.random.rand(A.shape[0],1)
 [d,d,A] = symmetric_rescaling(A)
 B = None
