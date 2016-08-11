@@ -337,16 +337,18 @@ def extend_hierarchy(levels, strength, aggregate, splitting, trace_min,
     levels[-1].complexity['aggregation'] = kwargs['cost'][0] * (float(C.nnz)/A.nnz)
 
     # Check for CF-splitting to generate C-points. Must use either a
-    # CF-splitting or aggregation routine. If both provided, Aggregation
-    # routine used to generate sparsity and C-points taken from CF-splitting.
-    # 
+    # CF-splitting or aggregation routine. 
+    #
     # TODO : levelize splitting in here and in classical.py
     #
     # fn, kwargs = unpack_arg(splitting[len(levels)-1])
     fn, kwargs = unpack_arg(splitting)
     if fn is not None and AggOp is not None:
-        raise ValueError("Must choose CF coarsening or aggregation - not both.")
-    if fn == 'RS':
+        raise ValueError("Must use either CF-coarsening or aggregation - not both.")
+    elif fn == None and AggOp == None:
+        raise ValueError('Must provide either aggregation routine ' \
+                         'or CF splitting routine.')
+    elif fn == 'RS':
         splitting = RS(C, **kwargs)
     elif fn == 'PMIS':
         splitting = PMIS(C, **kwargs)
@@ -358,9 +360,6 @@ def extend_hierarchy(levels, strength, aggregate, splitting, trace_min,
         splitting = CLJPc(C, **kwargs)
     elif fn == 'CR':
         splitting = CR(C, **kwargs)
-    elif fn == None and AggOp == None:
-        raise ValueError('Must provide either aggregation routine ' \
-                         'or CF splitting routine.')
     elif fn == None:
         # Ensure C-points are sorted
         splitting = np.zeros((A.shape[0],), dtype='intc')
