@@ -5,8 +5,8 @@ __docformat__ = "restructuredtext en"
 
 import numpy as np
 from warnings import warn
-from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr,\
-    SparseEfficiencyWarning
+from scipy.sparse import csr_matrix, isspmatrix_csr,\
+    isspmatrix_bsr, SparseEfficiencyWarning
 
 from pyamg.multilevel import multilevel_solver
 from pyamg.relaxation.smoothing import change_smoothers
@@ -32,8 +32,11 @@ __all__ = ['rootnode_solver']
 
 
 def rootnode_solver(A, B=None, BH=None,
-                    symmetry='hermitian', strength='symmetric',
-                    aggregate='standard', smooth='energy',
+                    symmetry='hermitian',
+                    strength='symmetric',
+                    splitting='RS',
+                    aggregate='standard',
+                    smooth='energy',
                     presmoother=('block_gauss_seidel',
                                  {'sweep': 'symmetric'}),
                     postsmoother=('block_gauss_seidel',
@@ -42,7 +45,8 @@ def rootnode_solver(A, B=None, BH=None,
                                         {'sweep': 'symmetric',
                                          'iterations': 4}),
                     max_levels = 10, max_coarse = 10,
-                    diagonal_dominance=False, keep=False, **kwargs):
+                    diagonal_dominance=False,
+                    keep=False, **kwargs):
     """
     Create a multilevel solver using root-node based Smoothed Aggregation (SA).
     See the notes below, for the major differences with the classical-style
@@ -315,7 +319,7 @@ def rootnode_solver(A, B=None, BH=None,
 
     while len(levels) < max_levels and \
             int(levels[-1].A.shape[0]/blocksize(levels[-1].A)) > max_coarse:
-        extend_hierarchy(levels, strength, aggregate, smooth,
+        extend_hierarchy(levels, strength, aggregate, splitting, smooth,
                          improve_candidates, diagonal_dominance, keep)
 
     ml = multilevel_solver(levels, **kwargs)
@@ -323,8 +327,8 @@ def rootnode_solver(A, B=None, BH=None,
     return ml
 
 
-def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
-                     diagonal_dominance=False, keep=True):
+def extend_hierarchy(levels, strength, aggregate, splitting, smooth,
+                     improve_candidates, diagonal_dominance=False, keep=True):
     """Service routine to implement the strength of connection, aggregation,
     tentative prolongation construction, and prolongation smoothing.  Called by
     smoothed_aggregation_solver.
@@ -486,12 +490,13 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         rowptr = np.zeros((A.shape[0]+1,),dtype='intc')
         rowptr[Cnodes+1] = 1
         np.cumsum(rowptr, out=rowptr)
-        T = sparse.csr_matrix((np.ones((Cnodes.shape[0],), dtype='intc'),
-                               np.arange(0,Cnodes.shape[0]),
-                               rowptr),
-                              shape=[n, Cnodes.shape[0]],
-                              dtype='float64')
-        
+        T = csr_matrix((np.ones((Cnodes.shape[0],), dtype='intc'),
+                        np.arange(0,Cnodes.shape[0]),
+                        rowptr),
+                       shape=[A.shape[0], Cnodes.shape[0]],
+                       dtype='float64')
+        AggOp = T
+        T = T.tobsr(blocksize=[1,1])
         # Create necessary root node matrices
         Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp, T))
 
