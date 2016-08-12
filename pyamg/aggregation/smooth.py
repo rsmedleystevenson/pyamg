@@ -1304,7 +1304,7 @@ def energy_prolongation_smoother(A, T, Atilde, B, Bf, Cpt_params,
 
 
 def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
-                 cost, precondition, debug=False):
+                 cost, precondition, X_norm=False, debug=False):
     """"
     CG to minimize trace functional. Fill this in. 
 
@@ -1340,36 +1340,48 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
     permute = permute.T
 
     # Save structure of sparsity pattern by reference
+    Sp.eliminate_zeros()
     Sp.sort_indices()
     indptr = Sp.indptr
     indices = Sp.indices
     sp_nnz = Sp.nnz
 
-    # Initialize arrays used in CG. Include tau in Aff to avoid
-    # multiplying correction by tau each CG iteration.
+    # Initialize arrays used in CG. 
     Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
-    Aff.data *= tau
     correction1 = np.zeros((len(Sp.data),))
     correction2 = np.ones((len(Sp.data),))
     C0 = np.zeros((len(Sp.data),))
     W = np.zeros((len(Sp.data),))
     D = Sp      # Reference to Sp (can overwrite, don't need Sp.data)
 
-    # import pdb
-    # pdb.set_trace()
+    # Define X = diagonal(A) to be spectrally equivalent to smoother.
+    # Scale Aff by tau to avoid multiplying correction by tau each CG iteration.
+    if X_norm:
+        Xff = sparse.diags(Aff.diagonal(),0,format='csr')
 
-    # Normalize B in euclidean and scale WAP term by energy,
-    # 1 / ||B||_A^2, and average over columns of B, 1 / B.shape[1]
+    Aff.data *= tau
+
+    # Normalize B in euclidean and scale WAP term by energy, 1 / ||B||_A
+    #   - Scale B by sqrt(1-tau) so that B^TB = (1-tau)B^TB.
     scale_norm = (1.0 - tau)
-    B /= norm(B)
-    for col in range(0, B.shape[1]):
-        B[:,col] *= np.sqrt(1.0-tau) / np.sqrt(np.dot(B[:,col].T, A*B[:,col]))
+    temp = norm(B)
+    if temp > 1e-14:
+        B /= temp
+        for col in range(0, B.shape[1]):
+            B[:,col] *= np.sqrt(1.0-tau) / np.sqrt(np.dot(B[:,col].T, A*B[:,col]))
 
-    cost[0] += B.shape[1] * (2*B.shape[0] + A.nnz) / float(A.nnz)
+        cost[0] += B.shape[1] * (2*B.shape[0] + A.nnz) / float(A.nnz)
+    else:
+        warn("||B|| < 1e-14")
 
-    # Form RHS, C0 = Bf*Bc^T - tau*Afc
+    # Form RHS, C0 = (1-tau)*Xff*Bf*Bc^T - tau*Afc
     Bc = B[Cpts,:]
-    mat_mult_d2s(B[Fpts,:].ravel(order='C'),
+    if X_norm:
+        Bf = Xff * B[Fpts,:]
+        cost[0] += B.shape[1] * Xff.nnz / float(A.nnz)
+    else:
+        Bf = B[Fpts,:]
+    mat_mult_d2s(Bf.ravel(order='C'),
                  Bc.ravel(order='C'),
                  indptr,
                  indices,
@@ -1378,6 +1390,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
                  nb,
                  nc)
     cost[0] += B.shape[1] * sp_nnz / float(A.nnz)
+    del Bf
 
     # C0 -= tau*Afc restricted to sparsity pattern of C0
     if tau != 0:
@@ -1390,22 +1403,33 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
                      temp.indices,
                      temp.data,
                      tau)
-        cost[0] += (nf + B.shape[1]*nc + sp_nnz) / float(A.nnz)
-        # cost[0] += (2*nf + B.shape[1]*nc + sp_nnz) / float(A.nnz) # If we include Mff
+        cost[0] += sp_nnz / float(A.nnz)
 
     # Get preconditioner
     if precondition:
         Pre = np.zeros((len(Sp.data),))
-        preconditioner(indptr,
-                       indices,
-                       Pre,
-                       Aff.diagonal(),
-                       Bc.ravel(order='C'),
-                       1.0,
-                       1.0,
-                       nc,
-                       nb)
-        cost[0] += sp_nnz / float(A.nnz)
+        if X_norm:
+            preconditioner(indptr,
+                           indices,
+                           Pre,
+                           Aff.diagonal(),
+                           Xff.diagonal(),
+                           Bc.ravel(order='C'),
+                           1.0,
+                           1.0,
+                           nc,
+                           nb)
+        else:
+            preconditioner(indptr,
+                           indices,
+                           Pre,
+                           Aff.diagonal(),
+                           Bc.ravel(order='C'),
+                           1.0,
+                           1.0,
+                           nc,
+                           nb)
+        cost[0] += 2 * sp_nnz / float(A.nnz)
     else:
         Pre = np.ones((len(Sp.data),))
 
@@ -1440,10 +1464,13 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
                          Aff.shape[0],
                          Sp.shape[1],
                          1, 1, 1)
-            cost[0] += mat_mat_complexity(Aff,D,incomplete=True) / float(A.nnz)
+            cost[0] += mat_mat_complexity(Aff,D,incomplete=True,keep_zeros=True) / float(A.nnz)
 
-        # correction2 = D*Bc*Bc^T, restricted to sparsity pattern
+        # correction2 = (1-tau)*Xff*D*Bc*Bc^T, restricted to sparsity pattern
         temp = D * Bc
+        if X_norm:
+            temp = Xff * temp
+            cost[0] += B.shape[1] * Xff.nnz / float(A.nnz)
         mat_mult_d2s(temp.ravel(order='C'),
                      Bc.ravel(order='C'),
                      indptr,
@@ -1455,7 +1482,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
         cost[0] += 2 * B.shape[1] * sp_nnz / float(A.nnz)
 
         # Compute and add correction, where 
-        #       App = tau * <AD, D>_F + scale * <DBcBc^T, D>
+        #       App = tau * <A*D, D>_F + (1-tau) * <Xff*D*Bc*Bc^T, D>
         #       alpha = ||r|| / App
         correction1 += correction2
         App = np.multiply(D.data, correction1).sum()
@@ -1465,7 +1492,7 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
         if tau != 0:
             cost[0] += sp_nnz / float(A.nnz)
 
-        # Get residual, R_{k+1} = R_k - tau*Aff*D - D*Bc*Bc^T
+        # Get residual, R_{k+1} = R_k - tau*Aff*D - (1-tau)*Xff*D*Bc*Bc^T
         R -= alpha * correction1
         Z = R * Pre
         rznew = np.dot(Z, R)
@@ -1495,9 +1522,14 @@ def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
 def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
                        deg=1, maxiter=100, tol=1e-8, get_tau=1,
                        diagonal_dominance=False, precondition=False,
-                       prefilter={}, debug=False, cost=[0]):
+                       X_norm=False, prefilter={}, debug=False,
+                       cost=[0]):
     """ 
     Trace-minimization of P. Fill this in.
+
+
+    TODO - add norm scaling Xff option
+
 
     """
     # Currently only implemented for CSR matrices
@@ -1580,8 +1612,8 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None, T=None,
     # Form P
     P = trace_min_cg(A=A, B=B, Sp=S, Cpts=Cpts, Fpts=Fpts,
                      maxiter=maxiter, tol=tol, tau=tau,
-                     precondition=precondition, debug=debug,
-                     cost=cost)
+                     precondition=precondition, X_norm=X_norm,
+                     debug=debug, cost=cost)
 
     # How do we form coarse-grid bad guys? By injection? 
     Bc = B[Cpts,:]

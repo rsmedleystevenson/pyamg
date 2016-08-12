@@ -2222,7 +2222,8 @@ def truncate_rows(A, nz_per_row):
     return A
 
 
-def mat_mat_complexity(A, P, test_cols=10, incomplete=False):
+def mat_mat_complexity(A, P, test_cols=10, incomplete=False,
+                       keep_zeros=False):
     """
     Function to approximate the complexity of a sparse matrix
     matrix multiplication, A*P.
@@ -2258,14 +2259,20 @@ def mat_mat_complexity(A, P, test_cols=10, incomplete=False):
         where A*P is only computed in the sparsity pattern
         of P. Used particularly in energy minimization 
         smoothing of prolongation operators. 
+    keep_zeros : bool : Default False
+        If true, do not eliminate zeros in matrices. 
+        Used in routines where matrices must maintain given
+        sparsity pattern.
 
     Returns
     -------
     Approximate number of FLOPs to compute A*P.
 
     """
-    A.eliminate_zeros()
-    P.eliminate_zeros()
+
+    if not keep_zeros:
+        A.eliminate_zeros()
+        P.eliminate_zeros()
 
     # Detailed estimate of complexity for matrix product 
     # using random sampling. 

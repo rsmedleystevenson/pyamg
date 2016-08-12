@@ -263,7 +263,9 @@ def apply_givens(*args):
 def tracemin_preconditioner(*args):
     """
     tracemin_preconditioner(int const [] S_rowptr, int const [] S_colinds, float [] S_data, float const [] Aff_diag, float const [] Bc, float const tau, float const K, int const nc, int const nb)
+    tracemin_preconditioner(int const [] S_rowptr, int const [] S_colinds, float [] S_data, float const [] Aff_diag, float const [] Mff_diag, float const [] Bc, float const tau, float const K, int const nc, int const nb)
     tracemin_preconditioner(int const [] S_rowptr, int const [] S_colinds, double [] S_data, double const [] Aff_diag, double const [] Bc, double const tau, double const K, int const nc, int const nb)
+    tracemin_preconditioner(int const [] S_rowptr, int const [] S_colinds, double [] S_data, double const [] Aff_diag, double const [] Mff_diag, double const [] Bc, double const tau, double const K, int const nc, int const nb)
     """
     return _amg_core.tracemin_preconditioner(*args)
 
