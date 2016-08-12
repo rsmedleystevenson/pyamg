@@ -6,16 +6,13 @@ import pdb
 
 # TODO : Be consistent with scipy importing. Remove unnecessary imports. 
 
-import time
+import copy
 import numpy as np
 import scipy
 import scipy.sparse
 import scipy.sparse.linalg as linalg
 import scipy.linalg
 from scipy.sparse import bsr_matrix, isspmatrix_csr, isspmatrix_bsr, eye, csr_matrix, diags
-from scipy.sparse.linalg.isolve.utils import make_system
-from scipy.sparse.linalg.interface import LinearOperator
-from scipy import stats
 
 from pyamg.multilevel import multilevel_solver, coarse_grid_solver
 from pyamg.strength import symmetric_strength_of_connection,\
@@ -23,12 +20,14 @@ from pyamg.strength import symmetric_strength_of_connection,\
 from pyamg.relaxation.smoothing import change_smoothers
 from pyamg.util.linalg import norm, approximate_spectral_radius
 from pyamg.util.utils import levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
-                            symmetric_rescaling, relaxation_as_linear_operator, mat_mat_complexity
+                            symmetric_rescaling, relaxation_as_linear_operator, mat_mat_complexity, \
+                            blocksize
 from .aggregate import standard_aggregation, naive_aggregation,\
     lloyd_aggregation
 from pyamg.aggregation.smooth import jacobi_prolongation_smoother, energy_prolongation_smoother, \
                    richardson_prolongation_smoother
 from .tentative import fit_candidates
+from pyamg.aggregation.aggregation import smoothed_aggregation_solver
 
 
 __all__ = ['A_norm', 'my_rand', 'tl_sa_solver', 'asa_solver']
@@ -286,10 +285,10 @@ def asa_solver(A, B=None,
                max_coarse=20,
                max_levels=20,
                target_convergence=0.5,
-               max_bullets=100,
-               max_bad_guys=0,
+               max_bullets=5,
+               max_bad_guys=10,
                num_targets=1,
-               max_level_iterations=10,
+               max_iterations=10,
                weak_tol=15.,
                diagonal_dominance=False,
                coarse_solver='pinv2',
@@ -328,7 +327,7 @@ def asa_solver(A, B=None,
         Maximum number of variables permitted on the coarse grid. 
     max_levels : {integer}
         Maximum number of levels.
-    max_level_iterations : {integer}
+    max_iterations : {integer}
         Maximum number of aSA iterations per level.
     prepostsmoother : {string or dict}
         Pre- and post-smoother used in the adaptive method
@@ -392,23 +391,6 @@ def asa_solver(A, B=None,
     if A.shape[0] != A.shape[1]:
         raise ValueError('Expected square matrix!')
 
-    levels = []
-
-    # Levelize the user parameters, so that they become lists describing the
-    # desired user option on each level.
-    max_levels, max_coarse, strength =\
-        levelize_strength_or_aggregation(strength, max_levels, max_coarse)
-    max_levels, max_coarse, aggregate =\
-        levelize_strength_or_aggregation(aggregate, max_levels, max_coarse)
-    smooth = levelize_smooth_or_improve_candidates(smooth, max_levels)
-
-
-
-    # TODO : Should maybe levelize adaptive parameters level_iterations, max targets, etc.?
-    #   - Assume tolerances fixed on all levels
-    #   - Assume max / min / num targets fixed on all levels too, don't see why they change>
-    #   - max_level_iterations may be reasonable to change per level
-
     # Dictionary for complexity tracking on each level
     complexity = []
     for i in range(0,max_levels):
@@ -421,321 +403,121 @@ def asa_solver(A, B=None,
                             'local_ritz': 0.0,
                             'smooth_P': 0.0} )
 
-    # Call recursive adaptive process starting from finest grid, level 0,
-    # to construct adaptive hierarchy. 
-    hierarchy = multilevel_solver(levels=levels)
-    try_solve(A=A, levels=levels, level=0, symmetry=symmetry,
-              strength=strength, aggregate=aggregate, smooth=smooth,
-              presmoother=presmoother, postsmoother=postsmoother,
-              improvement_iters=improvement_iters,
-              max_coarse=max_coarse, max_levels=max_levels,
-              target_convergence=target_convergence, max_bullets=max_bullets,
-              max_bad_guys=max_bad_guys, num_targets=num_targets, 
-              max_level_iterations=max_level_iterations,
-              weak_tol=weak_tol, diagonal_dominance=diagonal_dominance,
-              coarse_solver=coarse_solver, cycle=cycle,
-              verbose=verbose, keep=keep, hierarchy=hierarchy,
-              complexity=complexity, B=B)
-
-    # Add complexity dictionary to levels in hierarchy 
-    nlvls = len(hierarchy.levels)
-    for i in range(0,nlvls):
-
-        # Scale complexity on level i to be WUs w.r.t. the operator
-        # on level i for consistency with other methods. Rescaled to
-        # total WUs w.r.t. the fine grid in multilevel.py.
-        temp = float(levels[0].A.nnz) / levels[i].A.nnz 
-        for method in complexity[i]:
-            complexity[i][method] *= temp
-
-        hierarchy.levels[i].complexity = complexity[i]
-
-    # TODO : This needs to be added to SC somewhere
-    extra_work = 0.0
-    for i in range(nlvls,max_levels):
-        for method, cost in complexity[i].iteritems():
-            extra_work += cost
-
-    print("Extra setup cost on unaccounted for levels = ", extra_work)
-
-    return hierarchy
-
-
-# Weird bugs / Notes
-#   - Filtering does not decrease complexity, omproves CF slightly?
-#   - ^Same with local weighting
-#   - No filter, local weighting seems best for TAD / SAD
-#   - Don't think we need to symmetrically scale diagonal each iteration.
-#     Lot of WUs, initial tests didn't suggest it improved convergene or
-#     complexity enough to be worth the effort.
-#   - Seems to like energy smoothing. Low degree, e.g. 1 still increases
-#     complexity, but improves CF even more. 
-#   - For TAD, aSA seems to like energy smoothing w/ degree 1.
-#     E.g. for theta=3pi/16, n=1250, a modest increase in OC from 3 to 3.65
-#     with energy smoothing bumps CF from ~0.55 --> 0.35. Increasing 
-#     Jacobi degree to 2 was totally intractable moving OC to 6.9,
-#     with CF still ~0.55
-# ==> Approximate spectral radii should be for A^2!
-#     Should also only do once, and do less work to get it (i.e. less exact, row sum?).
-
-# Important :
-#   ==> Levels are passed by reference, but a coarse grid solver
-#       is constructed on the first pass, and invalid if we 
-#       remove a level. Thus we can pop() off the levels list,
-#       and it modifies the hierarchy created from the list. 
-def try_solve(A, levels,
-              level,
-              symmetry,
-              strength,
-              aggregate,
-              smooth,
-              presmoother,
-              postsmoother,
-              improvement_iters,
-              max_coarse,
-              max_levels,
-              target_convergence,
-              max_bullets,
-              max_bad_guys,
-              num_targets,
-              max_level_iterations,
-              weak_tol,
-              diagonal_dominance,
-              coarse_solver,
-              cycle,
-              verbose,
-              keep,
-              hierarchy,
-              complexity,
-              B = None):
-
-    """
-    Needs some love.
-
-    TODO : add SC for relaxation targets
-           Check on SC for small eigenvalue problems -- really 9n^3??
-
-           ----> BAD GUYS DO NOT APPEAR TO BE A-ORTHOGONAL COMING OUT OF GRITZ???
-
-    """
-
-    # If coarserer hierarchies have already been defined, remove
-    # because they will be reconstructed
-    while len(levels) > level:
-        levels.pop()
-
-    # Add new level to hierarchy, define reference 'current' to current level
-    # Set n and rhs for testing convergence on homogeneous problem
-    levels.append(multilevel_solver.level())
-    current = levels[level]
-    current.A = A
-    n = A.shape[0]
-
-    # Leading constant in approximation properties
-    #   TODO : Approximate this in a cheaper way?
-    sap_tol = (weak_tol / approximate_spectral_radius(A) )**2
-
-    # Test if we are at the coarsest level. If no hierarchy has been
-    # constructed in adaptive process yet, construct hierarchy. If 
-    # a hierarchy exists, update coarse grid solver. 
-    if n <= max_coarse or level >= max_levels - 1:
-        hierarchy.coarse_solver = coarse_grid_solver(coarse_solver)
-        change_smoothers(hierarchy, presmoother, postsmoother)
-        return
-
-    # initialize history
-    current.history = {}
-    current.history['B'] = []
-    current.history['conv'] = []
-    current.history['agg'] = []
-
-    # Leading constant for complexity w.r.t. the finest grid
-    chi = float(A.nnz) / levels[0].A.nnz
-
-    # Generate initial targets as random vectors relaxed on AB = 0.
-    if B == None:
-        current.B = my_rand(n,num_targets, zero_crossings=False)
+    # Right near nullspace candidates use constant for each variable as default
+    if B is None:
+        B = np.kron(np.ones((int(A.shape[0]/blocksize(A)), 1), dtype=A.dtype),
+                    np.eye(blocksize(A)))
     else:
-        current.B = B
+        B = np.asarray(B, dtype=A.dtype)
+        if len(B.shape) == 1:
+            B = B.reshape(-1, 1)
+        if B.shape[0] != A.shape[0]:
+            raise ValueError('The near null-space modes B have incorrect \
+                              dimensions for matrix A')
+        if B.shape[1] < blocksize(A):
+            warn('Having less target vectors, B.shape[1], than \
+                  blocksize of A can degrade convergence factors.')
 
-    # TODO : This needs some work, turns out changing kwargs changes
-    # internal argument. Currently reset to original value after improving...
-    fn, kwargs = unpack_arg(presmoother, cost=False)
-    try:
-        temp = kwargs['iterations']
-    except:
-        temp = 1
-    kwargs['iterations'] = improvement_iters
-    if fn is None:
-        raise ValueError("Must improve candidates for aSA.")
-
-    b = np.zeros((A.shape[0], 1), dtype=A.dtype)
-    current.B = relaxation_as_linear_operator( \
-                            (fn, kwargs), \
-                            current.A, b) * current.B
-
-    kwargs['iterations'] = temp
-    complexity[level]['candidates'] += improvement_iters * B.shape[1]
-
-    # Compute the strength-of-connection matrix C, where larger
-    # C[i,j] denote stronger couplings between i and j.
-    fn, kwargs = unpack_arg(strength[level])
-    if fn == 'symmetric':
-        C = symmetric_strength_of_connection(current.A, **kwargs)
-    elif fn == 'classical':
-        C = classical_strength_of_connection(current.A, **kwargs)
-    elif fn == 'distance':
-        C = distance_strength_of_connection(current.A, **kwargs)
-    elif (fn == 'ode') or (fn == 'evolution'):
-        if 'B' in kwargs:
-            C = evolution_strength_of_connection(current.A, **kwargs)
+    # Make improve candidates dictionary based on presmoother
+    # and improvement iters.
+    improve_candidates = copy.deepcopy(presmoother)
+    if type(improve_candidates) is list:
+        improve_candidates = improve_candidates[0]
+        if len(improve_candidates) == 1:
+            improve_candidates.append({'iterations': improvement_iters})
         else:
-            C = evolution_strength_of_connection(current.A, current.B, **kwargs)
-    elif fn == 'energy_based':
-        C = energy_based_strength_of_connection(current.A, **kwargs)
-    elif fn == 'predefined':
-        C = kwargs['C'].tocsr()
-    elif fn == 'algebraic_distance':
-        C = algebraic_distance(current.A, **kwargs)
-    elif fn == 'affinity':
-        C = affinity_distance(current.A, **kwargs)
-    elif fn is None:
-        C = current.A.tocsr()
+            improve_candidates[1]['iterations'] = improvement_iters
+        improve_candidates = tuple(improve_candidates)
+    elif type(improve_candidates) is tuple:
+        improve_candidates = list(improve_candidates)
+        if len(improve_candidates) == 1:
+            improve_candidates.append({'iterations': improvement_iters})
+        else:
+            improve_candidates[1]['iterations'] = improvement_iters
+        improve_candidates = tuple(improve_candidates)
+    elif type(improve_candidates) is str:
+        improve_candidates = (improve_candidates, {'iterations': improvement_iters})
     else:
-        raise ValueError('unrecognized strength of connection method: %s' %
-                         str(fn))
+        raise ValueError("Presmoother must be string, tuple or list.")
 
-    complexity[level]['strength'] += kwargs['cost'][0] * chi
+    # Build SA solver based on initial bad guys
+    #   TODO - Keep T in SA w/o keeping C and AggOp
+    ml = smoothed_aggregation_solver(A, B=B, BH=None, symmetry=symmetry, strength=strength,
+                                     aggregate=aggregate, smooth=smooth, presmoother=presmoother,
+                                     postsmoother=postsmoother, improve_candidates=improve_candidates,
+                                     max_levels = max_levels, max_coarse = max_coarse,
+                                     diagonal_dominance=diagonal_dominance,
+                                     keep=True, **kwargs)
 
-     # Avoid coarsening diagonally dominant rows
-    flag, kwargs = unpack_arg(diagonal_dominance)
-    if flag:
-        C = eliminate_diag_dom_nodes(current.A, C, **kwargs)
-        complexity[level]['strength'] += kwargs['cost'][0] * chi
-
-    # Compute the aggregation matrix AggOp (i.e., the nodal coarsening of A).
-    # AggOp is a boolean matrix, where the sparsity pattern for the k-th column
-    # denotes the fine-grid nodes agglomerated into k-th coarse-grid node.
-    fn, kwargs = unpack_arg(aggregate[level])
-    if fn == 'standard':
-        current.AggOp = standard_aggregation(C, **kwargs)[0]
-    elif fn == 'naive':
-        current.AggOp = naive_aggregation(C, **kwargs)[0]
-    elif fn == 'lloyd':
-        current.AggOp = lloyd_aggregation(C, **kwargs)[0]
-    elif fn == 'predefined':
-        current.AggOp = kwargs['AggOp'].tocsr()
-    else:
-        raise ValueError('unrecognized aggregation method %s' % str(fn))
-
-    complexity[level]['aggregation'] += kwargs['cost'][0] * (float(C.nnz)/levels[0].A.nnz)
-
-    # Loop over adaptive hierarchy until CF is sufficient or we have 
-    # reached maximum iterations. Maximum iterations is checked inside
-    # loop to prevent running test iterations that will not be used. 
+    # Loop over adaptive hierarchy until CF is sufficient or we have reached
+    # maximum iterations. Note, iterations and convergence checked inside
+    # loop to prevent running test iterations that will not be used, and for
+    # simple / readable code (no large block of code before loop). 
     level_iter = 0
     conv_factor = 1
-    target = None
-    while (conv_factor > target_convergence):
+    sap_tol = (weak_tol / approximate_spectral_radius(A) )**2
+    while True:
 
-        # Add new target. Orthogonalize using global / local Ritz and reconstruct T. 
-        temp_cost = [0] 
-        current.B = global_ritz_process(A=current.A, B1=current.B, B2=target, \
-                                        sap_tol=sap_tol, level=level, \
-                                        max_bad_guys=max_bad_guys, \
-                                        verbose=verbose, cost=temp_cost)
-        complexity[level]['global_ritz'] += temp_cost[0] * chi
-        
-        if level == 0:
-            pdb.set_trace()
+        # Generate random new target
+        target = my_rand(A.shape[0], 1, A.dtype)
 
-        temp_cost[0] = 0 
-        current.T, per_agg = local_ritz_process(A=current.A, AggOp=current.AggOp, \
-                                                B=current.B, sap_tol=sap_tol, \
-                                                max_bullets=max_bullets, level=level, \
-                                                verbose=verbose, cost=temp_cost)
-        complexity[level]['local_ritz'] += temp_cost[0] * chi
-        
-        # Restrict bad guy using tentative prolongator
-        Bc = current.T.T * current.B
-        current.history['B'].append(current.B)
-        current.history['agg'].append(per_agg)
-        complexity[level]['smooth_P'] += float(current.T.nnz) / levels[0].A.nnz
+        # Improve target in energy by relaxing on A B = 0
+        temp_cost = [0.0]
+        fn, sm_args = unpack_arg(improve_candidates, cost=False)
+        if fn is not None:
+            b = np.zeros((A.shape[0], 1), dtype=A.dtype)
+            B = relaxation_as_linear_operator((fn, sm_args), A, b, temp_cost) * B
+            if A.symmetry == "nonsymmetric":
+                BH = relaxation_as_linear_operator((fn, sm_args), AH, b, temp_cost) * BH
 
-        # Smooth tentative prolongator
-        fn, kwargs = unpack_arg(smooth[level])
-        if fn == 'jacobi':
-            current.P = jacobi_prolongation_smoother(current.A, current.T, C, \
-                                                     Bc, **kwargs)
-        elif fn == 'richardson':
-            current.P = richardson_prolongation_smoother(current.A, current.T, \
-                                                         **kwargs)
-        elif fn == 'energy':
-            current.P = energy_prolongation_smoother(current.A, current.T, C, \
-                                                     Bc, None, (False, {}), \
-                                                     **kwargs)
-        elif fn is None:
-            current.P = T
-        else:
-            raise ValueError('unrecognized prolongation smoother method %s' %
-                             str(fn))
-        
-        current.R = current.P.H
-        complexity[level]['smooth_P'] += kwargs['cost'][0] * chi        
+        complexity[0]['candidates'] = temp_cost[0] * B.shape[1]
 
-        # Form coarse grid operator, get complexity
-        complexity[level]['RAP'] += mat_mat_complexity(current.R, current.A) / float(levels[0].A.nnz)
-        RA = current.R * current.A
-        complexity[level]['RAP'] += mat_mat_complexity(RA, current.P) / float(levels[0].A.nnz)
-        Ac = csr_matrix(RA * current.P)      # Galerkin operator, Ac = RAP
+        # Test solver on new target
+        residuals = []
+        ml.solve(b, x0=target, cycle=cycle, maxiter=improvement_iters, \
+                 tol=1e-16, residuals=residuals, accel=None)
+        temp_CC = ml.cycle_complexity()
+        complexity[0]['test_solve'] += temp_CC * improvement_iters
 
-        # Symmetrically scale diagonal of Ac, modify R,P accodingly
-        #     TODO : Do we need to do this? 
-        #             Add cost
-        [D, Dinv, dum] = symmetric_rescaling(Ac, copy=False)
-        current.P = (current.P * diags(Dinv, offsets=0)).tocsr()
-        current.R = current.P.H
-        for i in range(0,Bc.shape[1]):
-            Bc[:,i] = D * Bc[:,i]
-
-        # Recursively call try_solve() with coarse grid operator
-        try_solve(A=Ac, levels=levels, level=(level+1), symmetry=symmetry,
-                  strength=strength, aggregate=aggregate, smooth=smooth,
-                  presmoother=presmoother, postsmoother=postsmoother,
-                  improvement_iters=improvement_iters,
-                  max_coarse=max_coarse, max_levels=max_levels,
-                  target_convergence=target_convergence, max_bullets=max_bullets,
-                  max_bad_guys=max_bad_guys, num_targets=num_targets, 
-                  max_level_iterations=max_level_iterations,
-                  weak_tol=weak_tol, diagonal_dominance=diagonal_dominance,
-                  coarse_solver=coarse_solver, cycle=cycle,
-                  verbose=verbose, keep=keep, hierarchy=hierarchy,
-                  complexity=complexity, B=Bc)
-
-        # Break if this was last adaptive iteration to prevent computing
-        # test iterations that won't be used to improve solver
+        # TODO - Need to estimate CF better
+        conv_factor = residuals[-1] / residuals[-2]
+        print("Iteration ",level_iter,", CF = ",conv_factor,", ",B.shape[1]," targets.")
         level_iter += 1
-        if level_iter == max_level_iterations:
+
+        # Check if good convergence achieved or maximum iterations done
+        if (level_iter > max_iterations) or (conv_factor < target_convergence):
             break
 
-        # Test convergence of new hierarchy
-        residuals = []
-        target = my_rand(n, 1, current.A.dtype)
-        target = hierarchy.solve(b, x0=target, cycle=cycle, \
-                                 maxiter=improvement_iters, \
-                                 tol=1e-16, residuals=residuals,
-                                 init_level=level, accel=None)
-        conv_factor = residuals[-1] / residuals[-2]
-        current.history['conv'].append(conv_factor)
-        temp_CC = hierarchy.cycle_complexity(cycle=cycle, init_level=level,
-                                             recompute=True)
+        # Interpolate targets in hierarchy up from coarsest grid,
+        # form set of bad guys
+        for i in range(len(ml.levels)-2,-1,-1):
+            # B2 = ml.levels[i].P * ml.levels[i+1].B
+            B2 = ml.levels[i].T * ml.levels[i+1].B
 
-        # Count WUs to run test iterations - note, the CC is in terms of
-        # the fine grid operator, so we do not scale by chi = Ai.nnz / A0.nnz
-        complexity[level]['test_solve'] += temp_CC * improvement_iters
+        # TODO account for complexity here
 
-        if verbose:
-            print tabs(level), "Iter = ",level_iter,", CF = ", conv_factor
+        # Store bad guys as one vector
+        B = np.hstack((B, B2, target))
 
-    return
+        # Add new target. Orthogonalize using global Ritz and reconstruct T. 
+        #   TODO - worth keeping stuff that trivially satisfies?
+        temp_cost = [0] 
+        B = global_ritz_process(A=A, B1=B, B2=None, sap_tol=sap_tol, level=0, \
+                                max_bad_guys=max_bad_guys, verbose=verbose, \
+                                cost=temp_cost)
+        complexity[0]['global_ritz'] += temp_cost[0]
+
+        # Build new hierarchy
+        ml = smoothed_aggregation_solver(A, B=B[:,0:min(B.shape[1],max_bullets)], BH=None, symmetry=symmetry, strength=strength,
+                                         aggregate=aggregate, smooth=smooth, presmoother=presmoother,
+                                         postsmoother=postsmoother, improve_candidates=improve_candidates,
+                                         max_levels = max_levels, max_coarse = max_coarse,
+                                         diagonal_dominance=diagonal_dominance,
+                                         keep=True, **kwargs)
+
+        # TODO - Store complexity from building new hierarchy
+
+
+    return ml
+
 

@@ -152,17 +152,17 @@ relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.3 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.4 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
 # -----------------------
-weak_tol 		 	 = 10.0			# new aSA 
-max_bad_guys		 = 10
-max_bullets			 = 8
-max_level_iterations = 5
-improvement_iters 	 = 10		# number of times a target bad guy is improved
-num_targets 		 = 1		# number of near null space candidates to generate
+weak_tol 		   = 10.0			# new aSA 
+max_bad_guys	   = 5
+max_bullets		   = 2
+max_iterations 	   = 5
+improvement_iters  = 5		# number of times a target bad guy is improved
+num_targets 	   = 1		# number of near null space candidates to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
 improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
@@ -192,7 +192,7 @@ keep = False
 # Poisson
 # -------
 n0 = 500
-eps = 0.1
+eps = 0.01
 theta = 3*np.pi / 14.0
 
 # A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
@@ -316,7 +316,7 @@ ml_new_asa = asa_solver(A, B=bad_guy,
 						max_bullets=max_bullets,
 						max_bad_guys=max_bad_guys,
 						num_targets=num_targets,
-						max_level_iterations=max_level_iterations,
+						max_iterations=max_iterations,
 						weak_tol=weak_tol,
 						diagonal_dominance=diagonal_dominance,
 						coarse_solver=coarse_solver,
@@ -350,11 +350,4 @@ print "\tOp. complexity  	- ", OC
 print "\tCyc. complexity 	- ", CC
 
 pdb.set_trace()
-
-
-bad_guys = ml_new_asa.levels[0].history['B']
-
-
-
-test = np.sin(np.linspace(0,1,A.shape[0])*np.pi)
 
