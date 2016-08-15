@@ -5,8 +5,8 @@ __docformat__ = "restructuredtext en"
 
 import numpy as np
 from warnings import warn
-from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr,\
-    SparseEfficiencyWarning
+from scipy.sparse import csr_matrix, isspmatrix_csr,\
+    isspmatrix_bsr, SparseEfficiencyWarning
 
 from pyamg.multilevel import multilevel_solver
 from pyamg.relaxation.smoothing import change_smoothers
@@ -24,13 +24,19 @@ from .aggregate import standard_aggregation, naive_aggregation, \
     lloyd_aggregation
 from .tentative import fit_candidates
 from .smooth import energy_prolongation_smoother
+from pyamg.classical.split import RS, PMIS, PMISc, MIS, CLJP, CLJPc
+from pyamg.classical.cr import CR
+
 
 __all__ = ['rootnode_solver']
 
 
 def rootnode_solver(A, B=None, BH=None,
-                    symmetry='hermitian', strength='symmetric',
-                    aggregate='standard', smooth='energy',
+                    symmetry='hermitian',
+                    strength='symmetric',
+                    splitting='RS',
+                    aggregate='standard',
+                    smooth='energy',
                     presmoother=('block_gauss_seidel',
                                  {'sweep': 'symmetric'}),
                     postsmoother=('block_gauss_seidel',
@@ -39,7 +45,8 @@ def rootnode_solver(A, B=None, BH=None,
                                         {'sweep': 'symmetric',
                                          'iterations': 4}),
                     max_levels = 10, max_coarse = 10,
-                    diagonal_dominance=False, keep=False, **kwargs):
+                    diagonal_dominance=False,
+                    keep=False, **kwargs):
     """
     Create a multilevel solver using root-node based Smoothed Aggregation (SA).
     See the notes below, for the major differences with the classical-style
@@ -312,7 +319,7 @@ def rootnode_solver(A, B=None, BH=None,
 
     while len(levels) < max_levels and \
             int(levels[-1].A.shape[0]/blocksize(levels[-1].A)) > max_coarse:
-        extend_hierarchy(levels, strength, aggregate, smooth,
+        extend_hierarchy(levels, strength, aggregate, splitting, smooth,
                          improve_candidates, diagonal_dominance, keep)
 
     ml = multilevel_solver(levels, **kwargs)
@@ -320,8 +327,8 @@ def rootnode_solver(A, B=None, BH=None,
     return ml
 
 
-def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
-                     diagonal_dominance=False, keep=True):
+def extend_hierarchy(levels, strength, aggregate, splitting, smooth,
+                     improve_candidates, diagonal_dominance=False, keep=True):
     """Service routine to implement the strength of connection, aggregation,
     tentative prolongation construction, and prolongation smoothing.  Called by
     smoothed_aggregation_solver.
@@ -395,10 +402,48 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
         Cnodes = kwargs['Cnodes']
+    elif fn == None:
+        AggOp = None
+        Cnodes = None
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
     
     levels[-1].complexity['aggregation'] = kwargs['cost'][0] * (float(C.nnz)/A.nnz)
+
+    # Check for CF-splitting to generate C-points. Must use either a
+    # CF-splitting or aggregation routine. 
+    # 
+    # TODO : levelize splitting in here and in classical.py
+    #
+    # fn, kwargs = unpack_arg(splitting[len(levels)-1])
+    fn, kwargs = unpack_arg(splitting)
+    if fn is not None and AggOp is not None:
+        raise ValueError("Must use either CF-coarsening or aggregation - not both.")
+    elif fn == None and AggOp == None:
+        raise ValueError('Must provide either aggregation routine ' \
+                         'or CF splitting routine.') 
+    elif fn == 'RS':
+        splitting = RS(C, **kwargs)
+    elif fn == 'PMIS':
+        splitting = PMIS(C, **kwargs)
+    elif fn == 'PMISc':
+        splitting = PMISc(C, **kwargs)
+    elif fn == 'CLJP':
+        splitting = CLJP(C, **kwargs)
+    elif fn == 'CLJPc':
+        splitting = CLJPc(C, **kwargs)
+    elif fn == 'CR':
+        splitting = CR(C, **kwargs)
+    elif fn == None:
+        # Ensure C-points are sorted
+        splitting = np.zeros((A.shape[0],), dtype='intc')
+        splitting[Cnodes] = 1
+    else:
+        raise ValueError('unknown C/F splitting method (%s)' % splitting)
+    
+    levels[-1].complexity['CF'] = kwargs['cost'][0]
+    if Cnodes is None:
+        Cnodes = np.array(np.where(splitting == 1)[0], dtype='intc')
 
     # Improve near nullspace candidates by relaxing on A B = 0
     temp_cost = [0.0]
@@ -413,27 +458,47 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
 
     levels[-1].complexity['candidates'] = temp_cost[0] * B.shape[1]
 
-    # Compute the tentative prolongator, T, which is a tentative interpolation
-    # matrix from the coarse-grid to the fine-grid.  T exactly interpolates
-    # B_fine[:, 0:blocksize(A)] = T B_coarse[:, 0:blocksize(A)].
-    # Orthogonalization complexity ~ 2nk^2, k = blocksize(A).
-    levels[-1].complexity['tentative'] = 2.0 * blocksize(A) * blocksize(A) * \
-                                            float(A.shape[0])/A.nnz
-    T, dummy = fit_candidates(AggOp, B[:, 0:blocksize(A)])
-    del dummy
-    if A.symmetry == "nonsymmetric":
-        TH, dummyH = fit_candidates(AggOp, BH[:, 0:blocksize(A)])
-        del dummyH
-        levels[-1].complexity['tentative'] += 2.0 * blocksize(A) * \
-                                        blocksize(A) * float(A.shape[0])/A.nnz
+    # If aggregation-style coarsening is used, form traditional tentative
+    # prolongator
+    if AggOp is not None:
+        # Compute the tentative prolongator, T, which is a tentative interpolation
+        # matrix from the coarse-grid to the fine-grid.  T exactly interpolates
+        # B_fine[:, 0:blocksize(A)] = T B_coarse[:, 0:blocksize(A)].
+        # Orthogonalization complexity ~ 2nk^2, k = blocksize(A).
+        levels[-1].complexity['tentative'] = 2.0 * blocksize(A) * blocksize(A) * \
+                                                float(A.shape[0])/A.nnz
 
-    # Create necessary root node matrices
-    Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp, T))
-    T = scale_T(T, Cpt_params[1]['P_I'], Cpt_params[1]['I_F'])
-    levels[-1].complexity['tentative'] += T.nnz / float(A.nnz)
-    if A.symmetry == "nonsymmetric":
-        TH = scale_T(TH, Cpt_params[1]['P_I'], Cpt_params[1]['I_F'])
-        levels[-1].complexity['tentative'] += TH.nnz / float(A.nnz)
+        T, dummy = fit_candidates(AggOp, B[:, 0:blocksize(A)])
+        del dummy
+        if A.symmetry == "nonsymmetric":
+            TH, dummyH = fit_candidates(AggOp, BH[:, 0:blocksize(A)])
+            del dummyH
+            levels[-1].complexity['tentative'] += 2.0 * blocksize(A) * \
+                                            blocksize(A) * float(A.shape[0])/A.nnz
+        
+        # Create necessary root node matrices
+        Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp, T))
+        T = scale_T(T, Cpt_params[1]['P_I'], Cpt_params[1]['I_F'])
+        levels[-1].complexity['tentative'] += T.nnz / float(A.nnz)
+        if A.symmetry == "nonsymmetric":
+            TH = scale_T(TH, Cpt_params[1]['P_I'], Cpt_params[1]['I_F'])
+            levels[-1].complexity['tentative'] += TH.nnz / float(A.nnz)
+
+    # If CF-splitting is used, let T be given by T = [0; I], i.e. P = [W; I],
+    # for W = 0. 
+    else:
+        rowptr = np.zeros((A.shape[0]+1,),dtype='intc')
+        rowptr[Cnodes+1] = 1
+        np.cumsum(rowptr, out=rowptr)
+        T = csr_matrix((np.ones((Cnodes.shape[0],), dtype='intc'),
+                        np.arange(0,Cnodes.shape[0]),
+                        rowptr),
+                       shape=[A.shape[0], Cnodes.shape[0]],
+                       dtype='float64')
+        AggOp = T
+        T = T.tobsr(blocksize=[1,1])
+        # Create necessary root node matrices
+        Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp, T))
 
     # Set coarse grid near nullspace modes as injected fine grid near
     # null-space modes
@@ -498,7 +563,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
 
     levels.append(multilevel_solver.level())
     levels[-1].A = A
-    levels[-1].B = B                          # right near nullspace candidates
+    levels[-1].B = B                            # right near nullspace candidates
 
     if A.symmetry == "nonsymmetric":
-        levels[-1].BH = BH                   # left near nullspace candidates
+        levels[-1].BH = BH                      # left near nullspace candidates
