@@ -1305,6 +1305,7 @@ def energy_prolongation_smoother(A, T, Atilde, B, Bf, Cpt_params,
 
 def trace_min_cg(A, B, Sp, Cpts, Fpts, maxiter, tol, tau,
                  cost, precondition, X_norm=False, debug=False):
+
     """"
     CG to minimize trace functional. Fill this in. 
 
