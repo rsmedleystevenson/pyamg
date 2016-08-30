@@ -1374,7 +1374,7 @@ def filter_operator(A, C, B, Bf, BtBinv=None):
                                               np.ravel(BtBinv), A.indptr,
                                               A.indices, np.ravel(A.data))
 
-    A.eliminate_zeros()
+    # A.eliminate_zeros()
     return A
 
 

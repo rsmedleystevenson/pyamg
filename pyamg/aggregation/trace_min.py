@@ -374,7 +374,7 @@ def extend_hierarchy(levels, strength, aggregate, splitting, trace_min,
     # Compute prolongation operator.
     temp_cost = [0]
     P, Bc = trace_minimization(A=A, B=B, SOC=C, Cpts=Cnodes, 
-                               Fpts=Fnodes, T=AggOp, cost=temp_cost,
+                               Fpts=Fnodes, AggOp=AggOp, cost=temp_cost,
                                **trace_min)
     levels[-1].complexity['trace_min'] = temp_cost[0]
 

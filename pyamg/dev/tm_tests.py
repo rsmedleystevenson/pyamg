@@ -5,9 +5,9 @@ import math
 import numpy as np
 from scipy import sparse
 from scipy.sparse import csr_matrix
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
+# import matplotlib.pyplot as plt
+# from matplotlib import cm
+# from mpl_toolkits.mplot3d import Axes3D
 
 from pyamg.gallery import poisson
 from pyamg.gallery.diffusion import diffusion_stencil_2d
@@ -16,13 +16,13 @@ from pyamg.util.utils import symmetric_rescaling, symmetric_rescaling_sa
 from pyamg.aggregation.trace_min import trace_min_solver
 from pyamg.aggregation.rootnode import rootnode_solver
 
-from poisson import get_poisson
-from elasticity_bar import get_elasticity_bar
+# from poisson import get_poisson
+# from elasticity_bar import get_elasticity_bar
 
 
-import sys
-sys.path.append("/Users/southworth2/Desktop/problemGeneration")
-from mfemGenerateMatrix import mfemGenerateMatrix
+# import sys
+# sys.path.append("/Users/southworth2/Desktop/problemGeneration")
+# from mfemGenerateMatrix import mfemGenerateMatrix
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -48,9 +48,9 @@ split_agg = [None, 'standard']
 
 
 deg = 2
-it = 6
+it = 4
 filt = 0.1
-trace_min = {'deg': deg, 'maxiter': it,
+trace_min = {'deg': deg, 'maxiter': it*3,
              'tol': 1e-8, 'prefilter': {'theta': filt},
              'get_tau': 0.0005, 'precondition': True,
              'X_norm': True, 'debug': False}
@@ -77,29 +77,28 @@ improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
 
 # ----------------------------------------------------------------------------- #
 
-[A,b,dum] = mfemGenerateMatrix(n=500, problem=0, order=2)
-x0 = np.random.rand(A.shape[0],1)
-B = None
-# [d,d,A] = symmetric_rescaling(A)
-
-
-# N 			= 2000
-# epsilon 	= 0.00
-# theta		= 3.0*math.pi/16.0
-# # theta 		= [math.pi/16.0, 3.0*math.pi/16.0, math.pi/4.0]
-
-# # 2d Poisson
-# grid_dims = [N,N]
-# stencil = diffusion_stencil_2d(epsilon,theta)
-# A = stencil_grid(stencil, grid_dims, format='csr')
-
-# # # Vectors and additional variables
-# [d,d,A] = symmetric_rescaling(A)
-# vec_size = np.prod(grid_dims)
-
-# b = np.zeros((vec_size,1))
-# x0 = np.random.rand(vec_size,1)
+# [A,b,dum] = mfemGenerateMatrix(n=500, problem=0, order=2)
+# x0 = np.random.rand(A.shape[0],1)
 # B = None
+# [d,d,A] = symmetric_rescaling(A)
+
+
+N 			= 500
+epsilon 	= 1
+theta		= 3.0*math.pi/16.0
+
+# 2d Poisson
+grid_dims = [N,N]
+stencil = diffusion_stencil_2d(epsilon,theta)
+A = stencil_grid(stencil, grid_dims, format='csr')
+
+# # Vectors and additional variables
+[d,d,A] = symmetric_rescaling(A)
+vec_size = np.prod(grid_dims)
+
+b = np.zeros((vec_size,1))
+x0 = np.random.rand(vec_size,1)
+B = None
 
 # Dolfin?
 # -------
@@ -201,11 +200,11 @@ for i in range(1,len(rn_residuals)):
 	rn_conv_factors[i-1] = rn_residuals[i]/rn_residuals[i-1]
 
 rn_CF = np.mean(rn_conv_factors)
-rn_CF2 = residuals[-1]/residuals[-2]
+rn_CF2 = rn_residuals[-1]/rn_residuals[-2]
 
 print "Root-node, problem : ", n," DOF, ", A.nnz," nonzeros"
-print "\tSetup time      - ",rn_setup_time, " seconds"
-print "\tSolve time      - ", rn_solve_time, " seconds"
+print "\tSetup time      	= ",rn_setup_time, " seconds"
+print "\tSolve time      	= ", rn_solve_time, " seconds"
 print "\tSetup complexity 	 = ",rn_SC
 print "\tOperator complexity 	 = ",rn_OC
 print "\tCycle complexity 	 = ",rn_CC
