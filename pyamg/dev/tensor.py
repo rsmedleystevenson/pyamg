@@ -22,7 +22,8 @@ def tensor_product_solver(A,
 						  B=None,
 						  BH=None,
 						  solver_handles=[rootnode_solver],
-						  solver_args=[{'smooth': ('energy', {'degree': 2, 'maxiter': 10})}],
+						  solver_args=[{'smooth': ('energy', {'degree': 2, 'maxiter': 10}), 
+						  				'improve_candidates' : ('jacobi', {'omega': 0.5}) } ],
 						  **kwargs):
 
 	if len(solver_handles) != len(solver_args):
@@ -61,7 +62,7 @@ def tensor_product_solver(A,
 	# TODO : what to do with presmoother and postsmoother
 	# TODO : Fix smoother
 	tensor_solver = multilevel_solver(levels, **kwargs)
-	change_smoothers(tensor_solver, 'jacobi', 'jacobi')
+	change_smoothers(tensor_solver, ('jacobi', {'omega': 1.0}), ('jacobi', {'omega': 1.0}))
 
 	return tensor_solver
 
@@ -72,8 +73,8 @@ def tensor_product_solver(A,
 # 	is a hard problem for AMG to solve. Not sure why...
 # - Tensor product AMG does at least as well (or poorly for that
 # 	matter) as full AMG. Now just need test problems...
-# 
-# 
+# - TODO : WHAT TO DO WITH DIFFERENT NUMBER OF LEVELS FOR DIFFERENT
+# 		   HIERACHIES??
 # ------------------------------------------------------------ #
 # ------------------------------------------------------------ #
 
@@ -85,11 +86,11 @@ A1 = poisson(grid=[n0])
 A2 = poisson(grid=[n0])
 ml = tensor_product_solver(A=[A1,A2])
 ml2 = rootnode_solver(A=ml.levels[0].A,
-					  presmoother='jacobi',
-					  postsmoother='jacobi',
+					  presmoother=('jacobi', {'omega': 1.0}),
+					  postsmoother=('jacobi', {'omega': 1.0}),
 					  smooth=('energy', {'degree': 2, 'maxiter': 10}))
 accel = 'cg'
-tol = 1e-10
+tol = 1e-8
 maxiter = 200
 b = np.zeros((N,1))
 x0 = np.random.rand(N,1)
