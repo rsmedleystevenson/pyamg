@@ -487,18 +487,11 @@ def extend_hierarchy(levels, strength, aggregate, splitting, smooth,
     # If CF-splitting is used, let T be given by T = [0; I], i.e. P = [W; I],
     # for W = 0. 
     else:
-        rowptr = np.zeros((A.shape[0]+1,),dtype='intc')
-        rowptr[Cnodes+1] = 1
-        np.cumsum(rowptr, out=rowptr)
-        T = csr_matrix((np.ones((Cnodes.shape[0],), dtype='intc'),
-                        np.arange(0,Cnodes.shape[0]),
-                        rowptr),
-                       shape=[A.shape[0], Cnodes.shape[0]],
-                       dtype='float64')
-        AggOp = T
-        T = T.tobsr(blocksize=[1,1])
+        # TODO : Change to RS interpolation when incorporated into code
+        T = direct_interpolation(A, C, splitting)
+        cost[0] += 0.0      # TODO
         # Create necessary root node matrices
-        Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp, T))
+        Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp=None, T))
 
     # Set coarse grid near nullspace modes as injected fine grid near
     # null-space modes

@@ -1421,8 +1421,8 @@ def trace_min_cg(A, Bc, Bf, W, Cpts, Fpts, maxiter, tol, tau,
         mat_mult_s2s(Aff.indptr,
                      Aff.indices,
                      Aff.data,
-                     W.indptr,
-                     W.indices,
+                     indptr,
+                     indices,
                      W.data,
                      indptr,
                      indices,
@@ -1580,26 +1580,18 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None,
         except:
             raise ValueError("Unrecognized weight tau.")
 
-    # Form initial sparsity pattern as identity along C-points
-    # if tentative operator is not passed in. 
-    # if AggOp == None:
-    #     rowptr = np.zeros((n+1,),dtype='intc')
-    #     rowptr[Cpts+1] = 1
-    #     np.cumsum(rowptr, out=rowptr)
-    #     S = sparse.csr_matrix((np.ones((nc,), dtype='intc'),
-    #                            np.arange(0,nc),
-    #                            rowptr),
-    #                           shape=[n, nc],
-    #                           dtype='float64')
-    # else:
-    #     S = sparse.csr_matrix(AggOp, dtype='float64')
-
     # Form tentative operator as either SA-style tentative
     # interpolation operator with ones, or classical AMG P.
     if splitting is not None:
         T = direct_interpolation(A, SOC, splitting)
+        cost[0] += 0.0      # TODO
+        # TODO : Change to RS interpolation when incorporated into code
     elif AggOp is not None:
-        T = sparse.csr_matrix(AggOp, dtype='float64')
+        cost[0] += 2.0 * blocksize(A)**2 * float(A.shape[0])/A.nnz
+        T, dummy = fit_candidates(AggOp, B[:, 0:blocksize(A)])
+        Cpt_params = (True, get_Cpt_params(A, Cpts, AggOp, T))
+        T = scale_T(T, Cpt_params[1]['P_I'], Cpt_params[1]['I_F'])
+        levels[-1].complexity['tentative'] += T.nnz / float(A.nnz)
     else:
         raise ValueError("Must provide either C/F splitting or "
                          "aggregation matrix.")
@@ -1639,6 +1631,7 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None,
     Bc = B[Cpts,:]
     Bf = B[Fpts,:]
 
+    # TODO : IS THIS WORTH IT? 
     # Set T to initially satisfy constraints
     T = filter_operator(T, S, Bc, Bf)
     cost[0] += 0    # TODO

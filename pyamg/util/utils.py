@@ -1555,7 +1555,7 @@ def get_Cpt_params(A, Cnodes, AggOp, T):
 
     if not isspmatrix_bsr(A) and not isspmatrix_csr(A):
         raise TypeError('Expected BSR or CSR matrix A')
-    if not isspmatrix_csr(AggOp):
+    if AggOp is not None and not isspmatrix_csr(AggOp):
         raise TypeError('Expected CSR matrix AggOp')
     if not isspmatrix_bsr(T):
         raise TypeError('Expected BSR matrix T')
@@ -1566,7 +1566,7 @@ def get_Cpt_params(A, Cnodes, AggOp, T):
     if T.shape[0] != A.shape[0]:
         raise TypeError('Expected compatible dimensions for T and A,\
                          T.shape[0] = A.shape[0]')
-    if Cnodes.shape[0] != AggOp.shape[1]:
+    if AggOp is not None and Cnodes.shape[0] != AggOp.shape[1]:
         if AggOp.shape[1] > 1:
             raise TypeError('Number of columns in AggOp must equal number\
                              of Cnodes')
@@ -1588,7 +1588,7 @@ def get_Cpt_params(A, Cnodes, AggOp, T):
             raise ValueError('Expected number of Cpts to match T.shape[1]')
     if blocksize != T.blocksize[0]:
         raise ValueError('Expected identical blocksize in A and T')
-    if AggOp.shape[0] != int(T.shape[0]/blocksize):
+    if AggOp is not None and AggOp.shape[0] != int(T.shape[0]/blocksize):
         raise ValueError('Number of rows in AggOp must equal number of\
                           fine-grid nodes')
 
