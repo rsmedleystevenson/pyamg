@@ -481,7 +481,7 @@ def asa_solver(A, B=None,
 
         # TODO - Need to estimate CF better
         conv_factor = residuals[-1] / residuals[-2]
-        print("Iteration ",level_iter,", CF = ",conv_factor,", ",B.shape[1]," targets.")
+        print "Iteration ",level_iter,", CF = ",conv_factor,", ",B.shape[1]," targets."
         level_iter += 1
 
         # Check if good convergence achieved or maximum iterations done
@@ -497,12 +497,18 @@ def asa_solver(A, B=None,
         # TODO account for complexity here
 
         # Store bad guys as one vector
-        B = np.hstack((B, B2, target))
+        # -- It seems that stacking the new guys and the old guys
+        #    is wrong, i.e. degrades convrergence. Unclear if replacing
+        #    B with B2 can offer suffcient improvement to be worthwhile...
+        if False:
+            B = np.hstack((B, B2))
+        elif True:
+            B = B2
 
         # Add new target. Orthogonalize using global Ritz and reconstruct T. 
         #   TODO - worth keeping stuff that trivially satisfies?
         temp_cost = [0] 
-        B = global_ritz_process(A=A, B1=B, B2=None, sap_tol=sap_tol, level=0, \
+        B = global_ritz_process(A=A, B1=B, B2=target, sap_tol=sap_tol, level=0, \
                                 max_bad_guys=max_bad_guys, verbose=verbose, \
                                 cost=temp_cost)
         complexity[0]['global_ritz'] += temp_cost[0]

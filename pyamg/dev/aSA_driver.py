@@ -5,9 +5,9 @@ import math
 import numpy as np
 from scipy import sparse
 from scipy.sparse import csr_matrix
-import matplotlib.pyplot as plt
-from matplotlib import cm
-from mpl_toolkits.mplot3d import Axes3D
+# import matplotlib.pyplot as plt
+# from matplotlib import cm
+# from mpl_toolkits.mplot3d import Axes3D
 
 from pyamg.gallery import poisson
 from pyamg.gallery.diffusion import diffusion_stencil_2d
@@ -17,8 +17,8 @@ from pyamg.aggregation.adaptive import adaptive_sa_solver
 from pyamg.aggregation.new_adaptive import asa_solver
 from pyamg.util.utils import symmetric_rescaling
 
-from poisson import get_poisson
-from elasticity_bar import get_elasticity_bar
+# from poisson import get_poisson
+# from elasticity_bar import get_elasticity_bar
 
 
 def A_norm(x, A):
@@ -157,11 +157,11 @@ eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
 # -----------------------
-weak_tol 		   = 10.0			# new aSA 
+weak_tol 		   = 1.0			# new aSA 
 max_bad_guys	   = 5
 max_bullets		   = 2
 max_iterations 	   = 5
-improvement_iters  = 5		# number of times a target bad guy is improved
+improvement_iters  = 7		# number of times a target bad guy is improved
 num_targets 	   = 1		# number of near null space candidates to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
@@ -191,8 +191,8 @@ keep = False
 
 # Poisson
 # -------
-n0 = 500
-eps = 0.01
+n0 = 850
+eps = 0.00
 theta = 3*np.pi / 14.0
 
 # A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
