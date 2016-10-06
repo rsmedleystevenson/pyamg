@@ -18,7 +18,6 @@ from pyamg.strength import classical_strength_of_connection,\
 from pyamg.aggregation.aggregate import standard_aggregation, naive_aggregation,\
     lloyd_aggregation, pairwise_aggregation
 
-from pyamg.aggregation.matching import *
 
 
 # pyAMG diffusion stencil is rotated from what it looks like, i.e. each row of 3
@@ -327,10 +326,10 @@ def plot_multiple_poisson(aggregations, labels, N, Cpts=True):
 # ------------------------------------------------------------------------------#
 # ------------------------------------------------------------------------------#
 
-N 			= 10
+N 			= 25
 problem_dim = 2
-epsilon 	= 0.01
-theta 		= 1.0*np.pi/4
+epsilon 	= 0.001
+theta 		= 0.0*np.pi/14
 
 # 1d Poisson 
 if problem_dim == 1:
@@ -356,7 +355,8 @@ elif problem_dim == -1:
 
 # ------------------------------------------------------------------------------#
 # C = evolution_strength_of_connection(A, epsilon=4.0, k=2)
-C = symmetric_strength_of_connection(A, theta=0.0)
+C = symmetric_strength_of_connection(A, theta=0.1)
+# C = classical_strength_of_connection(A, theta=0.2)
 AggOp, Cpts = standard_aggregation(C)
 
 
@@ -380,13 +380,13 @@ matchings = [ AggOp, drake, notay ]
 plot_multiple_poisson(matchings,labels,N, Cpts=False)
 
 
-
-fig = plt.figure()
-ax1 = fig.add_subplot(1,2,1);
-ax1.spy(AggOp.todense())
-ax2 = fig.add_subplot(1,2,2);
-ax2.spy(drake.todense())
-plt.show()
+# Plot sparsity patterns
+# fig = plt.figure()
+# ax1 = fig.add_subplot(1,2,1);
+# ax1.spy(AggOp.todense())
+# ax2 = fig.add_subplot(1,2,2);
+# ax2.spy(drake.todense())
+# plt.show()
 
 pdb.set_trace()
 

@@ -410,6 +410,7 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
             target = B[:,0]
         else:
             target = B[:,]
+
     # If no targets provided, check if a random or constant initial
     # target is specified in improve_candidates. If not, set default 
     # to random and improve target as specified. 
