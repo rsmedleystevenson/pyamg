@@ -1,4 +1,4 @@
-"""Basic Two-Level Adaptive Smoothed Aggregation"""
+"""Adaptive Smoothed Aggregation"""
 
 __docformat__ = "restructuredtext en"
 
@@ -30,7 +30,7 @@ from .tentative import fit_candidates
 from pyamg.aggregation.aggregation import smoothed_aggregation_solver
 
 
-__all__ = ['A_norm', 'my_rand', 'tl_sa_solver', 'asa_solver']
+__all__ = ['A_norm', 'my_rand', 'asa_solver']
 
 
 def unpack_arg(v, cost=True):
@@ -369,7 +369,6 @@ def asa_solver(A, B=None,
     >>> from pyamg.aggregation import go_to_room_sa_solver
     >>> import np
     >>> A=stencil_grid([[-1,-1,-1],[-1,8.0,-1],[-1,-1,-1]], (31,31),format='csr')
-    >>> sa = tl_sa_solver(A,num_targets=1)
     >>> residuals=[]
     >>> x=sa.solve(b=np.ones((A.shape[0],)),x0=np.ones((A.shape[0],)),residuals=residuals)
     """
@@ -381,7 +380,7 @@ def asa_solver(A, B=None,
 
     if not (isspmatrix_csr(A) or isspmatrix_bsr(A)):
         try:
-            print 'Implicit conversion of A to CSR in tl_sa_solver()...'
+            print 'Implicit conversion of A to CSR.'
             A = csr_matrix(A)
         except:
             raise TypeError('Argument A must have type csr_matrix or bsr_matrix, ' \

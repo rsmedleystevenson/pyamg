@@ -1,0 +1,2319 @@
+diff --git a/pyamg/aggregation/new_adaptive.py b/pyamg/aggregation/new_adaptive.py
+new file mode 100644
+index 0000000..b00b3b0
+--- /dev/null
++++ b/pyamg/aggregation/new_adaptive.py
+@@ -0,0 +1,529 @@
++"""Basic Two-Level Adaptive Smoothed Aggregation"""
++
++__docformat__ = "restructuredtext en"
++
++import pdb
++
++# TODO : Be consistent with scipy importing. Remove unnecessary imports. 
++
++import copy
++import numpy as np
++import scipy
++import scipy.sparse
++import scipy.sparse.linalg as linalg
++import scipy.linalg
++from scipy.sparse import bsr_matrix, isspmatrix_csr, isspmatrix_bsr, eye, csr_matrix, diags
++
++from pyamg.multilevel import multilevel_solver, coarse_grid_solver
++from pyamg.strength import symmetric_strength_of_connection,\
++                        classical_strength_of_connection, evolution_strength_of_connection
++from pyamg.relaxation.smoothing import change_smoothers
++from pyamg.util.linalg import norm, approximate_spectral_radius
++from pyamg.util.utils import levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
++                            symmetric_rescaling, relaxation_as_linear_operator, mat_mat_complexity, \
++                            blocksize
++from .aggregate import standard_aggregation, naive_aggregation,\
++    lloyd_aggregation
++from pyamg.aggregation.smooth import jacobi_prolongation_smoother, energy_prolongation_smoother, \
++                   richardson_prolongation_smoother
++from .tentative import fit_candidates
++from pyamg.aggregation.aggregation import smoothed_aggregation_solver
++
++
++__all__ = ['A_norm', 'my_rand', 'tl_sa_solver', 'asa_solver']
++
++
++def unpack_arg(v, cost=True):
++    if isinstance(v, tuple):
++        if cost:
++            (v[1])['cost'] = [0.0]
++            return v[0], v[1]
++        else:
++            return v[0], v[1]
++    else:
++        if cost:
++            return v, {'cost' : [0.0]}
++        else:
++            return v, {}
++
++
++def tabs(level):
++    return '  '*level
++
++
++def A_norm(x, A):
++    """
++    Calculate A-norm of x
++    """
++    x = np.ravel(x)
++    return np.sqrt(scipy.dot(x.conjugate(), A*x))
++
++
++def my_rand(d1, d2, zero_crossings=True):
++    """
++    Uniformly random vectors of size (d1,d2)
++    If zero_crossings are allowed, then range
++    of values is [-1,1].  If not, the range is
++    [0,1].
++    """
++
++    x = scipy.rand(d1,d2)
++    if zero_crossings:
++        x = (x - 0.5)*2.0
++    # x = np.ones((d1,d2))
++
++    return x
++
++
++def global_ritz_process(A, B1, B2, sap_tol, level, max_bad_guys,
++                        verbose=False, cost=[0]):
++    """
++    Helper function that compresses two sets of targets B1 and B2 into one set
++    of candidates. This is the Ritz procedure.
++
++    Parameters
++    ---------
++    A : {sparse matrix}
++        SPD matrix used to compress the candidates so that the weak
++        approximation property is satisfied.
++    B1 : {array}
++        n x m1 array of m1 potential candidates
++    B2 : {array}
++        n x m2 array of m2 potential candidates
++    weak_tol : {float}
++        The constant in the weak approximation property.
++    level
++        This is only for debugging purposes --> TODO : Remove
++    max_bad_guys : int 
++        Maximum number of global bad guys to keep
++
++    Returns
++    -------
++    New set of candidates forming an Euclidean orthogonal and energy
++    orthonormal subset of span(B1,B2). The candidates that trivially satisfy
++    the weak approximation property are deleted.
++    """
++
++    # TODO : hstack is very slow
++    if B2 is not None:
++        B = np.hstack((B1, B2.reshape(-1,1)))
++    else:
++        B = B1
++
++    # Orthonormalize the vectors. Cost taken from Golub/Van Loan ~ 2mn^2
++    [Q,R] = scipy.linalg.qr(B, mode='economic')
++    cost[0] += 2.0 * B.shape[0] * B.shape[1]**2 / float(A.nnz)
++
++    # Formulate and solve the eigenpairs problem returning eigenvalues in
++    # ascending order. Eigenvalue cost ~ 9n^3 for symmetric QR, Golub/Van Loan
++    QtAAQ = A*Q
++    QtAAQ = scipy.dot(QtAAQ.conjugate().T, QtAAQ)   # WAP_{A^2} = SAP
++    [E,V] = scipy.linalg.eigh(QtAAQ)
++    cost[0] += Q.shape[1] + float(Q.shape[0] * Q.shape[1]**2) / A.nnz + \
++                float(9.0 * QtAAQ.shape[0]**3) / A.nnz
++
++    # Make sure eigenvectors are real. Eigenvalues must be already real.
++    V = np.real(V)
++
++    # Compute Ritz vectors and normalize them in energy. 
++    V = scipy.dot(Q, V)
++    cost[0] += float(V.shape[0] * V.shape[1]**2) / A.nnz
++
++    # Select candidates that don't trivially satisfy the WAP(A^2).
++    num_candidates = 0
++    for j in range(V.shape[1]):
++        if 1./E[j] <= sap_tol:
++            num_candidates = j
++            break
++        else:
++            V[:,j] /= np.sqrt(E[j])
++            num_candidates += 1
++
++    # Make sure at least one candidate is kept
++    if num_candidates == 0:
++        V[:,0] /= np.sqrt(E[0])
++        num_candidates = 1
++
++    cost[0] += float(V.shape[0] * num_candidates) / A.nnz
++
++    print tabs(level), "Glob cand - ", num_candidates, ", max norm = ", np.dot(V[:,0].T,V[:,0]) # targets = ","%.2f"%av_num, \
++
++    # Only allow for for max_bad_guys to be kept
++    num_candidates = np.min((num_candidates,max_bad_guys))
++    return V[:, 0:num_candidates]
++
++
++# TODO : this has to be moved to C
++def local_ritz_process(A, AggOp, B, sap_tol, level, max_bullets,
++                       verbose=False, cost=[0]):
++    """
++    Helper function that finds the minimal local basis of a set of candidates.
++
++    Parameters
++    ----------
++    A : {csr_matrix}
++        SPD Matrix used to calculate tolerance.
++    AggOp : {csr_matrix}
++        The aggregation opterator. Used to determine aggregate groups.
++    B : {array}
++        n x m array of m candidates.
++    weak_tol : {float}
++        The weak approximation constant divided by the approximate spectral
++        radius of A, both squared for the WAP(A^2).
++
++    Returns
++    -------
++    T : {csr_matrix}
++        The tentative prolongator.
++    """
++
++    # TODO: keep this?
++    # return fit_candidates(AggOp, B)[0], []
++    # if B.shape[1] < 2:
++    #     return AggOp
++
++    # TODO : Can we avoid reallocation? 
++    AggOpCsc = AggOp.tocsc() # we are slicing columns, this makes it much faster
++
++    # row, col, and val arrays to store entries of T
++    max_size = B.shape[1]*AggOp.getnnz()
++    row_i = np.empty(max_size)
++    col_i = np.empty(max_size)
++    val_i = np.empty(max_size)
++    cur_col = 0
++    index = 0
++
++    # store how many basis functions we keep per aggregate
++    per_agg_count = np.zeros((B.shape[0], 1))
++
++    list_targets = []
++    agg_sizes = []
++
++    # iterate over aggregates
++    for i in range(AggOpCsc.shape[1]):
++
++        # Get current aggregate and restrict bad guys to it
++        agg = AggOpCsc[:,i]
++        rows = agg.nonzero()[0]
++        Ba = B[rows]
++
++        # Get eigenvalue decomposition of Ba^T*Ba, sprt eigenvalues
++        # and vectors in descending order.
++        BatBa = np.dot(Ba.transpose(), Ba)
++        [E, V] = np.linalg.eigh(BatBa)
++        E = E[::-1]
++        V = np.fliplr(V)
++        cost[0] +=  float(Ba.shape[1]*Ba.shape[0]**2 + 9*V.shape[0]**3) / A.nnz
++
++        # Form constant for local WAP(A^2)
++        local_const = sap_tol * float(agg.nnz) / AggOp.nnz
++        num_targets = 0
++
++        # iterate over eigenvectors
++        for j in range(V.shape[1]):
++            if E[j] <= local_const: # local candidate trivially satisfies local WAP
++                break
++            else:
++                V[:,j] /= np.sqrt(E[j])
++                num_targets += 1
++ 
++        # Make sure at least one candidate is kept
++        if num_targets == 0:
++            V[:,0] /= np.sqrt(E[0])
++            num_targets = 1
++
++        per_agg_count[rows] = num_targets
++        num_targets = np.min((num_targets,max_bullets))
++        cost[0] += float(V.shape[0] * num_targets) / A.nnz
++
++        # Define new local basis, Ba * V
++        basis = np.dot(Ba, V[:,0:num_targets]) 
++        cost[0] += float(Ba.shape[0] * Ba.shape[1] * num_targets) / A.nnz
++
++        # Diagnostics data
++        list_targets.append(num_targets)
++        agg_sizes.append(len(rows))
++
++        # Add columns 0,...,(num_targets-1) of U to T
++        for j in range(num_targets):
++            for x in range(rows.size):
++                row_i[index] = rows[x]
++                col_i[index] = cur_col
++                val_i[index] = basis[x,j]
++                index += 1
++            cur_col += 1
++
++    if verbose:
++        av_size = np.mean(agg_sizes)
++        av_num = np.mean(list_targets)
++
++        print tabs(level), "Av. agg size = ","%.2f"%av_size,", Av. # targets = ","%.2f"%av_num, \
++                ", Max = ",np.max(list_targets),", Min = ",np.min(list_targets)
++        # print tabs(level), "Eliminated %d local vectors (%.2f%% remaining nonzeros)" % \
++        #         (B.shape[1]*AggOp.shape[1] - cur_col, index*100.0/max_size)
++    
++    # TODO : don't need this, can construct CSR w/ hanging zeros. 
++    #        Will move this function to C anyways.
++    row_i.resize(index)
++    col_i.resize(index)
++    val_i.resize(index)
++
++    # build csr matrix
++    return csr_matrix((val_i, (row_i, col_i)), (B.shape[0], cur_col)), per_agg_count
++
++
++def asa_solver(A, B=None,
++               symmetry='hermitian',
++               strength='symmetric',
++               aggregate='standard',
++               smooth='jacobi',
++               presmoother=('block_gauss_seidel',
++                            {'sweep': 'symmetric'}),
++               postsmoother=('block_gauss_seidel',
++                             {'sweep': 'symmetric'}),
++               improvement_iters=10,
++               max_coarse=20,
++               max_levels=20,
++               target_convergence=0.5,
++               max_bullets=5,
++               max_bad_guys=10,
++               num_targets=1,
++               max_iterations=10,
++               weak_tol=15.,
++               diagonal_dominance=False,
++               coarse_solver='pinv2',
++               cycle='V',
++               verbose=False,
++               keep=True,
++               **kwargs):
++    """
++    Create a two-level solver using Adaptive Smoothed Aggregation (aSA)
++
++    Parameters
++    ----------
++    A : {csr_matrix, bsr_matrix}
++        Square matrix in CSR or BSR format
++    B : {None, n x m dense matrix}
++        If a matrix, then this forms the basis for the first m targets.
++        Also in this case, the initial setup stage is skipped, because this
++        provides the first target(s).  If None, then a random initial guess
++        and relaxation are used to inform the initial target.
++    max_bullets : {integer}
++        Maximum number of near-nullspace targets to generate
++        TODO : THIS IS NOT USED
++    max_bad_guys : {integer}
++        Minimum number of near-nullspace targets to generate
++        TODO : THIS IS NOT USED
++    num_targets : {integer}
++        Number of initial targets to generate
++    improvement_iters : {integer}
++        Number of smoothing passes/multigrid cycles used in the adaptive
++        process to obtain targets.
++    target_convergence : {float}
++        Convergence factor tolerance before the adaptive solver is accepted.
++    weak_tol : {float}
++        Weak approximation tolerance for dropping targets globally.
++    max_coarse : {integer}
++        Maximum number of variables permitted on the coarse grid. 
++    max_levels : {integer}
++        Maximum number of levels.
++    max_iterations : {integer}
++        Maximum number of aSA iterations per level.
++    prepostsmoother : {string or dict}
++        Pre- and post-smoother used in the adaptive method
++    smooth : ['jacobi', 'richardson', 'energy', None]
++        Method used used to smooth the tentative prolongator.  See
++        smoothed_aggregation_solver(...) documentation
++    strength : ['symmetric', 'classical', 'ode', ('predefined', {'C' : csr_matrix}), None]
++        Method used to determine the strength of connection between unknowns
++        of the linear system.  See smoothed_aggregation_solver(...) documentation.
++    aggregate : ['standard', ('predefined', {'AggOp' : csr_matrix})]
++        Method used to aggregate nodes.  See smoothed_aggregation_solver(...)
++        documentation.
++    coarse_solver : ['splu','lu', ... ]
++        Solver used at the coarsest level of the MG hierarchy
++    verbose : [True, False]
++        If True, print information from each level visited
++    keep : [True, False]
++        If True, keep all temporary operators in hierarchy.  This should be True.
++
++    Returns
++    -------
++    Smoothed aggregation solver with adaptively generated targets.
++
++    Floating point value representing the "work" required to generate
++    the solver.  This value is the total cost of just relaxation, relative
++    to the fine grid.
++
++    Notes
++    -----
++        Unlike the standard Smoothed Aggregation (SA) method, adaptive SA
++        does not require knowledge of near-nullspace target vectors.
++        Instead, an adaptive procedure computes one or more targets
++        'from scratch'.  This approach is useful when no targets are known
++        or the targets have been invalidated due to changes to matrix A.
++
++    Examples
++    --------
++    >>> from pyamg.gallery import stencil_grid
++    >>> from pyamg.aggregation import go_to_room_sa_solver
++    >>> import np
++    >>> A=stencil_grid([[-1,-1,-1],[-1,8.0,-1],[-1,-1,-1]], (31,31),format='csr')
++    >>> sa = tl_sa_solver(A,num_targets=1)
++    >>> residuals=[]
++    >>> x=sa.solve(b=np.ones((A.shape[0],)),x0=np.ones((A.shape[0],)),residuals=residuals)
++    """
++
++    if ('setup_complexity' in kwargs):
++        if kwargs['setup_complexity'] == True:
++            mat_mat_complexity.__detailed__ = True
++        del kwargs['setup_complexity']
++
++    if not (isspmatrix_csr(A) or isspmatrix_bsr(A)):
++        try:
++            print 'Implicit conversion of A to CSR in tl_sa_solver()...'
++            A = csr_matrix(A)
++        except:
++            raise TypeError('Argument A must have type csr_matrix or bsr_matrix, ' \
++                            'or be convertible to csr_matrix.')
++
++    A = A.asfptype()
++    if A.shape[0] != A.shape[1]:
++        raise ValueError('Expected square matrix!')
++
++    # Dictionary for complexity tracking on each level
++    complexity = []
++    for i in range(0,max_levels):
++        complexity.append( {'RAP': 0.0,
++                            'aggregation': 0.0,
++                            'strength': 0.0,
++                            'candidates': 0.0,
++                            'test_solve': 0.0,
++                            'global_ritz': 0.0,
++                            'local_ritz': 0.0,
++                            'smooth_P': 0.0} )
++
++    # Right near nullspace candidates use constant for each variable as default
++    if B is None:
++        B = np.kron(np.ones((int(A.shape[0]/blocksize(A)), 1), dtype=A.dtype),
++                    np.eye(blocksize(A)))
++    else:
++        B = np.asarray(B, dtype=A.dtype)
++        if len(B.shape) == 1:
++            B = B.reshape(-1, 1)
++        if B.shape[0] != A.shape[0]:
++            raise ValueError('The near null-space modes B have incorrect \
++                              dimensions for matrix A')
++        if B.shape[1] < blocksize(A):
++            warn('Having less target vectors, B.shape[1], than \
++                  blocksize of A can degrade convergence factors.')
++
++    # Make improve candidates dictionary based on presmoother
++    # and improvement iters.
++    improve_candidates = copy.deepcopy(presmoother)
++    if type(improve_candidates) is list:
++        improve_candidates = improve_candidates[0]
++        if len(improve_candidates) == 1:
++            improve_candidates.append({'iterations': improvement_iters})
++        else:
++            improve_candidates[1]['iterations'] = improvement_iters
++        improve_candidates = tuple(improve_candidates)
++    elif type(improve_candidates) is tuple:
++        improve_candidates = list(improve_candidates)
++        if len(improve_candidates) == 1:
++            improve_candidates.append({'iterations': improvement_iters})
++        else:
++            improve_candidates[1]['iterations'] = improvement_iters
++        improve_candidates = tuple(improve_candidates)
++    elif type(improve_candidates) is str:
++        improve_candidates = (improve_candidates, {'iterations': improvement_iters})
++    else:
++        raise ValueError("Presmoother must be string, tuple or list.")
++
++    # Build SA solver based on initial bad guys
++    #   TODO - Keep T in SA w/o keeping C and AggOp
++    ml = smoothed_aggregation_solver(A, B=B, BH=None, symmetry=symmetry, strength=strength,
++                                     aggregate=aggregate, smooth=smooth, presmoother=presmoother,
++                                     postsmoother=postsmoother, improve_candidates=improve_candidates,
++                                     max_levels = max_levels, max_coarse = max_coarse,
++                                     diagonal_dominance=diagonal_dominance,
++                                     keep=True, **kwargs)
++
++    # Loop over adaptive hierarchy until CF is sufficient or we have reached
++    # maximum iterations. Note, iterations and convergence checked inside
++    # loop to prevent running test iterations that will not be used, and for
++    # simple / readable code (no large block of code before loop). 
++    level_iter = 0
++    conv_factor = 1
++    sap_tol = (weak_tol / approximate_spectral_radius(A) )**2
++    while True:
++
++        # Generate random new target
++        target = my_rand(A.shape[0], 1, A.dtype)
++
++        # Improve target in energy by relaxing on A B = 0
++        temp_cost = [0.0]
++        fn, sm_args = unpack_arg(improve_candidates, cost=False)
++        if fn is not None:
++            b = np.zeros((A.shape[0], 1), dtype=A.dtype)
++            B = relaxation_as_linear_operator((fn, sm_args), A, b, temp_cost) * B
++            if A.symmetry == "nonsymmetric":
++                BH = relaxation_as_linear_operator((fn, sm_args), AH, b, temp_cost) * BH
++
++        complexity[0]['candidates'] = temp_cost[0] * B.shape[1]
++
++        # Test solver on new target
++        residuals = []
++        ml.solve(b, x0=target, cycle=cycle, maxiter=improvement_iters, \
++                 tol=1e-16, residuals=residuals, accel=None)
++        temp_CC = ml.cycle_complexity()
++        complexity[0]['test_solve'] += temp_CC * improvement_iters
++
++        # TODO - Need to estimate CF better
++        conv_factor = residuals[-1] / residuals[-2]
++        print "Iteration ",level_iter,", CF = ",conv_factor,", ",B.shape[1]," targets."
++        level_iter += 1
++
++        # Check if good convergence achieved or maximum iterations done
++        if (level_iter > max_iterations) or (conv_factor < target_convergence):
++            break
++
++        # Interpolate targets in hierarchy up from coarsest grid,
++        # form set of bad guys
++        for i in range(len(ml.levels)-2,-1,-1):
++            # B2 = ml.levels[i].P * ml.levels[i+1].B
++            B2 = ml.levels[i].T * ml.levels[i+1].B
++
++        # TODO account for complexity here
++
++        # Store bad guys as one vector
++        # -- It seems that stacking the new guys and the old guys
++        #    is wrong, i.e. degrades convrergence. Unclear if replacing
++        #    B with B2 can offer suffcient improvement to be worthwhile...
++        if False:
++            B = np.hstack((B, B2))
++        elif True:
++            B = B2
++
++        # Add new target. Orthogonalize using global Ritz and reconstruct T. 
++        #   TODO - worth keeping stuff that trivially satisfies?
++        temp_cost = [0] 
++        B = global_ritz_process(A=A, B1=B, B2=target, sap_tol=sap_tol, level=0, \
++                                max_bad_guys=max_bad_guys, verbose=verbose, \
++                                cost=temp_cost)
++        complexity[0]['global_ritz'] += temp_cost[0]
++
++        # Build new hierarchy
++        ml = smoothed_aggregation_solver(A, B=B[:,0:min(B.shape[1],max_bullets)], BH=None, symmetry=symmetry, strength=strength,
++                                         aggregate=aggregate, smooth=smooth, presmoother=presmoother,
++                                         postsmoother=postsmoother, improve_candidates=improve_candidates,
++                                         max_levels = max_levels, max_coarse = max_coarse,
++                                         diagonal_dominance=diagonal_dominance,
++                                         keep=True, **kwargs)
++
++        # TODO - Store complexity from building new hierarchy
++
++
++    return ml
++
++
+diff --git a/pyamg/amg_core/amg_core.py b/pyamg/amg_core/amg_core.py
+index bbd376c..bb7d40f 100644
+--- a/pyamg/amg_core/amg_core.py
++++ b/pyamg/amg_core/amg_core.py
+@@ -1,5 +1,5 @@
+ # This file was automatically generated by SWIG (http://www.swig.org).
+-# Version 3.0.5
++# Version 3.0.10
+ #
+ # Do not make changes to this file unless you know what you are doing--modify
+ # the SWIG interface file instead.
+@@ -8,8 +8,19 @@
+ 
+ 
+ 
+-from sys import version_info
+-if version_info >= (2, 6, 0):
++from sys import version_info as _swig_python_version_info
++if _swig_python_version_info >= (2, 7, 0):
++    def swig_import_helper():
++        import importlib
++        pkg = __name__.rpartition('.')[0]
++        mname = '.'.join((pkg, '_amg_core')).lstrip('.')
++        try:
++            return importlib.import_module(mname)
++        except ImportError:
++            return importlib.import_module('_amg_core')
++    _amg_core = swig_import_helper()
++    del swig_import_helper
++elif _swig_python_version_info >= (2, 6, 0):
+     def swig_import_helper():
+         from os.path import dirname
+         import imp
+@@ -29,12 +40,16 @@ if version_info >= (2, 6, 0):
+     del swig_import_helper
+ else:
+     import _amg_core
+-del version_info
++del _swig_python_version_info
+ try:
+     _swig_property = property
+ except NameError:
+     pass  # Python < 2.2 doesn't have 'property'.
+ 
++try:
++    import builtins as __builtin__
++except ImportError:
++    import __builtin__
+ 
+ def _swig_setattr_nondynamic(self, class_type, name, value, static=1):
+     if (name == "thisown"):
+@@ -59,38 +74,31 @@ def _swig_setattr(self, class_type, name, value):
+     return _swig_setattr_nondynamic(self, class_type, name, value, 0)
+ 
+ 
+-def _swig_getattr_nondynamic(self, class_type, name, static=1):
++def _swig_getattr(self, class_type, name):
+     if (name == "thisown"):
+         return self.this.own()
+     method = class_type.__swig_getmethods__.get(name, None)
+     if method:
+         return method(self)
+-    if (not static):
+-        return object.__getattr__(self, name)
+-    else:
+-        raise AttributeError(name)
+-
+-def _swig_getattr(self, class_type, name):
+-    return _swig_getattr_nondynamic(self, class_type, name, 0)
++    raise AttributeError("'%s' object has no attribute '%s'" % (class_type.__name__, name))
+ 
+ 
+ def _swig_repr(self):
+     try:
+         strthis = "proxy of " + self.this.__repr__()
+-    except:
++    except __builtin__.Exception:
+         strthis = ""
+     return "<%s.%s; %s >" % (self.__class__.__module__, self.__class__.__name__, strthis,)
+ 
+ try:
+     _object = object
+     _newclass = 1
+-except AttributeError:
++except __builtin__.Exception:
+     class _object:
+         pass
+     _newclass = 0
+ 
+ 
+-
+ def signof(*args):
+     """
+     signof(int a) -> int
+@@ -415,14 +423,8 @@ def truncate_rows_csr(*args):
+     truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< double > [] Sx)
+     """
+     return _amg_core.truncate_rows_csr(*args)
+-
+-_amg_core.F_NODE_swigconstant(_amg_core)
+ F_NODE = _amg_core.F_NODE
+-
+-_amg_core.C_NODE_swigconstant(_amg_core)
+ C_NODE = _amg_core.C_NODE
+-
+-_amg_core.U_NODE_swigconstant(_amg_core)
+ U_NODE = _amg_core.U_NODE
+ 
+ def classical_strength_of_connection(*args):
+diff --git a/pyamg/amg_core/amg_core_wrap.cxx b/pyamg/amg_core/amg_core_wrap.cxx
+index e45c7f7..f351ce7 100644
+--- a/pyamg/amg_core/amg_core_wrap.cxx
++++ b/pyamg/amg_core/amg_core_wrap.cxx
+@@ -1,6 +1,6 @@
+ /* ----------------------------------------------------------------------------
+  * This file was automatically generated by SWIG (http://www.swig.org).
+- * Version 3.0.5
++ * Version 3.0.10
+  *
+  * This file is not intended to be easily readable and contains a number of
+  * coding conventions designed to improve portability and efficiency. Do not make
+@@ -8,7 +8,11 @@
+  * interface file instead.
+  * ----------------------------------------------------------------------------- */
+ 
++
++#ifndef SWIGPYTHON
+ #define SWIGPYTHON
++#endif
++
+ #define SWIG_PYTHON_DIRECTOR_NO_VTABLE
+ 
+ 
+@@ -102,9 +106,11 @@ template <typename T> T SwigValueInit() {
+ #endif
+ 
+ /* exporting methods */
+-#if (__GNUC__ >= 4) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
+-#  ifndef GCC_HASCLASSVISIBILITY
+-#    define GCC_HASCLASSVISIBILITY
++#if defined(__GNUC__)
++#  if (__GNUC__ >= 4) || (__GNUC__ == 3 && __GNUC_MINOR__ >= 4)
++#    ifndef GCC_HASCLASSVISIBILITY
++#      define GCC_HASCLASSVISIBILITY
++#    endif
+ #  endif
+ #endif
+ 
+@@ -143,6 +149,19 @@ template <typename T> T SwigValueInit() {
+ # define _SCL_SECURE_NO_DEPRECATE
+ #endif
+ 
++/* Deal with Apple's deprecated 'AssertMacros.h' from Carbon-framework */
++#if defined(__APPLE__) && !defined(__ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES)
++# define __ASSERT_MACROS_DEFINE_VERSIONS_WITHOUT_UNDERSCORES 0
++#endif
++
++/* Intel's compiler complains if a variable which was never initialised is
++ * cast to void, which is a common idiom which we use to indicate that we
++ * are aware a variable isn't used.  So we just silence that warning.
++ * See: https://github.com/swig/swig/issues/192 for more discussion.
++ */
++#ifdef __INTEL_COMPILER
++# pragma warning disable 592
++#endif
+ 
+ 
+ #if defined(_DEBUG) && defined(SWIG_PYTHON_INTERPRETER_NO_DEBUG)
+@@ -651,16 +670,16 @@ SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
+     char d = *(c++);
+     unsigned char uu;
+     if ((d >= '0') && (d <= '9'))
+-      uu = ((d - '0') << 4);
++      uu = (unsigned char)((d - '0') << 4);
+     else if ((d >= 'a') && (d <= 'f'))
+-      uu = ((d - ('a'-10)) << 4);
++      uu = (unsigned char)((d - ('a'-10)) << 4);
+     else
+       return (char *) 0;
+     d = *(c++);
+     if ((d >= '0') && (d <= '9'))
+-      uu |= (d - '0');
++      uu |= (unsigned char)(d - '0');
+     else if ((d >= 'a') && (d <= 'f'))
+-      uu |= (d - ('a'-10));
++      uu |= (unsigned char)(d - ('a'-10));
+     else
+       return (char *) 0;
+     *u = uu;
+@@ -843,10 +862,6 @@ PyString_FromFormat(const char *fmt, ...) {
+ }
+ #endif
+ 
+-/* Add PyObject_Del for old Pythons */
+-#if PY_VERSION_HEX < 0x01060000
+-# define PyObject_Del(op) PyMem_DEL((op))
+-#endif
+ #ifndef PyObject_DEL
+ # define PyObject_DEL PyObject_Del
+ #endif
+@@ -1312,7 +1327,7 @@ SWIG_Python_AppendOutput(PyObject* result, PyObject* obj) {
+ 
+ /* Unpack the argument tuple */
+ 
+-SWIGINTERN int
++SWIGINTERN Py_ssize_t
+ SWIG_Python_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssize_t max, PyObject **objs)
+ {
+   if (!args) {
+@@ -1326,7 +1341,7 @@ SWIG_Python_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssi
+   }  
+   if (!PyTuple_Check(args)) {
+     if (min <= 1 && max >= 1) {
+-      int i;
++      Py_ssize_t i;
+       objs[0] = args;
+       for (i = 1; i < max; ++i) {
+ 	objs[i] = 0;
+@@ -1346,7 +1361,7 @@ SWIG_Python_UnpackTuple(PyObject *args, const char *name, Py_ssize_t min, Py_ssi
+ 		   name, (min == max ? "" : "at most "), (int)max, (int)l);
+       return 0;
+     } else {
+-      int i;
++      Py_ssize_t i;
+       for (i = 0; i < l; ++i) {
+ 	objs[i] = PyTuple_GET_ITEM(args, i);
+       }
+@@ -1532,6 +1547,23 @@ typedef struct {
+ #endif
+ } SwigPyObject;
+ 
++
++#ifdef SWIGPYTHON_BUILTIN
++
++SWIGRUNTIME PyObject *
++SwigPyObject_get___dict__(PyObject *v, PyObject *SWIGUNUSEDPARM(args))
++{
++  SwigPyObject *sobj = (SwigPyObject *)v;
++
++  if (!sobj->dict)
++    sobj->dict = PyDict_New();
++
++  Py_INCREF(sobj->dict);
++  return sobj->dict;
++}
++
++#endif
++
+ SWIGRUNTIME PyObject *
+ SwigPyObject_long(SwigPyObject *v)
+ {
+@@ -1670,16 +1702,32 @@ SwigPyObject_dealloc(PyObject *v)
+     if (destroy) {
+       /* destroy is always a VARARGS method */
+       PyObject *res;
++
++      /* PyObject_CallFunction() has the potential to silently drop
++         the active active exception.  In cases of unnamed temporary
++         variable or where we just finished iterating over a generator
++         StopIteration will be active right now, and this needs to
++         remain true upon return from SwigPyObject_dealloc.  So save
++         and restore. */
++      
++      PyObject *val = NULL, *type = NULL, *tb = NULL;
++      PyErr_Fetch(&val, &type, &tb);
++
+       if (data->delargs) {
+-	/* we need to create a temporary object to carry the destroy operation */
+-	PyObject *tmp = SwigPyObject_New(sobj->ptr, ty, 0);
+-	res = SWIG_Python_CallFunctor(destroy, tmp);
+-	Py_DECREF(tmp);
++        /* we need to create a temporary object to carry the destroy operation */
++        PyObject *tmp = SwigPyObject_New(sobj->ptr, ty, 0);
++        res = SWIG_Python_CallFunctor(destroy, tmp);
++        Py_DECREF(tmp);
+       } else {
+-	PyCFunction meth = PyCFunction_GET_FUNCTION(destroy);
+-	PyObject *mself = PyCFunction_GET_SELF(destroy);
+-	res = ((*meth)(mself, v));
++        PyCFunction meth = PyCFunction_GET_FUNCTION(destroy);
++        PyObject *mself = PyCFunction_GET_SELF(destroy);
++        res = ((*meth)(mself, v));
+       }
++      if (!res)
++        PyErr_WriteUnraisable(destroy);
++
++      PyErr_Restore(val, type, tb);
++
+       Py_XDECREF(res);
+     } 
+ #if !defined(SWIG_PYTHON_SILENT_MEMLEAK)
+@@ -1703,6 +1751,7 @@ SwigPyObject_append(PyObject* v, PyObject* next)
+   next = tmp;
+ #endif
+   if (!SwigPyObject_Check(next)) {
++    PyErr_SetString(PyExc_TypeError, "Attempt to append a non SwigPyObject");
+     return NULL;
+   }
+   sobj->next = next;
+@@ -1802,7 +1851,7 @@ swigobject_methods[] = {
+ static PyMethodDef
+ swigobject_methods[] = {
+   {(char *)"disown",  (PyCFunction)SwigPyObject_disown,  METH_VARARGS,  (char *)"releases ownership of the pointer"},
+-  {(char *)"acquire", (PyCFunction)SwigPyObject_acquire, METH_VARARGS,  (char *)"aquires ownership of the pointer"},
++  {(char *)"acquire", (PyCFunction)SwigPyObject_acquire, METH_VARARGS,  (char *)"acquires ownership of the pointer"},
+   {(char *)"own",     (PyCFunction)SwigPyObject_own,     METH_VARARGS,  (char *)"returns/sets ownership of the pointer"},
+   {(char *)"append",  (PyCFunction)SwigPyObject_append,  METH_VARARGS,  (char *)"appends another 'this' object"},
+   {(char *)"next",    (PyCFunction)SwigPyObject_next,    METH_VARARGS,  (char *)"returns the next 'this' object"},
+@@ -1858,7 +1907,9 @@ SwigPyObject_TypeOnce(void) {
+     (unaryfunc)SwigPyObject_oct,  /*nb_oct*/
+     (unaryfunc)SwigPyObject_hex,  /*nb_hex*/
+ #endif
+-#if PY_VERSION_HEX >= 0x03000000 /* 3.0 */
++#if PY_VERSION_HEX >= 0x03050000 /* 3.5 */
++    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 /* nb_inplace_add -> nb_inplace_matrix_multiply */
++#elif PY_VERSION_HEX >= 0x03000000 /* 3.0 */
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 /* nb_inplace_add -> nb_index, nb_inplace_divide removed */
+ #elif PY_VERSION_HEX >= 0x02050000 /* 2.5.0 */
+     0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 /* nb_inplace_add -> nb_index */
+@@ -1938,10 +1989,19 @@ SwigPyObject_TypeOnce(void) {
+       0,                                    /* tp_del */
+ #endif
+ #if PY_VERSION_HEX >= 0x02060000
+-      0,                                    /* tp_version */
++      0,                                    /* tp_version_tag */
++#endif
++#if PY_VERSION_HEX >= 0x03040000
++      0,                                    /* tp_finalize */
+ #endif
+ #ifdef COUNT_ALLOCS
+-      0,0,0,0                               /* tp_alloc -> tp_next */
++      0,                                    /* tp_allocs */
++      0,                                    /* tp_frees */
++      0,                                    /* tp_maxalloc */
++#if PY_VERSION_HEX >= 0x02050000
++      0,                                    /* tp_prev */
++#endif
++      0                                     /* tp_next */
+ #endif
+     };
+     swigpyobject_type = tmp;
+@@ -2117,10 +2177,19 @@ SwigPyPacked_TypeOnce(void) {
+       0,                                    /* tp_del */
+ #endif
+ #if PY_VERSION_HEX >= 0x02060000
+-      0,                                    /* tp_version */
++      0,                                    /* tp_version_tag */
++#endif
++#if PY_VERSION_HEX >= 0x03040000
++      0,                                    /* tp_finalize */
+ #endif
+ #ifdef COUNT_ALLOCS
+-      0,0,0,0                               /* tp_alloc -> tp_next */
++      0,                                    /* tp_allocs */
++      0,                                    /* tp_frees */
++      0,                                    /* tp_maxalloc */
++#if PY_VERSION_HEX >= 0x02050000
++      0,                                    /* tp_prev */
++#endif
++      0                                     /* tp_next */
+ #endif
+     };
+     swigpypacked_type = tmp;
+@@ -2571,18 +2640,21 @@ SWIG_Python_NewPointerObj(PyObject *self, void *ptr, swig_type_info *type, int f
+ 	  newobj = (SwigPyObject *) newobj->next;
+         newobj->next = next_self;
+         newobj = (SwigPyObject *)next_self;
++#ifdef SWIGPYTHON_BUILTIN
++        newobj->dict = 0;
++#endif
+       }
+     } else {
+       newobj = PyObject_New(SwigPyObject, clientdata->pytype);
++#ifdef SWIGPYTHON_BUILTIN
++      newobj->dict = 0;
++#endif
+     }
+     if (newobj) {
+       newobj->ptr = ptr;
+       newobj->ty = type;
+       newobj->own = own;
+       newobj->next = 0;
+-#ifdef SWIGPYTHON_BUILTIN
+-      newobj->dict = 0;
+-#endif
+       return (PyObject*) newobj;
+     }
+     return SWIG_Py_Void();
+@@ -2645,13 +2717,11 @@ PyModule_AddObject(PyObject *m, char *name, PyObject *o)
+ {
+   PyObject *dict;
+   if (!PyModule_Check(m)) {
+-    PyErr_SetString(PyExc_TypeError,
+-		    "PyModule_AddObject() needs module as first arg");
++    PyErr_SetString(PyExc_TypeError, "PyModule_AddObject() needs module as first arg");
+     return SWIG_ERROR;
+   }
+   if (!o) {
+-    PyErr_SetString(PyExc_TypeError,
+-		    "PyModule_AddObject() needs non-NULL value");
++    PyErr_SetString(PyExc_TypeError, "PyModule_AddObject() needs non-NULL value");
+     return SWIG_ERROR;
+   }
+   
+@@ -2964,7 +3034,7 @@ static swig_module_info swig_module = {swig_types, 5, 0, 0, 0, 0};
+ #endif
+ #define SWIG_name    "_amg_core"
+ 
+-#define SWIGVERSION 0x030005 
++#define SWIGVERSION 0x030010 
+ #define SWIG_VERSION SWIGVERSION
+ 
+ 
+@@ -3084,9 +3154,11 @@ SWIG_AsVal_double (PyObject *obj, double *val)
+   if (PyFloat_Check(obj)) {
+     if (val) *val = PyFloat_AsDouble(obj);
+     return SWIG_OK;
++#if PY_VERSION_HEX < 0x03000000
+   } else if (PyInt_Check(obj)) {
+     if (val) *val = PyInt_AsLong(obj);
+     return SWIG_OK;
++#endif
+   } else if (PyLong_Check(obj)) {
+     double v = PyLong_AsDouble(obj);
+     if (!PyErr_Occurred()) {
+@@ -3231,8 +3303,11 @@ SWIGINTERNINLINE PyObject*
+ 
+ /* Getting isfinite working pre C99 across multiple platforms is non-trivial. Users can provide SWIG_isfinite on older platforms. */
+ #ifndef SWIG_isfinite
++/* isfinite() is a macro for C99, but a function in namespace std for C++11. */
+ # if defined(isfinite)
+ #  define SWIG_isfinite(X) (isfinite(X))
++# elif defined __cplusplus && __cplusplus >= 201103L
++#  define SWIG_isfinite(X) (std::isfinite(X))
+ # elif defined(_MSC_VER)
+ #  define SWIG_isfinite(X) (_finite(X))
+ # elif defined(__sun) && defined(__SVR4)
+@@ -3302,7 +3377,7 @@ SWIG_AsVal_std_complex_Sl_float_Sg_ (PyObject *o, std::complex<float> *val)
+ 
+ 
+ SWIGINTERNINLINE PyObject*
+-SWIG_From_std_complex_Sl_float_Sg_  (/*@SWIG:/Users/southworth2/.hashdist/bld/swig/qaxi5nwvvghn/share/swig3.0/typemaps/swigmacros.swg,104,%ifcplusplus@*/
++SWIG_From_std_complex_Sl_float_Sg_  (/*@SWIG:/opt/local/share/swig/3.0.10/typemaps/swigmacros.swg,104,%ifcplusplus@*/
+ 
+ const std::complex<float>&
+ 
+@@ -3333,7 +3408,7 @@ SWIG_AsVal_std_complex_Sl_double_Sg_  (PyObject *o, std::complex<double>* val)
+ 
+ 
+ SWIGINTERNINLINE PyObject*
+-SWIG_From_std_complex_Sl_double_Sg_  (/*@SWIG:/Users/southworth2/.hashdist/bld/swig/qaxi5nwvvghn/share/swig3.0/typemaps/swigmacros.swg,104,%ifcplusplus@*/
++SWIG_From_std_complex_Sl_double_Sg_  (/*@SWIG:/opt/local/share/swig/3.0.10/typemaps/swigmacros.swg,104,%ifcplusplus@*/
+ 
+ const std::complex<double>&
+ 
+@@ -3820,13 +3895,18 @@ SWIGINTERN int
+ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
+ {
+ #if PY_VERSION_HEX>=0x03000000
++#if defined(SWIG_PYTHON_STRICT_BYTE_CHAR)
++  if (PyBytes_Check(obj))
++#else
+   if (PyUnicode_Check(obj))
++#endif
+ #else  
+   if (PyString_Check(obj))
+ #endif
+   {
+     char *cstr; Py_ssize_t len;
+ #if PY_VERSION_HEX>=0x03000000
++#if !defined(SWIG_PYTHON_STRICT_BYTE_CHAR)
+     if (!alloc && cptr) {
+         /* We can't allow converting without allocation, since the internal
+            representation of string in Python 3 is UCS-2/UCS-4 but we require
+@@ -3835,8 +3915,9 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
+         return SWIG_RuntimeError;
+     }
+     obj = PyUnicode_AsUTF8String(obj);
+-    PyBytes_AsStringAndSize(obj, &cstr, &len);
+     if(alloc) *alloc = SWIG_NEWOBJ;
++#endif
++    PyBytes_AsStringAndSize(obj, &cstr, &len);
+ #else
+     PyString_AsStringAndSize(obj, &cstr, &len);
+ #endif
+@@ -3856,27 +3937,58 @@ SWIG_AsCharPtrAndSize(PyObject *obj, char** cptr, size_t* psize, int *alloc)
+ #else
+ 	if (*alloc == SWIG_NEWOBJ) 
+ #endif
+-	  {
+-	    *cptr = reinterpret_cast< char* >(memcpy((new char[len + 1]), cstr, sizeof(char)*(len + 1)));
+-	    *alloc = SWIG_NEWOBJ;
+-	  }
+-	else {
++	{
++	  *cptr = reinterpret_cast< char* >(memcpy((new char[len + 1]), cstr, sizeof(char)*(len + 1)));
++	  *alloc = SWIG_NEWOBJ;
++	} else {
+ 	  *cptr = cstr;
+ 	  *alloc = SWIG_OLDOBJ;
+ 	}
+       } else {
+-        #if PY_VERSION_HEX>=0x03000000
+-        assert(0); /* Should never reach here in Python 3 */
+-        #endif
++#if PY_VERSION_HEX>=0x03000000
++#if defined(SWIG_PYTHON_STRICT_BYTE_CHAR)
++	*cptr = PyBytes_AsString(obj);
++#else
++	assert(0); /* Should never reach here with Unicode strings in Python 3 */
++#endif
++#else
+ 	*cptr = SWIG_Python_str_AsChar(obj);
++#endif
+       }
+     }
+     if (psize) *psize = len + 1;
+-#if PY_VERSION_HEX>=0x03000000
++#if PY_VERSION_HEX>=0x03000000 && !defined(SWIG_PYTHON_STRICT_BYTE_CHAR)
+     Py_XDECREF(obj);
+ #endif
+     return SWIG_OK;
+   } else {
++#if defined(SWIG_PYTHON_2_UNICODE)
++#if defined(SWIG_PYTHON_STRICT_BYTE_CHAR)
++#error "Cannot use both SWIG_PYTHON_2_UNICODE and SWIG_PYTHON_STRICT_BYTE_CHAR at once"
++#endif
++#if PY_VERSION_HEX<0x03000000
++    if (PyUnicode_Check(obj)) {
++      char *cstr; Py_ssize_t len;
++      if (!alloc && cptr) {
++        return SWIG_RuntimeError;
++      }
++      obj = PyUnicode_AsUTF8String(obj);
++      if (PyString_AsStringAndSize(obj, &cstr, &len) != -1) {
++        if (cptr) {
++          if (alloc) *alloc = SWIG_NEWOBJ;
++          *cptr = reinterpret_cast< char* >(memcpy((new char[len + 1]), cstr, sizeof(char)*(len + 1)));
++        }
++        if (psize) *psize = len + 1;
++
++        Py_XDECREF(obj);
++        return SWIG_OK;
++      } else {
++        Py_XDECREF(obj);
++      }
++    }
++#endif
++#endif
++
+     swig_type_info* pchar_descriptor = SWIG_pchar_descriptor();
+     if (pchar_descriptor) {
+       void* vptr = 0;
+@@ -4005,12 +4117,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_signof(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[2];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[2] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 1) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -4152,12 +4266,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_conjugate(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[2];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[2] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 1) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -4310,12 +4426,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_real(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[2];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[2] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 1) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -4468,12 +4586,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_imag(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[2];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[2] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 1) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -4626,12 +4746,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_mynorm(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[2];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[2] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 1) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -4784,12 +4906,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_mynormsq(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[2];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[2] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 1) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -4946,12 +5070,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_zero_real(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[2];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[2] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 1) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -5104,12 +5230,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_zero_imag(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[2];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[2] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 1) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -5370,12 +5498,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_pinv_array(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[5];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[5] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 4) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -6260,12 +6390,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_bellman_ford(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[7];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[7] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 6) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -6734,12 +6866,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_lloyd_cluster(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[9];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[9] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 8) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -7350,12 +7484,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_apply_householders(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[7];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[7] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 6) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -7880,12 +8016,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_householder_hornerscheme(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[8];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[8] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 7) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -8310,12 +8448,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_apply_givens(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[5];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[5] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 4) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -8860,12 +9000,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_gauss_seidel(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[9];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[9] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 8) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -9542,12 +9684,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_bsr_gauss_seidel(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[10];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[10] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 9) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -10316,12 +10460,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_jacobi(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[11];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[11] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 10) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -11162,12 +11308,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_bsr_jacobi(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[12];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[12] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 11) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -11944,12 +12092,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_gauss_seidel_indexed(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[10];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[10] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 9) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -12770,12 +12920,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_jacobi_ne(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[12];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[12] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 11) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -13588,12 +13740,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_gauss_seidel_nr(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[11];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[11] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 10) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -14370,12 +14524,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_gauss_seidel_ne(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[11];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[11] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 10) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -15256,12 +15412,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_block_jacobi(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[13];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[13] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 12) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -16086,12 +16244,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_block_gauss_seidel(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[11];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[11] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 10) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -16848,12 +17008,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_extract_subblocks(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[10];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[10] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 9) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -17798,12 +17960,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_overlapping_schwarz_csr(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[15];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[15] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 14) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -18604,12 +18768,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_symmetric_strength_of_connection(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[9];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[9] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 8) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -19482,12 +19648,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_fit_candidates(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[11];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[11] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 10) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -20264,12 +20432,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_satisfy_constraints_helper(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[11];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[11] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 10) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -20954,12 +21124,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_calc_BtB(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[9];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[9] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 8) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -21892,12 +22064,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_incomplete_mat_mult_bsr(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[15];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[15] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 14) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -22542,12 +22716,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_truncate_rows_csr(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[6];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[6] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 5) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -22711,39 +22887,6 @@ fail:
+ }
+ 
+ 
+-SWIGINTERN PyObject *F_NODE_swigconstant(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+-  PyObject *module;
+-  PyObject *d;
+-  if (!PyArg_ParseTuple(args,(char*)"O:swigconstant", &module)) return NULL;
+-  d = PyModule_GetDict(module);
+-  if (!d) return NULL;
+-  SWIG_Python_SetConstant(d, "F_NODE",SWIG_From_int(static_cast< int >(0)));
+-  return SWIG_Py_Void();
+-}
+-
+-
+-SWIGINTERN PyObject *C_NODE_swigconstant(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+-  PyObject *module;
+-  PyObject *d;
+-  if (!PyArg_ParseTuple(args,(char*)"O:swigconstant", &module)) return NULL;
+-  d = PyModule_GetDict(module);
+-  if (!d) return NULL;
+-  SWIG_Python_SetConstant(d, "C_NODE",SWIG_From_int(static_cast< int >(1)));
+-  return SWIG_Py_Void();
+-}
+-
+-
+-SWIGINTERN PyObject *U_NODE_swigconstant(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+-  PyObject *module;
+-  PyObject *d;
+-  if (!PyArg_ParseTuple(args,(char*)"O:swigconstant", &module)) return NULL;
+-  d = PyModule_GetDict(module);
+-  if (!d) return NULL;
+-  SWIG_Python_SetConstant(d, "U_NODE",SWIG_From_int(static_cast< int >(2)));
+-  return SWIG_Py_Void();
+-}
+-
+-
+ SWIGINTERN PyObject *_wrap_classical_strength_of_connection__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+   PyObject *resultobj = 0;
+   int arg1 ;
+@@ -23177,12 +23320,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_classical_strength_of_connection(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[9];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[9] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 8) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -23711,12 +23856,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_maximum_row_value(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[6];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[6] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 5) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -24437,12 +24584,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_rs_direct_interpolation_pass2(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[12];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[12] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 11) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -24853,12 +25002,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_cr_helper(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[10];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[10] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 9) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -25133,12 +25284,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_apply_distance_filter(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[6];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[6] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 5) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -25365,12 +25518,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_apply_absolute_distance_filter(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[6];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[6] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 5) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -25571,12 +25726,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_min_blocks(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[5];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[5] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 4) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -26157,12 +26314,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_evolution_strength_helper(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[11];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[11] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 10) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -26987,12 +27146,14 @@ fail:
+ 
+ 
+ SWIGINTERN PyObject *_wrap_incomplete_mat_mult_csr(PyObject *self, PyObject *args) {
+-  int argc;
+-  PyObject *argv[11];
+-  int ii;
++  Py_ssize_t argc;
++  PyObject *argv[11] = {
++    0
++  };
++  Py_ssize_t ii;
+   
+   if (!PyTuple_Check(args)) SWIG_fail;
+-  argc = args ? (int)PyObject_Length(args) : 0;
++  argc = args ? PyObject_Length(args) : 0;
+   for (ii = 0; (ii < 10) && (ii < argc); ii++) {
+     argv[ii] = PyTuple_GET_ITEM(args,ii);
+   }
+@@ -27465,9 +27626,6 @@ static PyMethodDef SwigMethods[] = {
+ 		"truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< float > [] Sx)\n"
+ 		"truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< double > [] Sx)\n"
+ 		""},
+-	 { (char *)"F_NODE_swigconstant", F_NODE_swigconstant, METH_VARARGS, NULL},
+-	 { (char *)"C_NODE_swigconstant", C_NODE_swigconstant, METH_VARARGS, NULL},
+-	 { (char *)"U_NODE_swigconstant", U_NODE_swigconstant, METH_VARARGS, NULL},
+ 	 { (char *)"classical_strength_of_connection", _wrap_classical_strength_of_connection, METH_VARARGS, (char *)"\n"
+ 		"classical_strength_of_connection(int const n_row, float const theta, int const [] Ap, int const [] Aj, float const [] Ax, int [] Sp, int [] Sj, float [] Sx)\n"
+ 		"classical_strength_of_connection(int const n_row, double const theta, int const [] Ap, int const [] Aj, double const [] Ax, int [] Sp, int [] Sj, double [] Sx)\n"
+@@ -27964,10 +28122,19 @@ extern "C" {
+         0,                                  /* tp_del */
+ #endif
+ #if PY_VERSION_HEX >= 0x02060000
+-        0,                                  /* tp_version */
++        0,                                  /* tp_version_tag */
++#endif
++#if PY_VERSION_HEX >= 0x03040000
++        0,                                  /* tp_finalize */
+ #endif
+ #ifdef COUNT_ALLOCS
+-        0,0,0,0                             /* tp_alloc -> tp_next */
++        0,                                  /* tp_allocs */
++        0,                                  /* tp_frees */
++        0,                                  /* tp_maxalloc */
++#if PY_VERSION_HEX >= 0x02050000
++        0,                                  /* tp_prev */
++#endif
++        0                                   /* tp_next */
+ #endif
+       };
+       varlink_type = tmp;
+@@ -28056,7 +28223,9 @@ extern "C" {
+     size_t i;
+     for (i = 0; methods[i].ml_name; ++i) {
+       const char *c = methods[i].ml_doc;
+-      if (c && (c = strstr(c, "swig_ptr: "))) {
++      if (!c) continue;
++      c = strstr(c, "swig_ptr: ");
++      if (c) {
+         int j;
+         swig_const_info *ci = 0;
+         const char *name = c + 10;
+@@ -28233,6 +28402,9 @@ SWIG_init(void) {
+   
+   import_array();
+   
++  SWIG_Python_SetConstant(d, "F_NODE",SWIG_From_int(static_cast< int >(0)));
++  SWIG_Python_SetConstant(d, "C_NODE",SWIG_From_int(static_cast< int >(1)));
++  SWIG_Python_SetConstant(d, "U_NODE",SWIG_From_int(static_cast< int >(2)));
+ #if PY_VERSION_HEX >= 0x03000000
+   return m;
+ #else
+diff --git a/pyamg/dev/aSA_driver.py b/pyamg/dev/aSA_driver.py
+new file mode 100644
+index 0000000..28297de
+--- /dev/null
++++ b/pyamg/dev/aSA_driver.py
+@@ -0,0 +1,353 @@
++import pdb
++
++import time
++import math
++import numpy as np
++from scipy import sparse
++from scipy.sparse import csr_matrix
++# import matplotlib.pyplot as plt
++# from matplotlib import cm
++# from mpl_toolkits.mplot3d import Axes3D
++
++from pyamg.gallery import poisson
++from pyamg.gallery.diffusion import diffusion_stencil_2d
++from pyamg.gallery.stencil import stencil_grid
++from pyamg.aggregation.aggregation import smoothed_aggregation_solver
++from pyamg.aggregation.adaptive import adaptive_sa_solver
++from pyamg.aggregation.new_adaptive import asa_solver
++from pyamg.util.utils import symmetric_rescaling
++
++# from poisson import get_poisson
++# from elasticity_bar import get_elasticity_bar
++
++
++def A_norm(x, A):
++    """
++    Calculate A-norm of x
++    """
++    x = np.ravel(x)
++    return np.sqrt(np.dot(x.conjugate(), A*x))
++
++
++# ----------------------------------------------------------------------------- #
++# ----------------------------------------------------------------------------- #
++
++# Strength of connection 
++# ----------------------
++#	- symmetric, strong connection if |A[i,j]| >= theta * sqrt( |A[i,i]| * |A[j,j]| )
++#		+ theta (0)
++#	- classical, strong connection if |A[i,j]| >= theta * max( |A[i,k]| )
++#		+ theta (0)
++# 	- evolution
++#		+ epsilon (4)- drop tolerance, > 1. Larger e -> denser matrix. 
++#		+ k (2)- ODE num time steps, step size = 1/rho(DinvA)
++#		+ block_flag (F)- True / False for block matrices
++#		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
++#		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
++# strength = ('symmetric', {'theta': 0.0} )
++strength = ('classical', {'theta': 0.2} )
++# strength = ('evolution', {'epsilon': 4.0, 'k' : 2} )
++
++
++# Aggregation 
++# -----------
++#	- standard
++#	- naive
++#		+ Differs from standard - "Each dof is considered. If it has been aggregated
++# 		  skip over. Otherwise, put dof and any unaggregated neighbors in an aggregate.
++#   	  Results in possibly much higher complexities than standard aggregation." 
++#	- lloyd (don't know how this works...)
++#		+ ratio (0.03)- fraction of the nodes which will be seeds.
++#		+ maxiter (10)- maximum number iterations to perform
++#		+ distance (unit)- edge weight of graph G used in Lloyd clustering.
++#		  For each C[i,j]!=0,
++#	    	~ unit - G[i,j] = 1
++#	        ~ abs  - G[i,j] = abs(C[i,j])
++#	        ~ inv  - G[i,j] = 1.0/abs(C[i,j])
++#	        ~ same - G[i,j] = C[i,j]
++#	        ~ sub  - G[i,j] = C[i,j] - min(C)
++aggregate = ('standard')
++
++
++# Interpolation smooother (Jacobi seems slow...)
++# -----------------------
++# 	- richardson
++#		+ omega (4/3)- weighted Richardson w/ weight omega
++#		+ degree (1)- number of Richardson iterations 
++# 	- jacobi
++#		+ omega (4/3)- weighted Jacobi w/ weight omega
++#		+ degree (1)- number of Jacobi iterations 
++#		+ filter (F)- True / False, filter smoothing matrix S w/ nonzero 
++#		  indices of SOC matrix. Can greatly control complexity? 
++#		+ weighting (diagonal)- construction of diagonal preconditioning
++#			~ local - local row-wise weight, avoids under-damping
++#			~ diagonal - inverse of diagonal of A
++#			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
++# 	- energy
++#		+ krylov (cg)- descent method for energy minimization
++#			~ cg - use cg for SPD systems. 
++#			~ cgnr - use for nonsymmetric or indefinite systems.
++#			  Only supports diagonal weighting.
++#			~ gmres - use for nonsymmetric or indefinite systems.
++#		+ degree (1)- sparsity pattern for P based on (Atilde^degree T).
++#		+ maxiter (4)- number of energy minimization steps to apply to P.
++#		+ weighting (local)- construction of diagonal preconditioning
++#			~ local - local row-wise weight, avoids under-damping 
++#			~ diagonal - inverse of diagonal of A
++#			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
++interp_smooth = ('jacobi', {'omega' : 4.0/3.0,
++							'degree' : 1,
++							'filter' : False,
++							'weighting' : 'diagonal'} )
++# interp_smooth = ('richardson', {'omega': 3.0/2.0, 'degree': 1} )
++# interp_smooth = ('energy', {'krylov' : 'cg',
++# 							'degree' : 1,
++# 							'maxiter' : 3,
++# 							'weighting' : 'local'} )
++
++
++# Relaxation
++# ---------- 
++# 	- jacobi
++#		+ omega (1.0)- damping parameter.
++#		+ iterations (1)- number of iterations to perform.
++# 	- gauss_seidel
++#		+ iterations (1)- number of iterations to perform.
++#		+ sweep (forward)- direction of relaxation sweep.
++#			~ forward
++#			~ backward
++#			~ symmetric
++# 	- sor
++#		+ omega - damping parameter. If omega = 1.0, SOR <--> Gauss-Seidel.
++#		+ iterations (1)- number of iterations to perform.
++#		+ sweep (forward)- direction of relaxation sweep.
++#			~ forward
++#			~ backward
++#			~ symmetric
++# 	- block_jacobi
++#		+ omega (1.0)- damping parameter.
++#		+ iterations (1)- number of relaxation iterations.
++#		+ blocksize (1)- block size of bsr matrix
++#		+ Dinv (None)- Array holding block diagonal inverses of A.
++#		  size (numBlocks, blocksize, blocksize)
++#	- block_gauss_seidel
++#		+ iterations (1)- number of relaxation iterations.
++#		+ sweep (forward)- direction of relaxation sweep.
++#			~ forward
++#			~ backward
++#			~ symmetric
++#		+ blocksize (1)- block size of bsr matrix
++#		+ Dinv (None)- Array holding block diagonal inverses of A.
++#		  size (numBlocks, blocksize, blocksize)
++#
++# Note, Schwarz relaxation, polynomial relaxation, Cimmino relaxation,
++# Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
++# Gauss-Seidel are also available - see relaxation.py. 
++# relaxation = ('jacobi', {'omega': 3.0/3.0, 'iterations': 1} )
++relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
++# relaxation = ('richardson', {'iterations': 1})
++
++
++# Adaptive parameters
++# -------------------
++candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
++num_candidates 		= 1		# number of near null space candidated to generate
++target_convergence	= 0.4 	# target convergence factor, called epsilon in adaptive solver input
++eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
++
++# New adaptive parameters
++# -----------------------
++weak_tol 		   = 1.0			# new aSA 
++max_bad_guys	   = 5
++max_bullets		   = 2
++max_iterations 	   = 5
++improvement_iters  = 7		# number of times a target bad guy is improved
++num_targets 	   = 1		# number of near null space candidates to generate
++
++# from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
++improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': improvement_iters})
++# improve_candidates = ('jacobi', {'omega': 3.0/3.0, 'iterations': 4})
++# improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
++
++
++# General multilevel parameters
++# -----------------------------
++max_levels 		   = 20 		# Max levels in hierarchy
++max_coarse 		   = 20 		# Max points allowed on coarse grid
++tol 			   = 1e-8		# Residual convergence tolerance
++is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
++keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
++diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
++coarse_solver = 'pinv'
++accel = 'gmres'
++cycle = 'V'
++keep = False
++
++# ----------------------------------------------------------------------------- #
++# ----------------------------------------------------------------------------- #
++
++# Problem parameters and variables
++# ---------------------------------
++
++# Poisson
++# -------
++n0 = 850
++eps = 0.00
++theta = 3*np.pi / 14.0
++
++# A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
++# n = A.shape[0]
++# x0 = np.random.rand(n,1)
++# b = np.zeros((n,1))
++
++# 2d Poisson pyAMG gallery
++grid_dims = [n0,n0]
++stencil = diffusion_stencil_2d(eps,theta)
++A = stencil_grid(stencil, grid_dims, format='csr')
++
++# Vectors and additional variables
++n = A.shape[0]
++b = np.zeros((n,1))
++x0 = np.random.rand(n,1)
++
++bad_guy = np.ones((n,1))
++# bad_guy = None
++# bad_guy = np.array((np.sin(np.linspace(0,1,A.shape[0])*np.pi),)).T
++
++# Elasticity 
++# ----------
++# nx = 2
++# ny = 100
++# nz = 5
++# A, b, bad_guy = get_elasticity_bar(nx=nx, ny=ny, nz=nz)
++# A.eliminate_zeros()
++# n = A.shape[0]
++# x0 = np.random.rand(n,1)
++# # bad_guy = None
++
++# [D, dum, dum] = symmetric_rescaling(A, copy=False)
++# bad_guy[:,0] = D * bad_guy[:,0]
++
++
++# ----------------------------------------------------------------------------- #
++# ----------------------------------------------------------------------------- #
++
++# Classical SA solver
++# -------------------
++
++sa_residuals = []
++start = time.clock()
++ml_sa = smoothed_aggregation_solver(A, B=bad_guy, symmetry='symmetric', strength=strength, aggregate=aggregate,
++						 			smooth=interp_smooth, max_levels=max_levels, max_coarse=max_coarse,
++						 			presmoother=relaxation, postsmoother=relaxation,
++						 			improve_candidates=improve_candidates, coarse_solver=coarse_solver,
++						 			keep=keep_levels )
++
++sa_sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals, cycle=cycle, accel=accel)
++
++end = time.clock()
++sa_time = end-start
++
++# Get complexities
++OC = ml_sa.operator_complexity()
++CC = ml_sa.cycle_complexity()
++SC = ml_sa.setup_complexity()
++
++# Convergence factors 
++sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
++for i in range(1,len(sa_residuals)-1):
++	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
++
++CF = np.mean(sa_conv_factors[1:])
++
++print "SA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
++# print "\tSetup time      	- ",sa_setup_time, " seconds"
++# print "\tSolve time      	- ", sa_solve_time, " seconds"
++print "\tConv. factor    	- ", CF
++print "\tSetup complexity 	- ", SC
++print "\tOp. complexity  	- ", OC
++print "\tCyc. complexity 	- ", CC
++
++
++# ----------------------------------------------------------------------------- #
++# ----------------------------------------------------------------------------- #
++
++# Classical aSA solver
++# --------------------
++
++# asa_residuals = []
++# start = time.clock()
++# [ml_asa, work] = asa_solver(A, B=bad_guy, pdef=is_pdef, num_candidates=num_candidates,
++# 									candidate_iters=candidate_iters, improvement_iters=improvement_iters,
++# 									epsilon=target_convergence, max_levels=max_levels, max_coarse=max_coarse,
++# 									aggregate=aggregate, prepostsmoother=relaxation, smooth=interp_smooth,
++# 									strength=strength, coarse_solver=coarse_solver,
++# 									eliminate_local=(False, {'Ca': 1.0}), keep=keep_levels)
++
++# asa_sol = ml_asa.solve(b, x0, tol, residuals=asa_residuals, cycle=cycle)
++
++# end = time.clock()
++# asa_time = end-start
++# asa_conv_factors = np.zeros((len(asa_residuals)-1,1))
++# for i in range(1,len(asa_residuals)-1):
++# 	asa_conv_factors[i] = asa_residuals[i]/asa_residuals[i-1]
++
++# print "Classical aSA - ", asa_time, " seconds"
++# print asa_conv_factors
++
++# ----------------------------------------------------------------------------- #
++# ----------------------------------------------------------------------------- #
++
++# New aSA solver
++# --------------
++
++new_asa_residuals = []
++start = time.clock()
++ml_new_asa = asa_solver(A, B=bad_guy,
++						strength=strength,
++						aggregate=aggregate,
++						smooth=interp_smooth,
++						presmoother=relaxation,
++						postsmoother=relaxation,
++						improvement_iters=improvement_iters,
++						max_coarse=max_coarse,
++						max_levels=max_levels,
++						target_convergence=target_convergence,
++						max_bullets=max_bullets,
++						max_bad_guys=max_bad_guys,
++						num_targets=num_targets,
++						max_iterations=max_iterations,
++						weak_tol=weak_tol,
++						diagonal_dominance=diagonal_dominance,
++						coarse_solver=coarse_solver,
++						cycle=cycle,
++						verbose=True,
++						keep=keep,
++						setup_complexity=True)
++
++new_asa_sol = ml_new_asa.solve(b, x0, tol, residuals=new_asa_residuals, cycle=cycle, accel=accel)
++end = time.clock()
++new_asa_time = end-start
++
++# Get complexities
++OC = ml_new_asa.operator_complexity()
++CC = ml_new_asa.cycle_complexity()
++SC = ml_new_asa.setup_complexity(verbose=False)
++
++# Convergence factors 
++new_asa_conv_factors = np.zeros((len(new_asa_residuals)-1,1))
++for i in range(1,len(new_asa_residuals)-1):
++	new_asa_conv_factors[i] = new_asa_residuals[i]/new_asa_residuals[i-1]
++
++CF = np.mean(new_asa_conv_factors[1:])
++
++print "aSA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
++# print "\tSetup time      	- ",sa_setup_time, " seconds"
++# print "\tSolve time      	- ", sa_solve_time, " seconds"
++print "\tConv. factor    	- ", CF
++print "\tSetup complexity 	- ", SC
++print "\tOp. complexity  	- ", OC
++print "\tCyc. complexity 	- ", CC
++
++pdb.set_trace()
++

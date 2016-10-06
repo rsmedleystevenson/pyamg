@@ -3,7 +3,7 @@ import pdb
 import time
 import math
 import numpy as np
-from scipy import sparse
+from scipy import sparse, io
 from scipy.sparse import csr_matrix
 # import matplotlib.pyplot as plt
 # from matplotlib import cm
@@ -15,6 +15,7 @@ from pyamg.gallery.stencil import stencil_grid
 from pyamg.aggregation.aggregation import smoothed_aggregation_solver
 from pyamg.aggregation.adaptive import adaptive_sa_solver
 from pyamg.aggregation.new_adaptive import asa_solver
+from pyamg.aggregation.gtyr_adaptive import gtyr_solver
 from pyamg.util.utils import symmetric_rescaling
 
 # from poisson import get_poisson
@@ -45,7 +46,7 @@ def A_norm(x, A):
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
 # strength = ('symmetric', {'theta': 0.0} )
-strength = ('classical', {'theta': 0.2} )
+strength = ('classical', {'theta': 0.5} )
 # strength = ('evolution', {'epsilon': 4.0, 'k' : 2} )
 
 
@@ -152,16 +153,16 @@ relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
 # -------------------
 candidate_iters		= 5 	# number of smoothings/cycles used at each stage of adaptive process
 num_candidates 		= 1		# number of near null space candidated to generate
-target_convergence	= 0.4 	# target convergence factor, called epsilon in adaptive solver input
+target_convergence	= 0.25 	# target convergence factor, called epsilon in adaptive solver input
 eliminate_local		= (False, {'Ca': 1.0})	# aSA, supposedly not useful I think
 
 # New adaptive parameters
 # -----------------------
-weak_tol 		   = 1.0			# new aSA 
-max_bad_guys	   = 5
-max_bullets		   = 2
+weak_tol 		   = 1.0	# new aSA 
+max_bad_guys	   = 8
+max_bullets		   = 3
 max_iterations 	   = 5
-improvement_iters  = 7		# number of times a target bad guy is improved
+improvement_iters  = 4		# number of times a target bad guy is improved
 num_targets 	   = 1		# number of near null space candidates to generate
 
 # from SA --> WHY WOULD WE DEFINE THIS TO BE DIFFERENT THAN THE RELAXATION SCHEME USED??
@@ -182,6 +183,7 @@ coarse_solver = 'pinv'
 accel = 'gmres'
 cycle = 'V'
 keep = False
+gtyr = True			# Run GTYR solver 
 
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
@@ -191,8 +193,8 @@ keep = False
 
 # Poisson
 # -------
-n0 = 850
-eps = 0.00
+n0 = 500
+eps = 0.001
 theta = 3*np.pi / 14.0
 
 # A, b = get_poisson(n=n0, eps=eps, theta=theta, rand=False)
@@ -204,6 +206,17 @@ theta = 3*np.pi / 14.0
 grid_dims = [n0,n0]
 stencil = diffusion_stencil_2d(eps,theta)
 A = stencil_grid(stencil, grid_dims, format='csr')
+
+
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/bundle1.mtx")		# Easy
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/chem97ztz.mtx")	# Easy
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/crankseg.mtx")	# Hard and interesting
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/crystm03.mtx")	# Easy
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/cvxbqp1.mtx")		# Really hard
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/obstacle.mtx")	# Easy
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/qa8fm.mtx")		# Easy, kind of interesting
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/sts4098.mtx")		# Small, medium hard, probably hard to scale (need big tol)
+# A = io.mmread("/Users/ben/Desktop/aSA_dataset/MMMAT/SPD-MTX/thread.mtx")		# Really hard, almost dense matrix
 
 # Vectors and additional variables
 n = A.shape[0]
@@ -260,7 +273,7 @@ for i in range(1,len(sa_residuals)-1):
 
 CF = np.mean(sa_conv_factors[1:])
 
-print "SA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
+print "SA Solver : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
 # print "\tSetup time      	- ",sa_setup_time, " seconds"
 # print "\tSolve time      	- ", sa_solve_time, " seconds"
 print "\tConv. factor    	- ", CF
@@ -341,13 +354,69 @@ for i in range(1,len(new_asa_residuals)-1):
 
 CF = np.mean(new_asa_conv_factors[1:])
 
-print "aSA Problem : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
+print "aSA Solver : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
 # print "\tSetup time      	- ",sa_setup_time, " seconds"
 # print "\tSolve time      	- ", sa_solve_time, " seconds"
 print "\tConv. factor    	- ", CF
 print "\tSetup complexity 	- ", SC
 print "\tOp. complexity  	- ", OC
 print "\tCyc. complexity 	- ", CC
+
+# ----------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
+
+# New GTYR solver
+# --------------
+if gtyr:
+
+	gtyr_residuals = []
+	start = time.clock()
+	ml_gtyr = gtyr_solver(A, B=bad_guy,
+							strength=strength,
+							aggregate=aggregate,
+							smooth=interp_smooth,
+							presmoother=relaxation,
+							postsmoother=relaxation,
+							improvement_iters=improvement_iters,
+							max_coarse=max_coarse,
+							max_levels=max_levels,
+							target_convergence=target_convergence,
+							max_bullets=max_bullets,
+							max_bad_guys=max_bad_guys,
+							num_targets=num_targets,
+							max_level_iterations=max_iterations,
+							weak_tol=weak_tol,
+							diagonal_dominance=diagonal_dominance,
+							coarse_solver=coarse_solver,
+							cycle=cycle,
+							verbose=True,
+							keep=keep,
+							setup_complexity=True)
+
+	gtyr_sol = ml_gtyr.solve(b, x0, tol, residuals=gtyr_residuals, cycle=cycle, accel=accel)
+	end = time.clock()
+	gtyr_time = end-start
+
+	# Get complexities
+	OC = ml_gtyr.operator_complexity()
+	CC = ml_gtyr.cycle_complexity()
+	SC = ml_gtyr.setup_complexity(verbose=False)
+
+	# Convergence factors 
+	gtyr_conv_factors = np.zeros((len(gtyr_residuals)-1,1))
+	for i in range(1,len(gtyr_residuals)-1):
+		gtyr_conv_factors[i] = gtyr_residuals[i]/gtyr_residuals[i-1]
+
+	CF = np.mean(gtyr_conv_factors[1:])
+
+	print "GTYR solver : ", A.shape[0]," DOF, ", A.nnz," nonzeros"
+	# print "\tSetup time      	- ",sa_setup_time, " seconds"
+	# print "\tSolve time      	- ", sa_solve_time, " seconds"
+	print "\tConv. factor    	- ", CF
+	print "\tSetup complexity 	- ", SC
+	print "\tOp. complexity  	- ", OC
+	print "\tCyc. complexity 	- ", CC
+
 
 pdb.set_trace()
 

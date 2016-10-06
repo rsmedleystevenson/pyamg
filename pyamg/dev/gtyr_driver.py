@@ -15,10 +15,11 @@ from pyamg.gallery.stencil import stencil_grid
 from pyamg.aggregation.aggregation import smoothed_aggregation_solver
 from pyamg.aggregation.adaptive import adaptive_sa_solver
 from pyamg.aggregation.new_adaptive import asa_solver
+from pyamg.aggregation.gtyr_adaptive import gtyr_solver
 from pyamg.util.utils import symmetric_rescaling
 
-from poisson import get_poisson
-from elasticity_bar import get_elasticity_bar
+# from poisson import get_poisson
+# from elasticity_bar import get_elasticity_bar
 
 
 def A_norm(x, A):
@@ -303,7 +304,7 @@ print "\tCyc. complexity 	- ", CC
 
 new_asa_residuals = []
 start = time.clock()
-ml_new_asa = asa_solver(A, B=bad_guy,
+ml_new_asa = gtyr_solver(A, B=bad_guy,
 						strength=strength,
 						aggregate=aggregate,
 						smooth=interp_smooth,
