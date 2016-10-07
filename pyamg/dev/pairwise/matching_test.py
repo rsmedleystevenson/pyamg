@@ -328,8 +328,8 @@ def plot_multiple_poisson(aggregations, labels, N, Cpts=True):
 
 N 			= 25
 problem_dim = 2
-epsilon 	= 0.001
-theta 		= 0.0*np.pi/14
+epsilon 	= 0.00
+theta 		= 3.0*np.pi/12
 
 # 1d Poisson 
 if problem_dim == 1:
@@ -348,6 +348,7 @@ elif problem_dim == -1:
 [d,d,A]   = symmetric_rescaling(A)
 # W = get_geometric_weights(A, theta, N, N)
 # W.eliminate_zeros()
+n = A.shape[0]
 
 # mmwrite('./test.mtx', A)
 
@@ -359,13 +360,14 @@ C = symmetric_strength_of_connection(A, theta=0.1)
 # C = classical_strength_of_connection(A, theta=0.2)
 AggOp, Cpts = standard_aggregation(C)
 
-
-
 # ------------------------------------------------------------------------------#
 matchings = 3
-
-drake = pairwise_aggregation(A, matchings=matchings, algorithm='drake', initial_target='ones', improve_candidates=None)
-notay = pairwise_aggregation(A, matchings=matchings, algorithm=('notay', {'beta':0.25}), initial_target='ones', improve_candidates=None)
+B = np.ones((n,1))
+improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
+B = None
+drake_w = pairwise_aggregation(A, B=B, get_weights=True, matchings=matchings, algorithm='drake', improve_candidates=improve_candidates)
+drake = pairwise_aggregation(A, B=B, get_weights=False, matchings=matchings, algorithm='drake', improve_candidates=improve_candidates)
+notay = pairwise_aggregation(A, B=B, get_weights=False, matchings=matchings, algorithm=('notay', {'beta':0.25}), improve_candidates=improve_candidates)
 
 # ------------------------------------------------------------------------------#
 # labels = ['Preis pairwise (n=%i)'%(num_matchings),'Notay pairwise (e=%1.2f,n=%i)'%(0.25,num_matchings),'Drake pairwise (n=%i)'%(num_matchings)]
@@ -374,8 +376,8 @@ notay = pairwise_aggregation(A, matchings=matchings, algorithm=('notay', {'beta'
 # labels = ['Classical SOC/aggregation','Notay pairwise (e=%1.2f,n=%i)'%(0.25,num_matchings),'Drake pairwise (n=%i)'%(num_matchings)]
 # matchings = [ [AggOp,Cpts], [notay_matching, notay_Cpts] , [drake_matching, drake_Cpts] ]
 
-labels = ['Standard','Drake pairwise', 'Notay pairwise']
-matchings = [ AggOp, drake, notay ]
+labels = ['Standard','Drake weighted', 'Drake unweighted', 'Notay pairwise']
+matchings = [ AggOp, drake_w, drake, notay ]
 
 plot_multiple_poisson(matchings,labels,N, Cpts=False)
 

@@ -355,6 +355,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     # Compute the aggregation matrix AggOp (i.e., the nodal coarsening of A).
     # AggOp is a boolean matrix, where the sparsity pattern for the k-th column
     # denotes the fine-grid nodes agglomerated into k-th coarse-grid node.
+    T = None
     fn, kwargs = unpack_arg(aggregate[len(levels)-1])
     if fn == 'standard':
         AggOp = standard_aggregation(C, **kwargs)[0]
@@ -363,8 +364,13 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     elif fn == 'lloyd':
         AggOp = lloyd_aggregation(C, **kwargs)[0]
     elif fn == 'pairwise':
-        AggOp = pairwise_aggregation(C, B, symmetry=A.symmetry,
-                 improve_candidates=improve_candidates[len(levels)-1], **kwargs)[0]
+        T = pairwise_aggregation(C, B, improve_candidates= \
+                                 improve_candidates[len(levels)-1],
+                                 **kwargs)
+        if A.symmetry == "nonsymmetric":
+            TH = pairwise_aggregation(C.H, BH, improve_candidates= \
+                                      improve_candidates[len(levels)-1],
+                                      **kwargs)
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
     else:
@@ -373,9 +379,10 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     # Compute the tentative prolongator, T, which is a tentative interpolation
     # matrix from the coarse-grid to the fine-grid.  T exactly interpolates
     # B_fine = T B_coarse.
-    T, B = fit_candidates(AggOp, B)
-    if A.symmetry == "nonsymmetric":
-        TH, BH = fit_candidates(AggOp, BH)
+    if T is None: 
+        T, B = fit_candidates(AggOp, B)
+        if A.symmetry == "nonsymmetric":
+            TH, BH = fit_candidates(AggOp, BH)
 
     # Smooth the tentative prolongator, so that it's accuracy is greatly
     # improved for algebraically smooth error.

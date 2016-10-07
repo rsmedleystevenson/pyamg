@@ -4,6 +4,7 @@ __docformat__ = "restructuredtext en"
 
 import pdb
 
+from warnings import warn
 import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, isspmatrix_csr, isspmatrix_csc
 from pyamg import amg_core
@@ -277,13 +278,12 @@ def lloyd_aggregation(C, ratio=0.03, distance='unit', maxiter=10):
     return AggOp, seeds
 
 
-def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
-                        algorithm='drake', matchings=2, weights=None,
+def pairwise_aggregation(A, B=None, algorithm='drake',
+                        matchings=2, get_weights=False,
                         improve_candidates=('gauss_seidel',
-                                            {'sweep': 'symmetric',
-                                             'iterations': 5}),
-                        initial_target='rand', get_Cpts=False,
-                        **kwargs):
+                                            {'sweep': 'forward',
+                                             'iterations': 4}),
+                        get_Cpts=False, **kwargs):
     """ Pairwise aggregation of nodes. 
 
     Parameters
@@ -295,10 +295,6 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
         If no target vector provided, constant vector is used. In the case of
         multiple targets, k>1, only the first is used to construct coarse grid
         matrices for pairwise aggregations. 
-    BH : array_like : default None
-        Left near-nullspace candidates stored in the columns of an NxK array.
-        BH is only used if symmetry is 'nonsymmetric'.
-        The default value B=None is equivalent to BH=B.copy()
     algorithm : string : default 'drake'
         Algorithm to perform pairwise matching. Current options are 
         'drake', 'notay', referring to the Drake (2003), and Notay (2010),
@@ -307,7 +303,7 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
     matchings : int : default 2
         Number of pairwise matchings to do. k matchings will lead to 
         a coarsening factor of under 2^k.
-    weights : function handle : Default None
+    get_weights : function handle : Default None
         Optional function handle to compute weights used in the matching,
         e.g. a strength of connection routine. Additional arguments for
         this routine should be provided in **kwargs. 
@@ -320,20 +316,13 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
               on the first pairwise pass, assuming it has already been smoothed.
             - If improve_candidates = None, an unsmoothed constant vector is 
               used as the target on each pairwise pass, as in [2].
-    initial_target : {string} : Default 'rand'
-        Initial target to use on each level of pairwise pass. If target
-        vector, B, provided, B is used on first pass and initial_target on 
-        all further passes. Can take on 'rand' for a random initial guess [1],
-        and 'ones' for a constant initial guess [2]. Note, only constant intial
-        guess is allowed if improve_candidates = None. 
     get_Cpts : {bool} : Default False
-        Return list of C-points with aggregation matrix.
+        Return list of C-points with aggregation matrix. Not currently
+        implemented.
 
     NOTES
     -----
-        - Not implemented for non-symmetric, block systems, or complex. 
-            + Need to set up pairwise aggregation to be applicable for 
-              nonsymmetric matrices.
+        - Not implemented for block systems or complex. 
             + Need to define how a matching is done nodally.
             + Also must consider what targets are used to form coarse grid
               in nodal approach...
@@ -342,6 +331,12 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
               Could I overload it perhaps? Probably would do magnitude or something
               though, which is not what we want... 
         - Need to set up function to pick C-points too
+        - Need to think about for nonsymmetric
+            + Because new coarse grid is formed for each pairwise, not sure
+              if we should call the function as is separately for P and R, i.e.
+              form multiple pairwise Galerkin coarse grids for each as in the
+              symmetric case, or simultaneously compute a pairwise for A and A^T
+              and then form a petrov Galerkin coarse grid for the next pairwise...
 
     REFERENCES
     ----------
@@ -373,69 +368,21 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
     if matchings < 1:
         raise ValueError("Number of matchings must be > 0.")
 
-    if (symmetry != 'symmetric') and (symmetry != 'hermitian') and \
-            (symmetry != 'nonsymmetric'):
-        raise ValueError('expected \'symmetric\', \'nonsymmetric\' or\
-                         \'hermitian\' for the symmetry parameter ')
-
     n = A.shape[0]
-    if (symmetry == 'nonsymmetric'): # and (Bh == None):
-        raise ValueError("Not implemented for non-symmetric matrices.")
-        # print "Warning - no left near null-space vector provided for nonsymmetric matrix.\n\
-        # Copying right near null-space vector."
-        # Bh = deepcopy(B[0:n,0:1])
 
-    # Compute weights if function provided, otherwise let W = A
-    Ac = A      # Let Ac reference A for loop purposes
-    if weights is not None:
-        W = weights(A, **kwargs)
-    else:
-        W = A
-
-    if not isspmatrix_csr(W):
-        warn("Only implemented for CSR matrix - trying to convert.", SparseEfficiencyWarning)
-        try:
-            W = W.tocsr()
-        except:
-            raise TypeError("Could not convert to csr matrix.")
-
-    # Get initial targets
-    improve_fn, improve_args = unpack_arg(improve_candidates)
-    target = None
-
-    # If target vectors provided, take first. Note, no improvement is 
-    # done on provided targets in the assumption that they are smooth.
+    # If target vectors provided, take first.
     if B is not None:
         if len(B.shape) == 2:
             target = B[:,0]
         else:
             target = B[:,]
-
-    # If no targets provided, check if a random or constant initial
-    # target is specified in improve_candidates. If not, set default 
-    # to random and improve target as specified. 
     else:
-        if (improve_fn is not None):
-            if initial_target == 'rand':
-                target = np.random.rand(n,)
-            elif initial_target == 'ones':
-                target = np.ones(n,)
-            else:
-                raise ValueError("Only initial guesses of 'init' = 'ones'\
-                                 and 'init' = 'rand' supported.")
-    
-            # Improve near nullspace candidates by relaxing on A B = 0
-            b = np.zeros((n, 1), dtype=A.dtype)
-            target = relaxation_as_linear_operator((improve_fn, improve_args), A, b) * target
-        
-        # If B = None and improve candidates = None, a default target of ones
-        # is used on all levels, which is specified by target = None. 
-        else: 
-            if initial_target == 'rand':
-                warn("Cannot use random initial target on each level if\n\
-                     improve_candidates = None. Setting target to constant.")
-                
-            target = None
+        target = None
+
+    # Get arguments to improve targets. Targets are not improved
+    # on the first level, as it is assumed the targets passed in
+    # are sufficiently smooth.
+    improve_fn, improve_args = unpack_arg(improve_candidates)
 
     # Get matching algorithm 
     beta = 0.25
@@ -446,8 +393,24 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
         get_pairwise = amg_core.notay_pairwise
         if 'beta' in alg_args:
             beta = alg_args['beta']
+        if get_weights:
+            warn("Computed weights not compatible with Notay pairwise. Ignoring.")
+            get_weights = False
     else:
        raise ValueError("Only drake amd notay pairwise algorithms implemented.")
+
+
+    # Compute weights if function provided, otherwise let W = A
+    Ac = A      # Let Ac reference A for loop purposes
+    if get_weights:
+        weights = np.empty((A.nnz,),dtype=A.dtype)
+        if target is None:
+            amg_core.compute_weights(A.indptr, A.indices, A.data, weights)
+        else:
+            amg_core.compute_weights(A.indptr, A.indices, A.data, weights, target)
+    else:
+        weights = A.data
+
 
     # Loop over the number of pairwise matchings to be done
     for i in range(0,matchings-1):
@@ -456,88 +419,64 @@ def pairwise_aggregation(A, B=None, Bh=None, symmetry='hermitian',
         rowptr = np.empty(n+1, dtype='intc')
         colinds = np.empty(n, dtype='intc')
         shape = np.empty(2, dtype='intc')
-        if target == None:
-            get_pairwise(W.indptr, 
-                         W.indices,
-                         W.data,
+        if target is None:
+            get_pairwise(Ac.indptr, 
+                         Ac.indices,
+                         weights,
                          rowptr,
                          colinds,
                          shape,
                          beta )
-            P = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
+            T_temp = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
         else:
             data = np.empty(n, dtype=float)
-            get_pairwise(W.indptr, 
-                         W.indices,
-                         W.data,
+            get_pairwise(Ac.indptr, 
+                         Ac.indices,
+                         weights,
                          target,
                          rowptr,
                          colinds,
                          data,
                          shape,
                          beta )
-            P = csr_matrix( (data, colinds, rowptr), shape=shape )
+            T_temp = csr_matrix( (data, colinds, rowptr), shape=shape )
 
         # Form aggregation matrix 
         if i == 0:
-            AggOp = csr_matrix( (np.ones(n, dtype=bool), colinds, rowptr), shape=shape )
+            T = T_temp
         else:
-            AggOp = csr_matrix(AggOp * P, dtype=bool)
+            T = T * T_temp
 
-        # Form coarse grid operator
-        if symmetry == 'hermitian':
-            R = P.H
-            Ac = R*Ac*P
-        elif symmetry == 'symmetric':
-            R = P.T            
-            Ac = R*Ac*P
+        # Prepare target, coarse grid for next matching
+        if i < (matchings-1):
 
-        # Compute optional weights on coarse grid operator
-        n = Ac.shape[0]
-        if weights is not None:
-            W = weights(Ac, **kwargs)
-        else:
-            W = Ac
-                
-        # Form new target vector on coarse grid if this is not last iteration.
-        # If last iteration, we will not use target - set to None.  
-        if (improve_fn is not None) and (i < (matchings-2)):
-            if initial_target == 'rand':
-                target = np.random.rand(n,)
-            elif initial_target == 'ones':
-                target = np.ones(n,)
+            # Form coarse grid operator and restrict target to coarse grid 
+            Ac = T_temp.T*Ac*T_temp
+            if target is not None:
+                target = T_temp.T*target  
 
-            # Improve near nullspace candidates by relaxing on A B = 0
-            b = np.zeros((n, 1), dtype=Ac.dtype)
-            target = relaxation_as_linear_operator((improve_fn, improve_args), Ac, b) * target
+            # If not last iteration, improve target by relaxing on A*target = 0.
+            # If last iteration, we will not use target - set to None.
+            n = Ac.shape[0]
+            if (target is not None) and (improve_fn is not None):
+                b = np.zeros((n, 1), dtype=Ac.dtype)
+                target = relaxation_as_linear_operator((improve_fn, improve_args), Ac, b) * target         
 
-        else:
-            target = None            
-
-    # Get final matching, form aggregation matrix 
-    rowptr = np.empty(n+1, dtype='intc')
-    colinds = np.empty(n, dtype='intc')
-    shape = np.empty(2, dtype='intc')
-    get_pairwise(W.indptr, 
-                 W.indices,
-                 W.data,
-                 rowptr,
-                 colinds,
-                 shape,
-                 beta )
-
-    if matchings > 1:
-        temp_agg = csr_matrix( (np.ones(n, dtype='int8'), colinds, rowptr), shape=shape )
-        AggOp = csr_matrix( AggOp * temp_agg, dtype='int8')
-    else:
-        AggOp = csr_matrix( (np.ones(n, dtype='int8'), colinds, rowptr), shape=shape )
-
+            # Compute optional weights on coarse grid operator
+            if get_weights:
+                weights = np.empty((A.nnz,),dtype=A.dtype)
+                if target is None:
+                    amg_core.compute_weights(A.indptr, A.indices, A.data, weights)
+                else:
+                    amg_core.compute_weights(A.indptr, A.indices, A.data, weights, target) 
+            else:
+                weights = Ac.data
 
     # NEED TO IMPLEMENT A WAY TO CHOOSE C-POINTS
     if get_Cpts:
         raise TypeError("Cannot return C-points - not yet implemented.")
     else:
-        return AggOp
+        return T
 
 
 

@@ -10,6 +10,7 @@
 #include "krylov.h"
 #include "relaxation.h"
 #include "smoothed_aggregation.h"
+#include "pairwise.h"
 #include "ruge_stuben.h"
 #include "evolution_strength.h"
 %}
@@ -47,8 +48,10 @@
     (const ctype splitting [], const int splitting_size),
     (      ctype splitting [], const int splitting_size),
     (const ctype A_rowptr [], const int A_rowptr_size),
+    (const ctype W_rowptr [], const int W_rowptr_size),
     (      ctype Agg_rowptr [], const int Agg_rowptr_size),
     (const ctype A_colinds [], const int A_colinds_size),
+    (const ctype W_colinds [], const int W_colinds_size),
     (      ctype Agg_colinds [], const int Agg_colinds_size),
     (      ctype Agg_shape [], const int Agg_shape_size),
     (      ctype indices [], const int indices_size)
@@ -80,6 +83,7 @@
     (      ctype temp [], const int temp_size),
     (const ctype omega [], const int omega_size),
     (const ctype A_data [], const int A_data_size),
+    (      ctype weights [], const int weights_size),
     (      ctype Agg_data [], const int Agg_data_size),
     (      ctype gamma [], const int gamma_size)
 };
@@ -196,8 +200,6 @@ INSTANTIATE_INDEXDATA_COMPLEX(overlapping_schwarz_csr)
 INSTANTIATE_INDEXDATA_COMPLEX(symmetric_strength_of_connection)
 INSTANTIATE_INDEX_ONLY(naive_aggregation)
 INSTANTIATE_INDEX_ONLY(standard_aggregation)
-INSTANTIATE_INDEXDATA(drake_matching)
-INSTANTIATE_INDEXDATA(notay_pairwise)
 
 %template(fit_candidates)   fit_candidates_real<int,float>;
 %template(fit_candidates)   fit_candidates_real<int,double>;
@@ -208,6 +210,15 @@ INSTANTIATE_INDEXDATA_COMPLEX(satisfy_constraints_helper)
 INSTANTIATE_INDEXDATA_COMPLEX(calc_BtB)
 INSTANTIATE_INDEXDATA_COMPLEX(incomplete_mat_mult_bsr)
 INSTANTIATE_INDEXDATA_COMPLEX(truncate_rows_csr)
+
+
+/*----------------------------------------------------------------------------
+  pairwise.h
+  ---------------------------------------------------------------------------*/
+%include "pairwise.h"
+INSTANTIATE_INDEXDATA(drake_matching)
+INSTANTIATE_INDEXDATA(notay_pairwise)
+INSTANTIATE_INDEXDATA(compute_weights)
 
 /*----------------------------------------------------------------------------
   ruge_stuben.h
