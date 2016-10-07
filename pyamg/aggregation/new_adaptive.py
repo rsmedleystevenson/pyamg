@@ -207,7 +207,7 @@ def local_ritz_process(A, AggOp, B, sap_tol, level, max_bullets,
         rows = agg.nonzero()[0]
         Ba = B[rows]
 
-        # Get eigenvalue decomposition of Ba^T*Ba, sprt eigenvalues
+        # Get eigenvalue decomposition of Ba^T*Ba, sort eigenvalues
         # and vectors in descending order.
         BatBa = np.dot(Ba.transpose(), Ba)
         [E, V] = np.linalg.eigh(BatBa)
@@ -511,6 +511,9 @@ def asa_solver(A, B=None,
                                 max_bad_guys=max_bad_guys, verbose=verbose, \
                                 cost=temp_cost)
         complexity[0]['global_ritz'] += temp_cost[0]
+
+        # TODO - put in Local Ritz! Should not be skipping this.
+
 
         # Build new hierarchy
         ml = smoothed_aggregation_solver(A, B=B[:,0:min(B.shape[1],max_bullets)], BH=None, symmetry=symmetry, strength=strength,

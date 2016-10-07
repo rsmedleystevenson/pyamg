@@ -47,6 +47,10 @@
     (const ctype splitting [], const int splitting_size),
     (      ctype splitting [], const int splitting_size),
     (      ctype indices [], const int indices_size),
+    (      ctype row_inds [], const int row_inds_size),
+    (      ctype col_inds [], const int col_inds_size),
+    (const ctype AggOp_colptr [], const int AggOp_colptr_size),
+    (const ctype AggOp_rowinds [], const int AggOp_rowinds_size),
     (const ctype A_rowptr [], const int A_rowptr_size),
     (const ctype A_colinds [], const int A_colinds_size)
 
@@ -76,6 +80,7 @@
     (      ctype AA [], const int AA_size),
     (      ctype  R [], const int  R_size),
     (      ctype temp [], const int temp_size),
+    (      ctype data [], const int data_size),
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
     (      ctype cost [], const int cost_size)
@@ -203,6 +208,7 @@ INSTANTIATE_INDEXDATA_COMPLEX(satisfy_constraints_helper)
 INSTANTIATE_INDEXDATA_COMPLEX(calc_BtB)
 INSTANTIATE_INDEXDATA_COMPLEX(incomplete_mat_mult_bsr)
 INSTANTIATE_INDEXDATA_COMPLEX(truncate_rows_csr)
+INSTANTIATE_INDEXDATA_COMPLEX(local_ritz)
 
 /*----------------------------------------------------------------------------
   ruge_stuben.h

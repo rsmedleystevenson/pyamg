@@ -957,4 +957,132 @@ void truncate_rows_csr(const I n_row,
     return;
 }
 
+
+template<class I, class T, class F>
+void local_ritz(const I AggOp_colptr[], const int AggOp_colptr_size,
+                const I AggOp_rowinds[], const int AggOp_rowinds_size,
+                const T B[], const int B_size,
+                const F &sap_tol,
+                const int &n,
+                      I row_inds[], const int row_inds_size, 
+                      I col_inds[], const int col_inds_size, 
+                      T data[], const int data_size)
+{
+    // Number of target vectors in B
+    const I num_B = B_size / n;
+    const I nc = AggOp_colptr_size - 1;
+    I curr_col = 0;
+    I index = 0;
+
+    // Preallocate arrays for SVD and Ba^T*Ba for speed
+    std::vector<T> BatBa(num_B*num_B, 0);
+    std::vector<T> U(num_B*num_B);
+    std::vector<T> V(num_B*num_B);
+    std::vector<F> S(num_B);
+
+    // Local Ritz for each coarse DOF
+    for (I i=0; i<nc; i++) {
+
+        // Get current aggregate
+        std::vector<I> agg;
+        for (I ind=AggOp_colptr[i]; ind<AggOp_colptr[i+1]; ind++) {
+            agg.push_back(AggOp_rowinds[ind]);
+        }
+
+        // Restrict bad guys to aggregate, Ba = B[aggregate]
+        const I agg_size = agg.size();
+        std::vector<T> Ba(agg_size*num_B);
+        for (I k=0; k<num_B; k++) {
+            for (I l=0; l<agg_size; l++) {
+                Ba[col_major(l,k,agg_size)] = B[col_major(agg[l],k,n)];
+            }
+        }
+
+        // Get local SAP tolerance
+        const F local_tol = sap_tol * double(agg_size) / nc;
+        I num_targets = 0;
+
+        // Form Ba^T*Ba in columns major, where
+        //      BatBa[k,j] = BatBa[j,k] = (Ba)_{k,:}*(Ba)_{j,:}
+        for (I j=0; j<num_B; j++) {
+            for (I k=j; k<num_B; k++) {
+                // Compute dot product of jth and kth column of Ba
+                T temp = 0;
+                for (I ind=0; ind<agg_size; ind++) {
+                    temp += Ba[col_major(j,ind,agg_size)] * Ba[col_major(k,ind,agg_size)];
+                }
+                BatBa[col_major(j,k,num_B)] = temp;
+                BatBa[col_major(k,j,num_B)] = temp;
+            }
+        }
+
+        // Get eigenvalue decompsition (svd) of Ba^T*Ba (decreasing order?)
+        std::fill(U.begin(), U.end(), 0);   // Reset arrays to zero
+        std::fill(V.begin(), V.end(), 0);
+        std::fill(S.begin(), S.end(), 0);
+        svd_jacobi(&BatBa[0],&U[0],&V[0],&S[0],num_B,num_B);
+
+        // Select eigenvectors that don't satisfy WAP(A^2) and normalize
+        // by \sqrt{\lambda}. 
+        F temp_eig = 100000.0;
+        for (I eig=0; eig<num_B; eig++) {
+
+            // Test to make sure eigenvalues decreasing
+            if (S[eig] > temp_eig) {
+                std::cout << "Warning: eigenvalues not in decreasing order.\n";
+            }
+            else {
+                temp_eig = S[eig];
+            }
+            // Check if eigenvalue trivially satisfies WAP(A^2)
+            if (S[eig] <= local_tol) {
+                break;
+            }
+            else {
+                T temp = std::sqrt(S[eig]);
+                for (I r=0; r<num_B; r++) {
+                    U[col_major(r,eig,num_B)] /= temp;
+                }
+                num_targets += 1;
+            }
+        }
+
+        // Ensure at least one target is kept. 
+        if (num_targets == 0) {
+            T temp = std::sqrt(S[0]);
+            for (I r=0; r<num_B; r++) {
+                U[col_major(r,0,num_B)] /= temp;
+            }
+            num_targets += 1;
+        }
+
+        // Compute basis Ba*U, assumes sorted singular vectors in U
+        std::vector<T> basis(agg_size*num_targets, 0);
+        for (I k=0; k<num_targets; k++) {
+            for (I l=0; l<agg_size; l++) {
+                // Compute dot product of lth row of Ba with kth column of U
+                T temp = 0;
+                for (I ind=0; ind<num_B; ind++) {
+                    temp += Ba[col_major(l,ind,agg_size)] * U[col_major(ind,k,num_B)];
+                }
+                BatBa[col_major(l,k,agg_size)] = temp;
+            }
+        }
+
+        // Add columns 0,...,(num_targets-1) of basis to T
+        for (I k=0; k<num_targets; k++) {
+            for (I l=0; l<agg_size; l++) {
+                row_inds[index] = agg[l];
+                col_inds[index] = curr_col;
+                data[index] = basis[col_major(l,k,agg_size)];
+                index += 1;
+            }
+            curr_col += 1;
+        }
+    }
+}
+
+
+
+
 #endif

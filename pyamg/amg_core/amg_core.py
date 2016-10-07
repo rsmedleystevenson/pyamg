@@ -170,6 +170,14 @@ def zero_imag(*args):
     """
     return _amg_core.zero_imag(*args)
 
+def row_major(row, col, num_cols):
+    """row_major(int const & row, int const & col, int const & num_cols) -> int"""
+    return _amg_core.row_major(row, col, num_cols)
+
+def col_major(row, col, num_rows):
+    """col_major(int const & row, int const & col, int const & num_rows) -> int"""
+    return _amg_core.col_major(row, col, num_rows)
+
 def pinv_array(*args):
     """
     pinv_array(float [] AA, int const m, int const n, char const TransA)
@@ -423,6 +431,15 @@ def truncate_rows_csr(*args):
     truncate_rows_csr(int const n_row, int const k, int const [] Sp, int [] Sj, std::complex< double > [] Sx)
     """
     return _amg_core.truncate_rows_csr(*args)
+
+def local_ritz(*args):
+    """
+    local_ritz(int const [] AggOp_colptr, int const [] AggOp_rowinds, float const [] B, float const & sap_tol, int const & n, int [] row_inds, int [] col_inds, float [] data)
+    local_ritz(int const [] AggOp_colptr, int const [] AggOp_rowinds, double const [] B, double const & sap_tol, int const & n, int [] row_inds, int [] col_inds, double [] data)
+    local_ritz(int const [] AggOp_colptr, int const [] AggOp_rowinds, std::complex< float > const [] B, float const & sap_tol, int const & n, int [] row_inds, int [] col_inds, std::complex< float > [] data)
+    local_ritz(int const [] AggOp_colptr, int const [] AggOp_rowinds, std::complex< double > const [] B, double const & sap_tol, int const & n, int [] row_inds, int [] col_inds, std::complex< double > [] data)
+    """
+    return _amg_core.local_ritz(*args)
 F_NODE = _amg_core.F_NODE
 C_NODE = _amg_core.C_NODE
 U_NODE = _amg_core.U_NODE

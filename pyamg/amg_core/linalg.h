@@ -122,6 +122,18 @@ inline std::complex<double> zero_imag(std::complex<double>& x)
     std::complex<double> tmp (x.real(), 0.0);
     return x; }
 
+/* 2d array index A[row,col] to row-major index. */
+inline int row_major(const int &row, const int &col, const int &num_cols) 
+{
+    return row*num_cols + col;
+}
+
+/* 2d array index A[row,col] to column-major index. */
+inline int col_major(const int &row, const int &col, const int &num_rows) 
+{
+    return col*num_rows + row;
+}
+
 
 /*******************************************************************
  *              Dense Linear Algebra Routines
