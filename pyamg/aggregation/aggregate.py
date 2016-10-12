@@ -278,13 +278,14 @@ def lloyd_aggregation(C, ratio=0.03, distance='unit', maxiter=10):
     return AggOp, seeds
 
 
-def pairwise_aggregation(A, B=None, algorithm='drake',
-                        matchings=2, get_weights=False,
-                        improve_candidates=('gauss_seidel',
-                                            {'sweep': 'forward',
-                                             'iterations': 4}),
-                        get_Cpts=False, **kwargs):
-    """ Pairwise aggregation of nodes. 
+def weighted_matching(A, B=None, matchings=2,
+                      get_weights=False,
+                      improve_candidates=('gauss_seidel',
+                                          {'sweep': 'forward',
+                                           'iterations': 4}),
+                      get_Cpts=False, **kwargs):
+    """ Pairwise aggregation of nodes using Drake approximate
+        1/2-matching algorithm.
 
     Parameters
     ----------
@@ -295,11 +296,6 @@ def pairwise_aggregation(A, B=None, algorithm='drake',
         If no target vector provided, constant vector is used. In the case of
         multiple targets, k>1, only the first is used to construct coarse grid
         matrices for pairwise aggregations. 
-    algorithm : string : default 'drake'
-        Algorithm to perform pairwise matching. Current options are 
-        'drake', 'notay', referring to the Drake (2003), and Notay (2010),
-        respectively. For Notay, optional filtering threshold, beta, can be 
-        passed in as algorithm=('notay', {'beta' : 0.25}). Default beta=0.25.
     matchings : int : default 2
         Number of pairwise matchings to do. k matchings will lead to 
         a coarsening factor of under 2^k.
@@ -344,10 +340,7 @@ def pairwise_aggregation(A, B=None, algorithm='drake',
     coarsening based on compatible weighted matching." Computing and
     Visualization in Science 16.2 (2013): 59-76.
 
-    [2] Notay, Yvan. "An aggregation-based algebraic multigrid method." 
-    Electronic transactions on numerical analysis 37.6 (2010): 123-146.
-
-    [3] Drake, Doratha E., and Stefan Hougardy. "A simple approximation
+    [2] Drake, Doratha E., and Stefan Hougardy. "A simple approximation
     algorithm for the weighted matching problem." Information Processing
     Letters 85.4 (2003): 211-213.
 
@@ -384,22 +377,6 @@ def pairwise_aggregation(A, B=None, algorithm='drake',
     # are sufficiently smooth.
     improve_fn, improve_args = unpack_arg(improve_candidates)
 
-    # Get matching algorithm 
-    beta = 0.25
-    choice, alg_args = unpack_arg(algorithm)
-    if choice == 'drake': 
-        get_pairwise = amg_core.drake_matching
-    elif choice == 'notay':
-        get_pairwise = amg_core.notay_pairwise
-        if 'beta' in alg_args:
-            beta = alg_args['beta']
-        if get_weights:
-            warn("Computed weights not compatible with Notay pairwise. Ignoring.")
-            get_weights = False
-    else:
-       raise ValueError("Only drake amd notay pairwise algorithms implemented.")
-
-
     # Compute weights if function provided, otherwise let W = A
     Ac = A      # Let Ac reference A for loop purposes
     if get_weights:
@@ -411,7 +388,6 @@ def pairwise_aggregation(A, B=None, algorithm='drake',
     else:
         weights = A.data
 
-
     # Loop over the number of pairwise matchings to be done
     for i in range(0,matchings-1):
 
@@ -420,7 +396,7 @@ def pairwise_aggregation(A, B=None, algorithm='drake',
         colinds = np.empty(n, dtype='intc')
         shape = np.empty(2, dtype='intc')
         if target is None:
-            get_pairwise(Ac.indptr, 
+            amg_core.drake_matching(Ac.indptr, 
                          Ac.indices,
                          weights,
                          rowptr,
@@ -430,15 +406,15 @@ def pairwise_aggregation(A, B=None, algorithm='drake',
             T_temp = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
         else:
             data = np.empty(n, dtype=float)
-            get_pairwise(Ac.indptr, 
-                         Ac.indices,
-                         weights,
-                         target,
-                         rowptr,
-                         colinds,
-                         data,
-                         shape,
-                         beta )
+            amg_core.drake_matching(Ac.indptr, 
+                                    Ac.indices,
+                                    weights,
+                                    target,
+                                    rowptr,
+                                    colinds,
+                                    data,
+                                    shape,
+                                    beta )
             T_temp = csr_matrix( (data, colinds, rowptr), shape=shape )
 
         # Form aggregation matrix 
@@ -471,6 +447,149 @@ def pairwise_aggregation(A, B=None, algorithm='drake',
                     amg_core.compute_weights(A.indptr, A.indices, A.data, weights, target) 
             else:
                 weights = Ac.data
+
+    # NEED TO IMPLEMENT A WAY TO CHOOSE C-POINTS
+    if get_Cpts:
+        raise TypeError("Cannot return C-points - not yet implemented.")
+    else:
+        return T
+
+
+
+# TODO - figure out if we should include option to provide
+# target or always use constant. Does Notay only use constant?
+# Would we ever want to not use constant? 
+def notay_pairwise(A, B=None, beta=0.25, matchings=2,
+                   get_Cpts=False, **kwargs):
+    """ Pairwise aggregation of nodes using Notay approach. 
+
+    Parameters
+    ----------
+    A : csr_matrix or bsr_matrix
+        matrix for linear system.
+    B : array_like : default None
+        Right near-nullspace candidates stored in the columns of an NxK array.
+        If no target vector provided, constant vector is used. In the case of
+        multiple targets, k>1, only the first is used to construct coarse grid
+        matrices for pairwise aggregations. 
+    beta : float
+
+    matchings : int : default 2
+        Number of pairwise matchings to do. k matchings will lead to 
+        a coarsening factor of under 2^k.
+    get_Cpts : {bool} : Default False
+        Return list of C-points with aggregation matrix. Not currently
+        implemented.
+
+    NOTES
+    -----
+        - Not implemented for block systems or complex. 
+            + Need to define how a matching is done nodally.
+            + Also must consider what targets are used to form coarse grid
+              in nodal approach...
+            + Drake should be accessible in complex, but not Notay due to the
+              hard minimum. Is there a < operator overloaded for complex?
+              Could I overload it perhaps? Probably would do magnitude or something
+              though, which is not what we want... 
+        - Need to set up function to pick C-points too
+        - Need to think about for nonsymmetric
+            + Because new coarse grid is formed for each pairwise, not sure
+              if we should call the function as is separately for P and R, i.e.
+              form multiple pairwise Galerkin coarse grids for each as in the
+              symmetric case, or simultaneously compute a pairwise for A and A^T
+              and then form a petrov Galerkin coarse grid for the next pairwise...
+
+    REFERENCES
+    ----------
+    [1] Notay, Yvan. "An aggregation-based algebraic multigrid method." 
+    Electronic transactions on numerical analysis 37.6 (2010): 123-146.
+
+    """
+
+    def unpack_arg(v):
+        if isinstance(v, tuple):
+            return v[0], v[1]
+        else:
+            return v, {}
+
+    if A.dtype == 'complex':
+        raise TypeError("Not currently implemented for complex.")
+
+    if not isinstance(matchings, int):
+        raise TypeError("Number of matchings must be an integer.")
+
+    if matchings < 1:
+        raise ValueError("Number of matchings must be > 0.")
+
+    n = A.shape[0]
+
+    # If target vectors provided, take first.
+    if B is not None:
+        if len(B.shape) == 2:
+            target = B[:,0]
+        else:
+            target = B[:,]
+    else:
+        target = None
+
+    # Get arguments to improve targets. Targets are not improved
+    # on the first level, as it is assumed the targets passed in
+    # are sufficiently smooth.
+    improve_fn, improve_args = unpack_arg(improve_candidates)
+
+    # Compute weights if function provided, otherwise let W = A
+    Ac = A      # Let Ac reference A for loop purposes
+
+    # Loop over the number of pairwise matchings to be done
+    for i in range(0,matchings-1):
+
+        # Get matching and form sparse P
+        rowptr = np.empty(n+1, dtype='intc')
+        colinds = np.empty(n, dtype='intc')
+        shape = np.empty(2, dtype='intc')
+        if target is None:
+            amg_core.notay_pairwise(Ac.indptr, 
+                                    Ac.indices,
+                                    Ac.data,
+                                    rowptr,
+                                    colinds,
+                                    shape,
+                                    beta )
+            T_temp = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
+        else:
+            data = np.empty(n, dtype=float)
+            amg_core.notay_pairwise(Ac.indptr, 
+                                    Ac.indices,
+                                    Ac.data,
+                                    target,
+                                    rowptr,
+                                    colinds,
+                                    data,
+                                    shape,
+                                    beta )
+            T_temp = csr_matrix( (data, colinds, rowptr), shape=shape )
+
+        # Form aggregation matrix 
+        if i == 0:
+            T = T_temp
+        else:
+            T = T * T_temp
+
+        # Prepare target, coarse grid for next matching
+        if i < (matchings-1):
+
+            # Form coarse grid operator and restrict target to coarse grid 
+            Ac = T_temp.T*Ac*T_temp
+            if target is not None:
+                target = T_temp.T*target  
+
+            # If not last iteration, improve target by relaxing on A*target = 0.
+            # If last iteration, we will not use target - set to None.
+            n = Ac.shape[0]
+            if (target is not None) and (improve_fn is not None):
+                b = np.zeros((n, 1), dtype=Ac.dtype)
+                target = relaxation_as_linear_operator((improve_fn, improve_args), Ac, b) * target         
+
 
     # NEED TO IMPLEMENT A WAY TO CHOOSE C-POINTS
     if get_Cpts:
