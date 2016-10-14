@@ -994,6 +994,7 @@ void compute_weights(const I A_rowptr[], const int A_rowptr_size,
 {
 	I n = A_rowptr_size-1;
 	std::vector<T> diag(n);
+    T temp_cost = 0.0;
 
 	// Get diagonal elements of matrix
 	for (I i=0; i<n; i++) {
