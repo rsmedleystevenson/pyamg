@@ -920,7 +920,7 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
  * Nothing, weights modified in place.
  * 
  */
-template<class I, class T, class F>
+template<class I, class T>
 void compute_weights(const I A_rowptr[], const int A_rowptr_size,
                      const I A_colinds[], const int A_colinds_size,
                      const T A_data[], const int A_data_size,
@@ -949,7 +949,7 @@ void compute_weights(const I A_rowptr[], const int A_rowptr_size,
 	}
 }
 
-template<class I, class T, class F>
+template<class I, class T>
 void compute_weights(const I A_rowptr[], const int A_rowptr_size,
                      const I A_colinds[], const int A_colinds_size,
                      const T A_data[], const int A_data_size,

@@ -85,7 +85,8 @@
     (const ctype A_data [], const int A_data_size),
     (      ctype weights [], const int weights_size),
     (      ctype Agg_data [], const int Agg_data_size),
-    (      ctype gamma [], const int gamma_size)
+    (      ctype gamma [], const int gamma_size),
+    (      ctype cost [], const int cost_size)
 };
 %enddef
 
@@ -218,7 +219,7 @@ INSTANTIATE_INDEXDATA_COMPLEX(truncate_rows_csr)
 %include "pairwise.h"
 INSTANTIATE_INDEXDATA(drake_matching)
 INSTANTIATE_INDEXDATA(notay_pairwise)
-INSTANTIATE_INDEXDATA_COMPLEX(compute_weights)
+INSTANTIATE_INDEXDATA(compute_weights)
 
 /*----------------------------------------------------------------------------
   ruge_stuben.h
@@ -233,6 +234,7 @@ INSTANTIATE_INDEX_ONLY(rs_cf_splitting)
 INSTANTIATE_INDEX_ONLY(cljp_naive_splitting)
 INSTANTIATE_INDEX_ONLY(rs_direct_interpolation_pass1)
 INSTANTIATE_INDEXDATA(rs_direct_interpolation_pass2)
+INSTANTIATE_INDEXDATA(rs_standard_interpolation_pass2)
 INSTANTIATE_INDEXDATA(cr_helper)
 
 /*----------------------------------------------------------------------------

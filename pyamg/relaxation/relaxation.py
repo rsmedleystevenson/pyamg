@@ -240,7 +240,9 @@ def schwarz(A, x, b, iterations=1, subdomain=None, subdomain_ptr=None,
     >>> residuals=[]
     >>> x = sa.solve(b, x0=x0, tol=1e-8, residuals=residuals)
     """
+
     A, x, b = make_system(A, x, b, formats=['csr'])
+    A.sort_indices()
 
     if subdomain is None and inv_subblock is not None:
         raise ValueError("inv_subblock must be None if subdomain is None")
@@ -1080,6 +1082,3 @@ def schwarz_parameters(A, subdomain=None, subdomain_ptr=None,
     A.schwarz_parameters = (subdomain, subdomain_ptr, inv_subblock,
                             inv_subblock_ptr)
     return A.schwarz_parameters
-
-# from pyamg.utils import dispatcher
-# dispatch = dispatcher( dict([ (fn,eval(fn)) for fn in __all__ ]) )

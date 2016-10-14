@@ -14,15 +14,15 @@ from pyamg.util.linalg import norm, cond, pinv_array
 from scipy.linalg import eigvals
 import pyamg.amg_core
 
-__all__ = ['blocksize', 'diag_sparse', 'profile_solver', 'to_type',
-           'type_prep', 'get_diagonal', 'UnAmal', 'Coord2RBM',
+__all__ = ['unpack_arg', 'blocksize', 'diag_sparse', 'profile_solver', 
+           'to_type', 'type_prep', 'get_diagonal', 'UnAmal', 'Coord2RBM',
            'hierarchy_spectrum', 'print_table', 'get_block_diag', 'amalgamate',
            'symmetric_rescaling', 'symmetric_rescaling_sa',
            'relaxation_as_linear_operator', 'filter_operator', 'scale_T',
            'get_Cpt_params', 'compute_BtBinv', 'eliminate_diag_dom_nodes',
            'levelize_strength_or_aggregation',
            'levelize_smooth_or_improve_candidates', 'filter_matrix_columns',
-           'filter_matrix_rows', 'truncate_rows']
+           'filter_matrix_rows', 'truncate_rows', 'mat_mat_complexity']
 
 try:
     from scipy.sparse._sparsetools import csr_scale_rows, bsr_scale_rows
@@ -31,6 +31,21 @@ except ImportError:
     from scipy.sparse.sparsetools import csr_scale_rows, bsr_scale_rows
     from scipy.sparse.sparsetools import csr_scale_columns, bsr_scale_columns
 
+
+def unpack_arg(v, cost=True):
+    # Helper function for unpacking a function name and parameter
+    # dictionary tuple
+    if isinstance(v, tuple):
+        if cost:
+            (v[1])['cost'] = [0.0]
+            return v[0], v[1]
+        else:
+            return v[0], v[1]
+    else:
+        if cost:
+            return v, {'cost' : [0.0]}
+        else:
+            return v, {}
 
 def blocksize(A):
     # Helper Function: return the blocksize of a matrix
@@ -1126,7 +1141,7 @@ def Coord2RBM(numNodes, numPDEs, x, y, z):
     return rbm
 
 
-def relaxation_as_linear_operator(method, A, b):
+def relaxation_as_linear_operator(method, A, b, cost=[0.0]):
     """
     Create a linear operator that applies a relaxation method for the
     given right-hand-side
@@ -1139,6 +1154,8 @@ def relaxation_as_linear_operator(method, A, b):
         and 'opts' a dict of keyword arguments to the smoother, e.g., opts =
         {'sweep':symmetric}.  If string, must be that of a supported smoother,
         e.g., gauss_seidel.
+    cost : {list containing one scalar}
+        cost[0] is incremented to reflect a FLOP estimate for this function
 
     Returns
     -------
@@ -1168,20 +1185,14 @@ def relaxation_as_linear_operator(method, A, b):
     from scipy.sparse.linalg.interface import LinearOperator
     import pyamg.multilevel
 
-    def unpack_arg(v):
-        if isinstance(v, tuple):
-            return v[0], v[1]
-        else:
-            return v, {}
-
     # setup variables
     accepted_methods = ['gauss_seidel', 'block_gauss_seidel', 'sor',
                         'gauss_seidel_ne', 'gauss_seidel_nr', 'jacobi',
                         'block_jacobi', 'richardson', 'schwarz',
-                        'strength_based_schwarz']
+                        'strength_based_schwarz', 'jacobi_ne']
 
     b = np.array(b, dtype=A.dtype)
-    fn, kwargs = unpack_arg(method)
+    fn, kwargs = unpack_arg(method, cost=False)
     lvl = pyamg.multilevel_solver.level()
     lvl.A = A
 
@@ -1192,6 +1203,21 @@ def relaxation_as_linear_operator(method, A, b):
         setup_smoother = getattr(relaxation.smoothing, 'setup_' + fn)
     except NameError:
         raise NameError("invalid presmoother method: ", fn)
+
+    # Estimate cost in WUs for different relaxation methods 
+    dcost = 1
+    if fn.endswith(('nr', 'ne')):
+        dcost *= 2
+    if 'sweep' in kwargs:
+        if kwargs['sweep'] == 'symmetric':
+            dcost *= 2
+    if 'iterations' in kwargs:
+        dcost *= kwargs['iterations']
+    if 'degree' in kwargs:
+        dcost *= kwargs['degree']
+
+    cost[0] += dcost
+
     # Get relaxation routine that takes only (A, x, b) as parameters
     relax = setup_smoother(lvl, **kwargs)
 
@@ -1204,7 +1230,7 @@ def relaxation_as_linear_operator(method, A, b):
     return LinearOperator(A.shape, matvec, dtype=A.dtype)
 
 
-def filter_operator(A, C, B, Bf, BtBinv=None):
+def filter_operator(A, C, B, Bf, BtBinv=None, cost=[0.0]):
     """
     Filter the matrix A according to the matrix graph of C,
     while ensuring that the new, filtered A satisfies:  A_new*B = Bf.
@@ -1223,11 +1249,14 @@ def filter_operator(A, C, B, Bf, BtBinv=None):
         to the neighborhood (with respect to the matrix graph
         of C) of dof of i.  If None is passed in, this array is
         computed internally.
+    cost : {list containing one scalar}
+        cost[0] is incremented to reflect a FLOP estimate for this function
 
     Returns
     -------
     A : sparse matrix updated such that sparsity structure of A now matches
-    that of C, and that the relationship A*B = Bf holds.
+    that of C, and that the relationship A*B = Bf holds.  A will even hold
+    explicit zeros, if necessary.
 
     Notes
     -----
@@ -1327,12 +1356,14 @@ def filter_operator(A, C, B, Bf, BtBinv=None):
     # inv(Bi'Bi), where Bi is B restricted to row i's sparsity pattern in
     # C. This array is used multiple times in Satisfy_Constraints(...).
     if BtBinv is None:
-        BtBinv = compute_BtBinv(B, C)
+        BtBinv = compute_BtBinv(B, C, cost)
 
     # Filter A according to C's matrix graph
     C = C.copy()
     C.data[:] = 1
     A = A.multiply(C)
+    cost[0] += float(max(A.nnz, C.nnz))
+
     # add explicit zeros to A wherever C is nonzero, but A is zero
     A = A.tocoo()
     C = C.tocoo()
@@ -1344,7 +1375,8 @@ def filter_operator(A, C, B, Bf, BtBinv=None):
     else:
         A = A.tocsr()
 
-    # Calculate difference between A*B and Bf
+    # Calculate difference between A*B and Bf, cost updated below for
+    # this operation
     diff = A*B - Bf
 
     # Right multiply each row i of A with
@@ -1358,8 +1390,8 @@ def filter_operator(A, C, B, Bf, BtBinv=None):
                                               np.ravel(diff),
                                               np.ravel(BtBinv), A.indptr,
                                               A.indices, np.ravel(A.data))
+    cost[0] += A.nnz * (2.0*B.shape[1] + B.shape[1]**2) + (B.shape[1]**3) * B.shape[0]
 
-    A.eliminate_zeros()
     return A
 
 
@@ -1614,7 +1646,7 @@ def get_Cpt_params(A, Cnodes, AggOp, T):
     return {'P_I': P_I, 'I_F': I_F, 'I_C': I_C, 'Cpts': Cpts, 'Fpts': Fpts}
 
 
-def compute_BtBinv(B, C):
+def compute_BtBinv(B, C, cost=[0.0]):
     ''' Helper function that creates inv(B_i.T B_i) for each block row i in C,
         where B_i is B restricted to the sparsity pattern of block row i.
 
@@ -1625,6 +1657,8 @@ def compute_BtBinv(B, C):
     C : {csr_matrix, bsr_matrix}
         Sparse NxM matrix, whose sparsity structure (i.e., matrix graph)
         is used to determine BtBinv.
+    cost : {list containing one scalar}
+        cost[0] is incremented to reflect a FLOP estimate for this function
 
     Returns
     -------
@@ -1703,11 +1737,16 @@ def compute_BtBinv(B, C):
     #   pyamg.amg_core.pinv_array(np.ravel(BtBinv), Nnodes, NullDim, 'F')
     BtBinv = BtBinv.transpose((0, 2, 1)).copy()
     pinv_array(BtBinv)
+    
+    # Ignore leading constant in block inverse, because for small blocks
+    # seen in bad guys, constant of 30n^3 is way overestimating. 
+    cost[0] += (B.shape[0]*B.shape[1] + (B.shape[1]**3)*C.shape[0] ) /\
+                        float( blocksize(C) )
 
     return BtBinv
 
 
-def eliminate_diag_dom_nodes(A, C, theta=1.02):
+def eliminate_diag_dom_nodes(A, C, theta=1.02, cost=[0.0]):
     ''' Helper function that eliminates diagonally dominant rows and cols from A
     in the separate matrix C.  This is useful because it eliminates nodes in C
     which we don't want coarsened.  These eliminated nodes in C just become
@@ -1722,6 +1761,8 @@ def eliminate_diag_dom_nodes(A, C, theta=1.02):
         is CSR or is BSR with blocksize 1.  Otherwise M = N/blocksize.
     theta : {float}
         determines diagonal dominance threshhold
+    cost : {list containing one scalar}
+        cost[0] is incremented to reflect a FLOP estimate for this function
 
     Returns
     -------
@@ -1758,6 +1799,7 @@ def eliminate_diag_dom_nodes(A, C, theta=1.02):
     D_abs = get_diagonal(A_abs, norm_eq=0, inv=False)
     diag_dom_rows = (D_abs > (theta*(A_abs*np.ones((A_abs.shape[0],),
                      dtype=A_abs) - D_abs)))
+    cost[0] += 2
 
     # Account for BSR matrices and translate diag_dom_rows from dofs to nodes
     bsize = blocksize(A_abs)
@@ -1768,6 +1810,7 @@ def eliminate_diag_dom_nodes(A, C, theta=1.02):
         diag_dom_rows = (diag_dom_rows == bsize)
 
     # Replace these rows/cols in # C with rows/cols of the identity.
+    # Cost ignored, as a careful implementation could do this very cheaply. 
     I = eye(C.shape[0], C.shape[1], format='csr')
     I.data[diag_dom_rows] = 0.0
     C = I*C*I
@@ -2080,7 +2123,7 @@ def filter_matrix_columns(A, theta):
     return A_filter
 
 
-def filter_matrix_rows(A, theta):
+def filter_matrix_rows(A, theta, cost=[0.0]):
     """
     Filter each row of A with tol, i.e., drop all entries in row k where
         abs(A[i,k]) < tol max( abs(A[:,k]) )
@@ -2091,6 +2134,9 @@ def filter_matrix_rows(A, theta):
 
     theta : float
         In range [0,1) and defines drop-tolerance used to filter the row of A
+    
+    cost : {list containing one scalar}
+        cost[0] is incremented to reflect a FLOP estimate for this function
 
     Returns
     -------
@@ -2147,10 +2193,12 @@ def filter_matrix_rows(A, theta):
         A_filter = A_filter.asformat(Aformat)
 
     A.indices -= A.shape[0]
+    
+    cost[0] += 2.0 * A.nnz
     return A_filter
 
 
-def truncate_rows(A, nz_per_row):
+def truncate_rows(A, nz_per_row, cost=[0.0]):
     """
     Truncate the rows of A by keeping only the largest in magnitude entries in
     each row.
@@ -2160,7 +2208,10 @@ def truncate_rows(A, nz_per_row):
     A : sparse_matrix
 
     nz_per_row : int
+
         Determines how many entries in each row to keep
+    cost : {list containing one scalar}
+        cost[0] is incremented to reflect a FLOP estimate for this function
 
     Returns
     -------
@@ -2201,32 +2252,85 @@ def truncate_rows(A, nz_per_row):
         A = A.tobsr(blocksize)
     else:
         A = A.asformat(Aformat)
+    
+    # Track cost as the cost to sort each row
+    avg_row_size = A.nnz / float(A.shape[0])
+    if avg_row_size > 0:
+        cost[0] += A.shape[0]*(avg_row_size * np.log2(avg_row_size))
 
     return A
 
 
-# from functools import partial, update_wrapper
-# def dispatcher(name_to_handle):
-#    def dispatcher(arg):
-#        if isinstance(arg,tuple):
-#            fn,opts = arg[0],arg[1]
-#        else:
-#            fn,opts = arg,{}
-#
-#        if fn in name_to_handle:
-#            # convert string into function handle
-#            fn = name_to_handle[fn]
-#        #elif isinstance(fn, type(numpy.ones)):
-#        #    pass
-#        elif callable(fn):
-#            # if fn is itself a function handle
-#            pass
-#        else:
-#            raise TypeError('Expected function')
-#
-#        wrapped = partial(fn, **opts)
-#        update_wrapper(wrapped, fn)
-#
-#        return wrapped
-#
-#    return dispatcher
+def mat_mat_complexity(A, P, test_cols=10, incomplete=False):
+    """
+    Function to approximate the complexity of a sparse matrix
+    matrix multiplication, A*P.
+        
+        For a detailed estimate, a sample of test_cols columns
+        in P, p_i, are randomly selected, and the complexity to
+        compute A * p_i found as the number of nonzeros in A
+        which overlap with the sparsity of p_i. This is averaged
+        over the set of randomly selected columns.
+
+        The fast approximation is given by taking the average
+        number of nonzeros per column in P, and multiplying this
+        by the number of nonzeros in A. Is generally a pretty
+        good and cheap approximation.
+
+    If the function attribute mat_mat_complexity.__detailed__
+    is set to True, the detailed estimate is used, otherwise 
+    the fast approximation is used. Note that the detailed 
+    estimate will slow down the seutp process. 
+
+    Parameters
+    ----------
+    A : sparse matrix (preferably csr)
+        Left hand side of matrix multiplication
+    P : sparse matrix (preferably csc)
+        Right hand side of matrix multiplication
+    test_cols : int : Default 10
+        Number of columns to sample for overlapping sparsity
+        patterns of A, P. More samples is more work, but 
+        more accurate. 
+    incomplete : bool : Default False
+        Complexity of incomplete matrix multiplication,
+        where A*P is only computed in the sparsity pattern
+        of P. Used particularly in energy minimization 
+        smoothing of prolongation operators. 
+
+    Returns
+    -------
+    Approximate number of FLOPs to compute A*P.
+
+    """
+
+    # Detailed estimate of complexity for matrix product 
+    # using random sampling. 
+    if hasattr(mat_mat_complexity, '__detailed__') and\
+        mat_mat_complexity.__detailed__ == True:
+        from random import randint
+        A0 = A.tocsr()
+        P0 = P.tocsc()
+
+        # Random set of test columns
+        test_cols = min(test_cols, P0.shape[1])
+        k = P0.shape[1]
+        cols = [randint(0,P0.shape[1]-1) for i in range(0,test_cols)]
+
+        work = 0.0
+        for c in cols:
+            inds = P0[:,c].indices
+            if len(inds) == 0:
+                continue
+            if incomplete:
+                work += A0[inds,:][:,inds].nnz
+            else:
+                work += A0[:,inds].nnz
+
+        work = work * P0.shape[1] / float(test_cols)
+        return work
+
+    # Approximation of complexity of matrix product.
+    else:
+        return A.nnz * (float(P.nnz) / P.shape[0])
+
