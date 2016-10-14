@@ -78,7 +78,8 @@ I add_edge(const I A_rowptr[],
            const T A_data[],
            std::vector<I> &M,
            T &W,
-           const I &row)
+           const I &row,
+           T cost[] )
 {
     I data_ind0 = A_rowptr[row];
     I data_ind1 = A_rowptr[row+1];
@@ -94,7 +95,9 @@ I add_edge(const I A_rowptr[],
                 new_node = temp_node;
                 new_ind = i;
             }
+            cost[0] += 1.0;
         }
+        cost[0] += 1.0;
     }
 
     // Add edge to matching and weight to total edge weight.
@@ -103,6 +106,7 @@ I add_edge(const I A_rowptr[],
         W += std::abs(A_data[new_ind]);
         M[row] = new_node;
         M[new_node] = row;
+        cost[0] += 1.0;
     }
 
     // Return node index in new edge
@@ -151,7 +155,8 @@ void drake_matching_data(const I A_rowptr[],
                          T Agg_data[], 
                          I Agg_shape[],
                          const T B[],
-                         const I &n )
+                         const I &n,
+                         T cost[] )
 {
         
     // Store M1[:], M2[:] = -1 to start. When nodes are aggregated, 
@@ -172,7 +177,7 @@ void drake_matching_data(const I A_rowptr[],
             if (M1[x] != -1) {
                 break;
             }    
-            I y = add_edge(A_rowptr, A_colinds, A_data, M1, W1, x);
+            I y = add_edge(A_rowptr, A_colinds, A_data, M1, W1, x, cost);
             if (y == -1) {
                 break;
             }
@@ -182,7 +187,7 @@ void drake_matching_data(const I A_rowptr[],
             if (M2[y] != -1) {
                 break;
             }
-            x = add_edge(A_rowptr, A_colinds, A_data, M2, W2, y);
+            x = add_edge(A_rowptr, A_colinds, A_data, M2, W2, y, cost);
             if (x == -1) {
                 break;
             }
@@ -218,7 +223,8 @@ void drake_matching_data(const I A_rowptr[],
             singletons.push_back(i);
             if (std::abs(B[i]) > max_single) {
                 max_single = std::abs(B[i]);
-            }                
+            }
+            cost[0] += 1.0;
 
             // Mark node as stored (-2), increase coarse grid count
             M[i] = -2;
@@ -239,6 +245,7 @@ void drake_matching_data(const I A_rowptr[],
             T norm_b = std::sqrt( B[p1]*B[p1] + B[p2]*B[p2] );
             Agg_data[p1] = B[p1] / norm_b;
             Agg_data[p2] = B[p2] / norm_b;
+            cost[0] += 4.0;
 
             // Mark both nodes as stored (-2), and increase coarse grid count
             // Order is important, must modify M[p2] before M[p1], because 
@@ -257,6 +264,7 @@ void drake_matching_data(const I A_rowptr[],
     if (max_single > 0) {
         for (auto it=singletons.begin(); it!=singletons.end(); it++) {
             Agg_data[*it] /= max_single;
+            cost[0] += 1.0;
         }
     }
 
@@ -301,7 +309,8 @@ void drake_matching_nodata(const I A_rowptr[],
                            I Agg_rowptr[],
                            I Agg_colinds[],
                            I Agg_shape[],
-                           const I &n )
+                           const I &n,
+                           T cost[] )
 {
         
     // Plan - store M1, M2 as all -a to start, when nodes are aggregated, 
@@ -322,7 +331,7 @@ void drake_matching_nodata(const I A_rowptr[],
             if (M1[x] != -1) {
                 break;
             }    
-            I y = add_edge(A_rowptr, A_colinds, A_data, M1, W1, x);
+            I y = add_edge(A_rowptr, A_colinds, A_data, M1, W1, x, cost);
             if (y == -1) {
                 break;
             }
@@ -332,7 +341,7 @@ void drake_matching_nodata(const I A_rowptr[],
             if (M2[y] != -1) {
                 break;
             }
-            x = add_edge(A_rowptr, A_colinds, A_data, M2, W2, y);
+            x = add_edge(A_rowptr, A_colinds, A_data, M2, W2, y, cost);
             if (x == -1) {
                 break;
             }
@@ -351,6 +360,8 @@ void drake_matching_nodata(const I A_rowptr[],
     I Nc = 0;
     Agg_rowptr[0] = 0;
     for (I i=0; i<n; i++) {
+
+        cost[0] += 1.0; // No real FLOPs, just +1 / iteration?
 
         // Set row pointer value for next row
         Agg_rowptr[i+1] = i+1;
@@ -405,12 +416,12 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
                     I Agg_colinds[], const int Agg_colinds_size,
                     T Agg_data[], const int Agg_data_size,
                     I Agg_shape[], const int Agg_shape_size,
-                    const T dummy = 0)
+                    T cost[], const int cost_size )
 {
     I n = A_rowptr_size-1;
     drake_matching_data(A_rowptr, A_colinds, A_data,
                         Agg_rowptr, Agg_colinds, Agg_data,
-                        Agg_shape, B, n);
+                        Agg_shape, B, n, cost);
 }
 
 
@@ -421,11 +432,12 @@ void drake_matching(const I A_rowptr[], const int A_rowptr_size,
                     I Agg_rowptr[], const int Agg_rowptr_size,
                     I Agg_colinds[], const int Agg_colinds_size,
                     I Agg_shape[], const int Agg_shape_size,
-                    const T dummy = 0)
+                    T cost[], const int cost_size )
 {
     I n = A_rowptr_size-1;
     drake_matching_nodata(A_rowptr, A_colinds, A_data,
-                          Agg_rowptr, Agg_colinds, Agg_shape, n);
+                          Agg_rowptr, Agg_colinds, Agg_shape,
+                          n, cost);
 }
 
 /* Function to filter matrix A using the hard minimum approach in
@@ -541,7 +553,8 @@ void notay_pairwise_data(const I A_rowptr[],
                          T Agg_data[],
                          I Agg_shape[],
                          const T B[],
-                         const I &n  )
+                         const I &n,
+                         T cost[] )
 {
     // Construct vector, m, to track if each node has been aggregated (-1),
     // and its number of unaggregated neighbors otherwise. Save node with
@@ -556,6 +569,7 @@ void notay_pairwise_data(const I A_rowptr[],
             start_ind = i;
         }
     }
+    cost[0] += n;
 
     // Loop until all nodes have been aggregated 
     I Nc = 0;
@@ -577,6 +591,7 @@ void notay_pairwise_data(const I A_rowptr[],
                     min_val = A_data[j];
                 }
             }
+            cost[0] += 1.0;
         }
 
         // Form new aggregate as vector of length 1 or 2 and mark
@@ -615,6 +630,7 @@ void notay_pairwise_data(const I A_rowptr[],
                         start_ind = A_colinds[j];
                     }
                 }
+                cost[0] += 1.0;
             }
         }
 
@@ -626,6 +642,7 @@ void notay_pairwise_data(const I A_rowptr[],
                     min_neighbor = m[i];
                     start_ind = i;
                 }
+                cost[0] += 1.0;
             }
         }
 
@@ -635,8 +652,10 @@ void notay_pairwise_data(const I A_rowptr[],
         if (new_agg.size() > 1) {
             for (auto it=new_agg.begin(); it!=new_agg.end(); it++) {
                 agg_norm += B[*it] * B[*it];
+                cost[0] += 1.0;
             }
             agg_norm = std::sqrt(agg_norm);
+            cost[0] += 1.0;
         }
 
         // Update sparse structure for aggregation matrix with new aggregate.
@@ -645,6 +664,7 @@ void notay_pairwise_data(const I A_rowptr[],
             Agg_colinds[*it] = Nc;
             // Set corresponding data value, normalize if B provided.
             Agg_data[*it] = B[*it] / agg_norm;
+            cost[0] += 1.0;
             // Increase row pointer by one for each node aggregated
             Agg_rowptr[num_aggregated+1] = num_aggregated+1; 
             // Increase count of aggregated nodes
@@ -710,7 +730,8 @@ void notay_pairwise_nodata(const I A_rowptr[],
                            I Agg_rowptr[],
                            I Agg_colinds[],
                            I Agg_shape[],
-                           const I &n  )
+                           const I &n,
+                           T cost[] )
 {
     // Construct vector, m, to track if each node has been aggregated (-1),
     // and its number of unaggregated neighbors otherwise. Save node with
@@ -725,6 +746,7 @@ void notay_pairwise_nodata(const I A_rowptr[],
             start_ind = i;
         }
     }
+    cost[0] += n;
 
     // Loop until all nodes have been aggregated 
     I Nc = 0;
@@ -744,6 +766,7 @@ void notay_pairwise_nodata(const I A_rowptr[],
                     min_val = A_data[j];
                 }
             }
+            cost[0] += 1;
         }
 
         // Form new aggregate as vector of length 1 or 2 and mark
@@ -777,6 +800,7 @@ void notay_pairwise_nodata(const I A_rowptr[],
                         start_ind = A_colinds[j];
                     }
                 }
+                cost[0] += 1;
             }
         }
 
@@ -788,6 +812,7 @@ void notay_pairwise_nodata(const I A_rowptr[],
                     min_neighbor = m[i];
                     start_ind = i;
                 }
+                cost[0] += 1.0;
             }
         }
 
@@ -820,6 +845,7 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
                     I Agg_colinds[], const int Agg_colinds_size,
                     T Agg_data[], const int Agg_data_size,
                     I Agg_shape[], const int Agg_shape_size,
+                    T cost[], const int cost_size,
                     const T beta = 0)
 {
     I n = A_rowptr_size-1;
@@ -837,17 +863,18 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
         //      { a_ij : a_ij < beta * min_j a_ij }
         notay_filter(A_rowptr, A_colinds, A_data,
                      rowptr, colinds, data, beta, n);
+        cost[0] += A_data_size;
 
         // Pairwise matching on filtered matrix
         notay_pairwise_data(&rowptr[0], &colinds[0], &data[0],
                             Agg_rowptr, Agg_colinds, Agg_data,
-                            Agg_shape, B, n);
+                            Agg_shape, B, n, cost);
     }
     // If filtering threshold = 0, do pairwise aggregation on A
     else {
         notay_pairwise_data(A_rowptr, A_colinds, A_data,
                             Agg_rowptr, Agg_colinds, Agg_data,
-                            Agg_shape, B, n);
+                            Agg_shape, B, n, cost);
     }
 }
 
@@ -859,6 +886,7 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
                     I Agg_rowptr[], const int Agg_rowptr_size,
                     I Agg_colinds[], const int Agg_colinds_size,
                     I Agg_shape[], const int Agg_shape_size,
+                    T cost[], const int cost_size,
                     const T beta = 0)
 {
     I n = A_rowptr_size-1;
@@ -876,15 +904,18 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
         //      { a_ij : a_ij < beta * min_j a_ij }
         notay_filter(A_rowptr, A_colinds, A_data,
                      rowptr, colinds, data, beta, n);
+        cost[0] += A_data_size;
 
         // Pairwise matching on filtered matrix
         notay_pairwise_nodata(&rowptr[0], &colinds[0], &data[0],
-                              Agg_rowptr, Agg_colinds, Agg_shape, n);
+                              Agg_rowptr, Agg_colinds, Agg_shape, n,
+                              cost);
     }
     // If filtering threshold = 0, do pairwise aggregation on A
     else {
         notay_pairwise_nodata(A_rowptr, A_colinds, A_data,
-                              Agg_rowptr, Agg_colinds, Agg_shape, n);
+                              Agg_rowptr, Agg_colinds, Agg_shape, n,
+                              cost);
     } 
 }
 
@@ -925,10 +956,12 @@ void compute_weights(const I A_rowptr[], const int A_rowptr_size,
                      const I A_colinds[], const int A_colinds_size,
                      const T A_data[], const int A_data_size,
                       	   T weights[], const int weights_size,
-                     const T B[], const int B_size)
+                     const T B[], const int B_size,
+                           T cost[], const int cost_size)
 {
 	I n = A_rowptr_size-1;
 	std::vector<T> diag(n);
+    T temp_cost = 0.0;
 
 	// Get diagonal elements of matrix
 	for (I i=0; i<n; i++) {
@@ -945,15 +978,19 @@ void compute_weights(const I A_rowptr[], const int A_rowptr_size,
 		for (I ind=A_rowptr[i]; ind<A_rowptr[i+1]; ind++) {
 			I j=A_colinds[ind];
 			weights[ind] = 1.0 - (2*A_data[ind]*B[i]*B[j]) / (diag[i]*B[i]*B[i] + diag[j]*B[j]*B[j]);
+            temp_cost += 3.0;
 		}
 	}
+    temp_cost += n; // Can precompute a_{ii}B_i^2
+    cost[0] += temp_cost;   
 }
 
 template<class I, class T>
 void compute_weights(const I A_rowptr[], const int A_rowptr_size,
                      const I A_colinds[], const int A_colinds_size,
                      const T A_data[], const int A_data_size,
-                      	   T weights[], const int weights_size)
+                      	   T weights[], const int weights_size,
+                           T cost[], const int cost_size)
 {
 	I n = A_rowptr_size-1;
 	std::vector<T> diag(n);
@@ -973,8 +1010,10 @@ void compute_weights(const I A_rowptr[], const int A_rowptr_size,
 		for (I ind=A_rowptr[i]; ind<A_rowptr[i+1]; ind++) {
 			I j=A_colinds[ind];
 			weights[ind] = 1.0 - 2*A_data[ind] / (diag[i] + diag[j]);
+            temp_cost += 2.0;
 		}
-	}		
+	}	
+    cost[0] += temp_cost;	
 }
 
 #endif

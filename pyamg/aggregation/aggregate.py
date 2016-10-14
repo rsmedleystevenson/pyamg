@@ -9,7 +9,7 @@ import numpy as np
 from scipy.sparse import csr_matrix, coo_matrix, isspmatrix_csr, isspmatrix_csc
 from pyamg import amg_core
 from pyamg.graph import lloyd_cluster
-from pyamg.util.utils import relaxation_as_linear_operator
+from pyamg.util.utils import relaxation_as_linear_operator, mat_mat_complexity
 
 __all__ = ['standard_aggregation', 'naive_aggregation', 'lloyd_aggregation', 'pairwise_aggregation']
 
@@ -287,7 +287,7 @@ def weighted_matching(A, B=None, matchings=2,
                       improve_candidates=('gauss_seidel',
                                           {'sweep': 'forward',
                                            'iterations': 4}),
-                      get_Cpts=False, **kwargs):
+                      get_Cpts=False, cost=[0.0], **kwargs):
     """ Pairwise aggregation of nodes using Drake approximate
         1/2-matching algorithm.
 
@@ -385,10 +385,15 @@ def weighted_matching(A, B=None, matchings=2,
     Ac = A      # Let Ac reference A for loop purposes
     if get_weights:
         weights = np.empty((A.nnz,),dtype=A.dtype)
+        temp_cost = [0]
         if target is None:
-            amg_core.compute_weights(A.indptr, A.indices, A.data, weights)
+            amg_core.compute_weights(A.indptr, A.indices, A.data,
+                                     weights, temp_cost)
         else:
-            amg_core.compute_weights(A.indptr, A.indices, A.data, weights, target)
+            amg_core.compute_weights(A.indptr, A.indices, A.data,
+                                     weights, target, temp_cost)
+
+        cost[0] += temp_cost[0] / float(A.nnz)
     else:
         weights = A.data
 
@@ -399,6 +404,7 @@ def weighted_matching(A, B=None, matchings=2,
         rowptr = np.empty(n+1, dtype='intc')
         colinds = np.empty(n, dtype='intc')
         shape = np.empty(2, dtype='intc')
+        temp_cost = [0]
         if target is None:
             amg_core.drake_matching(Ac.indptr, 
                          Ac.indices,
@@ -406,7 +412,7 @@ def weighted_matching(A, B=None, matchings=2,
                          rowptr,
                          colinds,
                          shape,
-                         beta )
+                         temp_cost )
             T_temp = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
         else:
             data = np.empty(n, dtype=float)
@@ -418,37 +424,48 @@ def weighted_matching(A, B=None, matchings=2,
                                     colinds,
                                     data,
                                     shape,
-                                    beta )
+                                    temp_cost )
             T_temp = csr_matrix( (data, colinds, rowptr), shape=shape )
 
+        cost[0] += temp_cost[0] / float(A.nnz)
         # Form aggregation matrix 
         if i == 0:
             T = T_temp
         else:
+            cost[0] += mat_mat_complexity(T,T_temp) / float(A.nnz)
             T = T * T_temp
 
-        # Prepare target, coarse grid for next matching
+        # Form coarse grid operator and restrict target to coarse grid 
         if i < (matchings-1):
-
-            # Form coarse grid operator and restrict target to coarse grid 
-            Ac = T_temp.T*Ac*T_temp
+            # Get complexity of Ac = T^TAT
+            cost[0] += mat_mat_complexity(T_temp.T,Ac) / float(A.nnz)
+            TA = T_temp.T * Ac
+            cost[0] += mat_mat_complexity(TA,T_temp) / float(A.nnz)
+            Ac = TA * T_temp
             if target is not None:
-                target = T_temp.T*target  
+                target = T_temp.T*target
+                cost[0] += T_temp.nnz / / float(A.nnz)
 
             # If not last iteration, improve target by relaxing on A*target = 0.
             # If last iteration, we will not use target - set to None.
             n = Ac.shape[0]
             if (target is not None) and (improve_fn is not None):
                 b = np.zeros((n, 1), dtype=Ac.dtype)
-                target = relaxation_as_linear_operator((improve_fn, improve_args), Ac, b) * target         
+                target = relaxation_as_linear_operator((improve_fn, improve_args),
+                                                       Ac, b, cost) * target         
 
             # Compute optional weights on coarse grid operator
             if get_weights:
                 weights = np.empty((A.nnz,),dtype=A.dtype)
+                temp_cost = [0.0]
                 if target is None:
-                    amg_core.compute_weights(A.indptr, A.indices, A.data, weights)
+                    amg_core.compute_weights(A.indptr, A.indices, A.data,
+                                             weights, temp_cost)
                 else:
-                    amg_core.compute_weights(A.indptr, A.indices, A.data, weights, target) 
+                    amg_core.compute_weights(A.indptr, A.indices, A.data,
+                                             weights, target, temp_cost)
+
+                cost[0] += temp_cost[0] / float(A.nnz)
             else:
                 weights = Ac.data
 
@@ -461,7 +478,7 @@ def weighted_matching(A, B=None, matchings=2,
 
 
 def notay_pairwise(A, B=None, beta=0.25, matchings=2,
-                   get_Cpts=False, **kwargs):
+                   get_Cpts=False, cost=[0.0], **kwargs):
     """ Pairwise aggregation of nodes using Notay approach. 
 
     Parameters
@@ -549,6 +566,7 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
         rowptr = np.empty(n+1, dtype='intc')
         colinds = np.empty(n, dtype='intc')
         shape = np.empty(2, dtype='intc')
+        temp_cost = [0]
         if target is None:
             amg_core.notay_pairwise(Ac.indptr, 
                                     Ac.indices,
@@ -556,6 +574,7 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
                                     rowptr,
                                     colinds,
                                     shape,
+                                    temp_cost,
                                     beta )
             T_temp = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
         else:
@@ -568,27 +587,37 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
                                     colinds,
                                     data,
                                     shape,
+                                    temp_cost,
                                     beta )
             T_temp = csr_matrix( (data, colinds, rowptr), shape=shape )
+
+        cost[0] += temp_cost[0] / float(A.nnz)
 
         # Form aggregation matrix 
         if i == 0:
             T = T_temp
         else:
+            cost[0] += mat_mat_complexity(T,T_temp) / float(A.nnz)
             T = T * T_temp
 
         # Form coarse grid operator and restrict target to coarse grid 
         if i < (matchings-1):
-            Ac = T_temp.T*Ac*T_temp
+            # Get complexity of Ac = T^TAT
+            cost[0] += mat_mat_complexity(T_temp.T,Ac) / float(A.nnz)
+            TA = T_temp.T * Ac
+            cost[0] += mat_mat_complexity(TA,T_temp) / float(A.nnz)
+            Ac = TA * T_temp
             if target is not None:
-                target = T_temp.T*target  
+                target = T_temp.T*target
+                cost[0] += T_temp.nnz / / float(A.nnz)
 
             # If not last iteration, improve target by relaxing on A*target = 0.
             # If last iteration, we will not use target - set to None.
             n = Ac.shape[0]
             if (target is not None) and (improve_fn is not None):
                 b = np.zeros((n, 1), dtype=Ac.dtype)
-                target = relaxation_as_linear_operator((improve_fn, improve_args), Ac, b) * target         
+                target = relaxation_as_linear_operator((improve_fn, improve_args),
+                                                       Ac, b, cost) * target         
 
 
     # NEED TO IMPLEMENT A WAY TO CHOOSE C-POINTS

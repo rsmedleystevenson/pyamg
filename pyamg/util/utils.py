@@ -1155,7 +1155,9 @@ def relaxation_as_linear_operator(method, A, b, cost=[0.0]):
         {'sweep':symmetric}.  If string, must be that of a supported smoother,
         e.g., gauss_seidel.
     cost : {list containing one scalar}
-        cost[0] is incremented to reflect a FLOP estimate for this function
+        cost[0] is incremented to reflect a FLOP estimate for this function.
+        Note, cost is increased in WUs, and not in raw FLOPS as is the case
+        for some functions.
 
     Returns
     -------
