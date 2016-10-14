@@ -15,7 +15,7 @@ from pyamg.util.utils import relaxation_as_linear_operator,\
     eliminate_diag_dom_nodes, blocksize, \
     levelize_strength_or_aggregation, \
     levelize_smooth_or_improve_candidates, \
-    mat_mat_complexity
+    mat_mat_complexity, unpack_arg
 from pyamg.strength import classical_strength_of_connection,\
     symmetric_strength_of_connection, evolution_strength_of_connection,\
     energy_based_strength_of_connection, distance_strength_of_connection,\
@@ -140,7 +140,7 @@ def rootnode_solver(A, B=None, BH=None,
     setup_complexity : bool
         For a detailed, more accurate setup complexity, pass in 
         'setup_complexity' = True. This will slow down performance, but
-        increase accuracy of complexiy count. 
+        increase accuracy of complexity count. 
 
     Returns
     -------
@@ -268,6 +268,7 @@ def rootnode_solver(A, B=None, BH=None,
 
     if A.shape[0] != A.shape[1]:
         raise ValueError('expected square matrix')
+
     # Right near nullspace candidates use constant for each variable as default
     if B is None:
         B = np.kron(np.ones((int(A.shape[0]/blocksize(A)), 1), dtype=A.dtype),
@@ -322,6 +323,7 @@ def rootnode_solver(A, B=None, BH=None,
         extend_hierarchy(levels, strength, aggregate, splitting, smooth,
                          improve_candidates, diagonal_dominance, keep)
 
+    # Construct and return multilevel hierarchy
     ml = multilevel_solver(levels, **kwargs)
     change_smoothers(ml, presmoother, postsmoother)
     return ml
@@ -333,19 +335,6 @@ def extend_hierarchy(levels, strength, aggregate, splitting, smooth,
     tentative prolongation construction, and prolongation smoothing.  Called by
     smoothed_aggregation_solver.
     """
-
-    def unpack_arg(v, cost=True):
-        if isinstance(v, tuple):
-            if cost:
-                (v[1])['cost'] = [0.0]
-                return v[0], v[1]
-            else:
-                return v[0], v[1]
-        else:
-            if cost:
-                return v, {'cost' : [0.0]}
-            else:
-                return v, {}
 
     A = levels[-1].A
     B = levels[-1].B
@@ -465,16 +454,15 @@ def extend_hierarchy(levels, strength, aggregate, splitting, smooth,
         # matrix from the coarse-grid to the fine-grid.  T exactly interpolates
         # B_fine[:, 0:blocksize(A)] = T B_coarse[:, 0:blocksize(A)].
         # Orthogonalization complexity ~ 2nk^2, k = blocksize(A).
-        levels[-1].complexity['tentative'] = 2.0 * blocksize(A) * blocksize(A) * \
-                                                float(A.shape[0])/A.nnz
 
-        T, dummy = fit_candidates(AggOp, B[:, 0:blocksize(A)])
+        temp_cost=[0.0]
+        T, dummy = fit_candidates(AggOp, B[:, 0:blocksize(A)], cost=temp_cost)
         del dummy
         if A.symmetry == "nonsymmetric":
-            TH, dummyH = fit_candidates(AggOp, BH[:, 0:blocksize(A)])
+            TH, dummyH = fit_candidates(AggOp, BH[:, 0:blocksize(A)], cost=temp_cost)
             del dummyH
-            levels[-1].complexity['tentative'] += 2.0 * blocksize(A) * \
-                                            blocksize(A) * float(A.shape[0])/A.nnz
+
+        levels[-1].complexity['tentative'] = temp_cost[0]/A.nnz
         
         # Create necessary root node matrices
         Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp, T))

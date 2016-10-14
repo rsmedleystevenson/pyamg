@@ -13,7 +13,7 @@ from pyamg.relaxation.smoothing import change_smoothers
 from pyamg.util.utils import relaxation_as_linear_operator,\
     eliminate_diag_dom_nodes, blocksize,\
     levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
-    mat_mat_complexity
+    mat_mat_complexity, unpack_arg
 from pyamg.strength import classical_strength_of_connection,\
     symmetric_strength_of_connection, evolution_strength_of_connection,\
     energy_based_strength_of_connection, distance_strength_of_connection,\
@@ -125,7 +125,7 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
     setup_complexity : bool
         For a detailed, more accurate setup complexity, pass in 
         'setup_complexity' = True. This will slow down performance, but
-        increase accuracy of complexiy count. 
+        increase accuracy of complexity count. 
 
     Returns
     -------
@@ -224,15 +224,15 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
             warn("Implicit conversion of A to CSR",
                  SparseEfficiencyWarning)
         except:
-            raise TypeError('Argument A must have type csr_matrix or\
-                             bsr_matrix, or be convertible to csr_matrix')
+            raise TypeError('Argument A must have type csr_matrix or '
+                            'bsr_matrix, or be convertible to csr_matrix')
 
     A = A.asfptype()
 
     if (symmetry != 'symmetric') and (symmetry != 'hermitian') and\
             (symmetry != 'nonsymmetric'):
-        raise ValueError('expected \'symmetric\', \'nonsymmetric\' or\
-                         \'hermitian\' for the symmetry parameter ')
+        raise ValueError('expected \'symmetric\', \'nonsymmetric\' or '
+                         'hermitian\' for the symmetry parameter ')
     A.symmetry = symmetry
 
     if A.shape[0] != A.shape[1]:
@@ -293,6 +293,7 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
         extend_hierarchy(levels, strength, aggregate, smooth,
                          improve_candidates, diagonal_dominance, keep)
 
+    # Construct and return multilevel hierarchy
     ml = multilevel_solver(levels, **kwargs)
     change_smoothers(ml, presmoother, postsmoother)
     return ml
@@ -304,19 +305,6 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     tentative prolongation construction, and prolongation smoothing.  Called by
     smoothed_aggregation_solver.
     """
-
-    def unpack_arg(v, cost=True):
-        if isinstance(v, tuple):
-            if cost:
-                (v[1])['cost'] = [0.0]
-                return v[0], v[1]
-            else:
-                return v[0], v[1]
-        else:
-            if cost:
-                return v, {'cost' : [0.0]}
-            else:
-                return v, {}
 
     A = levels[-1].A
     B = levels[-1].B
@@ -393,13 +381,12 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     # Compute the tentative prolongator, T, which is a tentative interpolation
     # matrix from the coarse-grid to the fine-grid.  T exactly interpolates
     # B_fine = T B_coarse. Orthogonalization complexity ~ 2nk^2, k=B.shape[1].
-    levels[-1].complexity['tentative'] = 2.0 * B.shape[1] * B.shape[1] * \
-                                            float(A.shape[0])/A.nnz
-    T, B = fit_candidates(AggOp, B)
+    temp_cost=[0.0]
+    T, B = fit_candidates(AggOp, B, cost=temp_cost)
     if A.symmetry == "nonsymmetric":
-        TH, BH = fit_candidates(AggOp, BH)
-        levels[-1].complexity['tentative'] += 2.0 * BH.shape[1] * BH.shape[1] * \
-                                            float(A.shape[0])/A.nnz
+        TH, BH = fit_candidates(AggOp, BH, cost=temp_cost)
+
+    levels[-1].complexity['tentative'] = temp_cost[0]/A.nnz
 
     # Smooth the tentative prolongator, so that it's accuracy is greatly
     # improved for algebraically smooth error.

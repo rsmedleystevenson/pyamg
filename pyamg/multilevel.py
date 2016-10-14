@@ -3,18 +3,12 @@
 __docformat__ = "restructuredtext en"
 
 from warnings import warn
+from pyamg.util.utils import unpack_arg
 
 import scipy as sp
 import numpy as np
 
 __all__ = ['multilevel_solver', 'coarse_grid_solver']
-
-
-def unpack_arg(v):
-    if isinstance(v, tuple):
-        return v[0], v[1]
-    else:
-        return v, {}
 
 
 class multilevel_solver:
@@ -74,7 +68,8 @@ class multilevel_solver:
             the relaxation schemes used on this level. Used to compute 
             cycle complexity.
         complexity : {dict}
-            Dictionary to store complexity for each step in setup process.
+            Dictionary to store complexity for each step in setup process,
+            such as constructing P or computing strength-of-connection
         SC : float
             Setup complexity on this level in WUs relative to fine grid. 
 
@@ -84,6 +79,8 @@ class multilevel_solver:
         """
         def __init__(self):
             self.smoothers = {}
+            self.smoothers['presmoother'] = [None, {}]
+            self.smoothers['postsmoother'] = [None, {}]
             self.complexity = {}
             self.SC = None
 
@@ -96,12 +93,6 @@ class multilevel_solver:
         ----------
         levels : level array
             Array of level objects that contain A, R, and P.
-        solver_type : string
-            Type of hierarchy this is, options are
-            - 'sa'  => smoothed aggregation
-            - 'asa' => adaptive smoothed aggregation
-            - 'rn'  => root node
-            - 'amg' => ruge-stuben amg
         coarse_solver : {string, callable, tuple}
             The solver method is either (1) a string such as 'splu' or 'pinv'
             of a callable object which receives only parameters (A, b) and
@@ -202,7 +193,6 @@ class multilevel_solver:
 
         return output
 
-
     def setup_complexity(self, verbose=False):
         """Setup complexity of this multigrid hierarchy.
 
@@ -286,8 +276,8 @@ class multilevel_solver:
         given by the cycle type. Note, this is only for init_level=0.
 
         """
-        if init_level >= len(self.levels)-1:
-            raise ValueError("Initial CC level must be less than %i"%(len(self.levels)-1))
+        if init_level > len(self.levels)-1:
+            raise ValueError("Initial CC level must be in the range [0, %i]"%len(self.levels))
 
         # Return if already stored
         cycle = str(cycle).upper()
@@ -301,6 +291,8 @@ class multilevel_solver:
         rel_nnz_R = [level.R.nnz/nnz[0] for level in self.levels[0:-1]]
 
         # Determine cost per nnz for smoothing on each level
+        # Note: It is assumed that the default parameters in smoothing.py for each
+        # relaxation scheme corresponds to a single workunit operation.
         smoother_cost = []
         for i in range(0,len(self.levels)-1):
             lvl = self.levels[i]
@@ -317,9 +309,11 @@ class multilevel_solver:
                         pre_factor *= 2
                 if 'iterations' in presmoother[1]:
                     pre_factor *= presmoother[1]['iterations']
+                if 'maxiter' in presmoother[1]:
+                    pre_factor *= presmoother[1]['maxiter']
                 if 'degree' in presmoother[1]:
                     pre_factor *= presmoother[1]['degree']
-            else:  
+            else:
                 pre_factor = 0
 
             # Postsmoother
@@ -332,9 +326,11 @@ class multilevel_solver:
                         post_factor *= 2
                 if 'iterations' in postsmoother[1]:
                     post_factor *= postsmoother[1]['iterations']
+                if 'maxiter' in postsmoother[1]:
+                    post_factor *= postsmoother[1]['maxiter']
                 if 'degree' in postsmoother[1]:
                     post_factor *= postsmoother[1]['degree']
-            else:  
+            else:
                 post_factor = 0
 
             # Smoothing cost scaled by A_i.nnz / A_0.nnz
@@ -380,7 +376,8 @@ class multilevel_solver:
             if len(self.levels) == 1:
                 return rel_nnz_A[0]
             elif level == len(self.levels) - 2:
-                return smoother_cost[level] + schwarz_work[level]
+                return smoother_cost[level] + correction_cost[level] + \
+                    schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
                     schwarz_work[level] + V(level + 1)
@@ -389,7 +386,8 @@ class multilevel_solver:
             if len(self.levels) == 1:
                 return rel_nnz_A[0]
             elif level == len(self.levels) - 2:
-                return smoother_cost[level] + schwarz_work[level] 
+                return smoother_cost[level] +  correction_cost[level] + \
+                    schwarz_work[level] 
             else:
                 return smoother_cost[level] + correction_cost[level] + \
                     schwarz_work[level] + 2*W(level + 1)
@@ -398,7 +396,8 @@ class multilevel_solver:
             if len(self.levels) == 1:
                 return rel_nnz_A[0]
             elif level == len(self.levels) - 2:
-                return smoother_cost[level] + schwarz_work[level]
+                return smoother_cost[level] + correction_cost[level] + \
+                    schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
                     schwarz_work[level] + F(level + 1) + V(level + 1)
@@ -779,13 +778,7 @@ def coarse_grid_solver(solver):
     >>> x = cgs(A, b)
     """
 
-    def unpack_arg(v):
-        if isinstance(v, tuple):
-            return v[0], v[1]
-        else:
-            return v, {}
-
-    solver, kwargs = unpack_arg(solver)
+    solver, kwargs = unpack_arg(solver, cost=False)
 
     if solver in ['pinv', 'pinv2']:
         def solve(self, A, b):

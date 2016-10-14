@@ -5,7 +5,7 @@ from __future__ import absolute_import
 import scipy as sp
 from . import relaxation
 from .chebyshev import chebyshev_polynomial_coefficients
-from pyamg.util.utils import scale_rows, get_block_diag, get_diagonal
+from pyamg.util.utils import scale_rows, get_block_diag, get_diagonal, unpack_arg
 from pyamg.util.linalg import approximate_spectral_radius
 from pyamg.krylov import gmres, cgne, cgnr, cg
 
@@ -14,19 +14,16 @@ __docformat__ = "restructuredtext en"
 __all__ = ['change_smoothers']
 
 
-# Default relaxation parameters and list of by-definition
-# symmetric relaxation schemes, e.g. Jacobi.
+# Default relaxation parameters
+# Note:  multilevel.cycle_complexity() assumes these default parameters
+# correspond to a single workunit operation.
 DEFAULT_SWEEP = 'forward'
 DEFAULT_NITER = 1
+# List of by-definition symmetric relaxation schemes, e.g. Jacobi.
 SYMMETRIC_RELAXATION = ['jacobi', 'richardson', 'block_jacobi',
                         'jacobi_ne', 'chebyshev', None ]
-
-def unpack_arg(v):
-    if isinstance(v, tuple):
-        return v[0], v[1]
-    else:
-        return v, {}
-
+# List of supported Krylov relaxation schemes
+KRYLOV_RELAXATION = ['cg', 'cgne', 'cgnr', 'gmres']
 
 def change_smoothers(ml, presmoother, postsmoother):
     '''
@@ -65,8 +62,8 @@ def change_smoothers(ml, presmoother, postsmoother):
     Returns
     -------
     ml changed in place
-    ml.level[i].presmoother   <===  presmoother[i]
-    ml.level[i].postsmoother  <===  postsmoother[i]
+    ml.level[i].smoothers['presmoother']   <===  presmoother[i]
+    ml.level[i].smoothers['postsmoother']  <===  postsmoother[i]
     ml.symmetric_smoothing is marked True/False depending on whether
         the smoothing scheme is symmetric. 
 
@@ -157,7 +154,7 @@ def change_smoothers(ml, presmoother, postsmoother):
     same = (len(presmoother) == len(postsmoother))
     for i in range(0, min_len):
         # unpack presmoother[i]
-        fn1, kwargs1 = unpack_arg(presmoother[i])
+        fn1, kwargs1 = unpack_arg(presmoother[i], cost=False)
         # get function handle
         try:
             setup_presmoother = eval('setup_' + str(fn1))
@@ -166,7 +163,7 @@ def change_smoothers(ml, presmoother, postsmoother):
         ml.levels[i].presmoother = setup_presmoother(ml.levels[i], **kwargs1)
 
         # unpack postsmoother[i]
-        fn2, kwargs2 = unpack_arg(postsmoother[i])
+        fn2, kwargs2 = unpack_arg(postsmoother[i], cost=False)
         # get function handle
         try:
             setup_postsmoother = eval('setup_' + str(fn2))
@@ -182,12 +179,14 @@ def change_smoothers(ml, presmoother, postsmoother):
         try:
             it1 = kwargs1['iterations']
         except:
-            it1 = 1
+            it1 = DEFAULT_NITER
         try:
             it2 = kwargs2['iterations']
         except:
-            it2 = 1
+            it2 = DEFAULT_NITER
         if (fn1 != fn2) or (it1 != it2):
+            ml.symmetric_smoothing = False
+        elif fn1 in KRYLOV_RELAXATION or fn2 in KRYLOV_RELAXATION:
             ml.symmetric_smoothing = False
         elif fn1 not in SYMMETRIC_RELAXATION:
             try:
@@ -212,7 +211,7 @@ def change_smoothers(ml, presmoother, postsmoother):
             ml.levels[i].presmoother = setup_presmoother(ml.levels[i], **kwargs1)
             
             # unpack postsmoother[i]
-            fn2, kwargs2 = unpack_arg(postsmoother[i])
+            fn2, kwargs2 = unpack_arg(postsmoother[i], cost=False)
             # get function handle
             try:
                 setup_postsmoother = eval('setup_' + str(fn2))
@@ -228,12 +227,14 @@ def change_smoothers(ml, presmoother, postsmoother):
             try:
                 it1 = kwargs1['iterations']
             except:
-                it1 = 1
+                it1 = DEFAULT_NITER
             try:
                 it2 = kwargs2['iterations']
             except:
-                it2 = 1
+                it2 = DEFAULT_NITER
             if (fn1 != fn2) or (it1 != it2):
+                ml.symmetric_smoothing = False
+            elif fn1 in KRYLOV_RELAXATION or fn2 in KRYLOV_RELAXATION:
                 ml.symmetric_smoothing = False
             elif fn1 not in SYMMETRIC_RELAXATION:
                 try:
@@ -252,10 +253,10 @@ def change_smoothers(ml, presmoother, postsmoother):
                     ml.symmetric_smoothing = False
 
     elif len(presmoother) > len(postsmoother):
-        mid_len = min(len(postsmoother), len(ml.levels[:-1]))
+        mid_len = min(len(presmoother), len(ml.levels[:-1]))
         for i in range(min_len, mid_len):
             # unpack presmoother[i]
-            fn1, kwargs1 = unpack_arg(presmoother[i])
+            fn1, kwargs1 = unpack_arg(presmoother[i], cost=False)
             # get function handle
             try:
                 setup_presmoother = eval('setup_' + str(fn1))
@@ -274,12 +275,14 @@ def change_smoothers(ml, presmoother, postsmoother):
             try:
                 it1 = kwargs1['iterations']
             except:
-                it1 = 1
+                it1 = DEFAULT_NITER
             try:
                 it2 = kwargs2['iterations']
             except:
-                it2 = 1
+                it2 = DEFAULT_NITER
             if (fn1 != fn2) or (it1 != it2):
+                ml.symmetric_smoothing = False
+            elif fn1 in KRYLOV_RELAXATION or fn2 in KRYLOV_RELAXATION:
                 ml.symmetric_smoothing = False
             elif fn1 not in SYMMETRIC_RELAXATION:
                 try:
@@ -300,7 +303,7 @@ def change_smoothers(ml, presmoother, postsmoother):
     else:  
         mid_len = min_len
 
-    # Fill in remaining levels, save tuples in ml to check cycle complexity
+    # Fill in remaining levels
     for i in range(mid_len, len(ml.levels[:-1])):
         ml.levels[i].presmoother = setup_presmoother(ml.levels[i], **kwargs1)
         ml.levels[i].postsmoother = setup_postsmoother(ml.levels[i], **kwargs2)
@@ -475,12 +478,13 @@ def setup_schwarz(lvl, iterations=DEFAULT_NITER, subdomain=None, subdomain_ptr=N
                   inv_subblock=None, inv_subblock_ptr=None, sweep=DEFAULT_SWEEP):
 
     matrix_asformat(lvl, 'A', 'csr')
+    lvl.Acsr.sort_indices()
     subdomain, subdomain_ptr, inv_subblock, inv_subblock_ptr = \
         relaxation.schwarz_parameters(lvl.Acsr, subdomain, subdomain_ptr,
                                       inv_subblock, inv_subblock_ptr)
 
     def smoother(A, x, b):
-        relaxation.schwarz(A, x, b, iterations=iterations, subdomain=subdomain,
+        relaxation.schwarz(lvl.Acsr, x, b, iterations=iterations, subdomain=subdomain,
                            subdomain_ptr=subdomain_ptr,
                            inv_subblock=inv_subblock,
                            inv_subblock_ptr=inv_subblock_ptr, sweep=sweep)
@@ -495,6 +499,7 @@ def setup_strength_based_schwarz(lvl, iterations=DEFAULT_NITER, sweep=DEFAULT_SW
     else:
         C = lvl.C.tocsr()
 
+    C.sort_indices()
     subdomain_ptr = C.indptr.copy()
     subdomain = C.indices.copy()
 
@@ -619,7 +624,7 @@ def setup_gauss_seidel_nr(lvl, iterations=DEFAULT_NITER, sweep=DEFAULT_SWEEP,
     return smoother
 
 
-def setup_gmres(lvl, tol=1e-12, maxiter=1, restrt=None, M=None, callback=None,
+def setup_gmres(lvl, tol=1e-12, maxiter=DEFAULT_NITER, restrt=None, M=None, callback=None,
                 residuals=None):
     def smoother(A, x, b):
         x[:] = (gmres(A, b, x0=x, tol=tol, maxiter=maxiter, restrt=restrt, M=M,
@@ -627,14 +632,14 @@ def setup_gmres(lvl, tol=1e-12, maxiter=1, restrt=None, M=None, callback=None,
     return smoother
 
 
-def setup_cg(lvl, tol=1e-12, maxiter=1, M=None, callback=None, residuals=None):
+def setup_cg(lvl, tol=1e-12, maxiter=DEFAULT_NITER, M=None, callback=None, residuals=None):
     def smoother(A, x, b):
         x[:] = (cg(A, b, x0=x, tol=tol, maxiter=maxiter, M=M,
                 callback=callback, residuals=residuals)[0]).reshape(x.shape)
     return smoother
 
 
-def setup_cgne(lvl, tol=1e-12, maxiter=1, M=None, callback=None,
+def setup_cgne(lvl, tol=1e-12, maxiter=DEFAULT_NITER, M=None, callback=None,
                residuals=None):
     def smoother(A, x, b):
         x[:] = (cgne(A, b, x0=x, tol=tol, maxiter=maxiter, M=M,
@@ -642,7 +647,7 @@ def setup_cgne(lvl, tol=1e-12, maxiter=1, M=None, callback=None,
     return smoother
 
 
-def setup_cgnr(lvl, tol=1e-12, maxiter=1, M=None, callback=None,
+def setup_cgnr(lvl, tol=1e-12, maxiter=DEFAULT_NITER, M=None, callback=None,
                residuals=None):
     def smoother(A, x, b):
         x[:] = (cgnr(A, b, x0=x, tol=tol, maxiter=maxiter, M=M,
