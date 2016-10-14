@@ -98,8 +98,6 @@ I add_edge(const I A_rowptr[],
     }
 
     // Add edge to matching and weight to total edge weight.
-    // Note, matching is indexed (+2) because M[0] tracks the number
-    // of pairs added to the matching, and M[1] the total weight. 
     // Mark each node in pair as aggregated. 
     if (new_node != -1) {
         W += std::abs(A_data[new_ind]);
@@ -922,13 +920,12 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
  * Nothing, weights modified in place.
  * 
  */
-template<class I, class T>
+template<class I, class T, class F>
 void compute_weights(const I A_rowptr[], const int A_rowptr_size,
                      const I A_colinds[], const int A_colinds_size,
                      const T A_data[], const int A_data_size,
                       	   T weights[], const int weights_size,
                      const T B[], const int B_size)
-
 {
 	I n = A_rowptr_size-1;
 	std::vector<T> diag(n);
@@ -952,12 +949,11 @@ void compute_weights(const I A_rowptr[], const int A_rowptr_size,
 	}
 }
 
-template<class I, class T>
+template<class I, class T, class F>
 void compute_weights(const I A_rowptr[], const int A_rowptr_size,
                      const I A_colinds[], const int A_colinds_size,
                      const T A_data[], const int A_data_size,
                       	   T weights[], const int weights_size)
-
 {
 	I n = A_rowptr_size-1;
 	std::vector<T> diag(n);

@@ -495,6 +495,7 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
               form multiple pairwise Galerkin coarse grids for each as in the
               symmetric case, or simultaneously compute a pairwise for A and A^T
               and then form a petrov Galerkin coarse grid for the next pairwise...
+            + As is, bases pairwise on row space.
 
     REFERENCES
     ----------

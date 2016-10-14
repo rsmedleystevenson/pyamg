@@ -218,7 +218,7 @@ INSTANTIATE_INDEXDATA_COMPLEX(truncate_rows_csr)
 %include "pairwise.h"
 INSTANTIATE_INDEXDATA(drake_matching)
 INSTANTIATE_INDEXDATA(notay_pairwise)
-INSTANTIATE_INDEXDATA(compute_weights)
+INSTANTIATE_INDEXDATA_COMPLEX(compute_weights)
 
 /*----------------------------------------------------------------------------
   ruge_stuben.h
