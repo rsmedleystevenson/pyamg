@@ -156,7 +156,7 @@ void drake_matching_data(const I A_rowptr[],
                          const I &n )
 {
         
-    // Plan - store M1, M2 as all -a to start, when nodes are aggregated, 
+    // Store M1[:], M2[:] = -1 to start. When nodes are aggregated, 
     // say x and y, set M1[x] = y and M1[y] = x. 
     std::vector<I> M1(n,-1);     
     std::vector<I> M2(n,-1);
@@ -340,8 +340,6 @@ void drake_matching_nodata(const I A_rowptr[],
             }
         }
     }
-
-    // std::cout << "W1 = " << W1 << ", W2 = " << W2 << std::endl;
 
     int *M = NULL; 
     if (std::abs(W1) >= std::abs(W2)) {
@@ -836,7 +834,9 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
         rowptr.reserve(n+1);   
         colinds.reserve(n);   
         data.reserve(n);
-        // Filter matrix
+        // Filter matrix to only keep entries less than beta times
+        // the minimum (negative) element in each row, i.e.
+        //      { a_ij : a_ij < beta * min_j a_ij }
         notay_filter(A_rowptr, A_colinds, A_data,
                      rowptr, colinds, data, beta, n);
 
@@ -873,7 +873,9 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
         rowptr.reserve(n+1);   
         colinds.reserve(n);   
         data.reserve(n);
-        // Filter matrix
+        // Filter matrix to only keep entries less than beta times
+        // the minimum (negative) element in each row, i.e.
+        //      { a_ij : a_ij < beta * min_j a_ij }
         notay_filter(A_rowptr, A_colinds, A_data,
                      rowptr, colinds, data, beta, n);
 
@@ -891,7 +893,9 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
 
 /* Function to compute weights of a graph for an approximate matching. 
  * Weights are chosen to construct as well-conditioned of a fine grid
- * as possible based on a given smooth vector. 
+ * as possible based on a given smooth vector:
+ *
+ *      W_{ij} = 1 - 2a_{ij}b_ib_j / (a_{ii}w_i^2 + a_{jj}w_j^2)
  *
  * Notes: 
  * ------

@@ -456,9 +456,6 @@ def weighted_matching(A, B=None, matchings=2,
 
 
 
-# TODO - figure out if we should include option to provide
-# target or always use constant. Does Notay only use constant?
-# Would we ever want to not use constant? 
 def notay_pairwise(A, B=None, beta=0.25, matchings=2,
                    get_Cpts=False, **kwargs):
     """ Pairwise aggregation of nodes using Notay approach. 
@@ -575,10 +572,8 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
         else:
             T = T * T_temp
 
-        # Prepare target, coarse grid for next matching
+        # Form coarse grid operator and restrict target to coarse grid 
         if i < (matchings-1):
-
-            # Form coarse grid operator and restrict target to coarse grid 
             Ac = T_temp.T*Ac*T_temp
             if target is not None:
                 target = T_temp.T*target  
