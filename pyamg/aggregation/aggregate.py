@@ -398,7 +398,7 @@ def weighted_matching(A, B=None, matchings=2,
         weights = A.data
 
     # Loop over the number of pairwise matchings to be done
-    for i in range(0,matchings-1):
+    for i in range(0,matchings):
 
         # Get matching and form sparse P
         rowptr = np.empty(n+1, dtype='intc')
@@ -476,9 +476,8 @@ def weighted_matching(A, B=None, matchings=2,
         return T
 
 
-
 def notay_pairwise(A, B=None, beta=0.25, matchings=2,
-                   get_Cpts=False, cost=[0.0], **kwargs):
+                   get_Cpts=False, cost=[0.0]):
     """ Pairwise aggregation of nodes using Notay approach. 
 
     Parameters
@@ -560,7 +559,7 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
     Ac = A      # Let Ac reference A for loop purposes
 
     # Loop over the number of pairwise matchings to be done
-    for i in range(0,matchings-1):
+    for i in range(0,matchings):
 
         # Get matching and form sparse P
         rowptr = np.empty(n+1, dtype='intc')
@@ -625,6 +624,53 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
         raise TypeError("Cannot return C-points - not yet implemented.")
     else:
         return T
+
+
+
+""" TODO : 
+    - Make sure same number of aggregates are formed.
+        + Maybe should make function that takes "C-points," i.e. one
+          node from each pair in first aggregate, and forms a new
+          aggregate from its strongest neighbor?
+
+    - Figure out what to do for C-points.
+
+    """
+def nonsymmetric_notay_pairwise(A, B=None, Bh=None, beta=0.25, matchings=2,
+                                get_Cpts=False, cost=[0.0], **kwargs):
+
+    # Get initial pairwise for A and A^T
+    P = notay_pairwise(A=A, B=B, beta=beta, matchings=1,
+                       get_Cpts=False, cost=cost)
+    R = notay_pairwise(A=A.T, B=Bh, beta=beta, matchings=1,
+                   get_Cpts=False, cost=cost)
+
+    # References for loop purposes
+    P_temp = P
+    R_temp = R
+    Ac = A
+
+    # Loop over rest of matchings
+    for i in range(1,matchings):
+
+        # Form coarse grid and get complexity
+        cost[0] += mat_mat_complexity(R_temp,Ac) / float(A.nnz)
+        RA = R_temp * Ac
+        cost[0] += mat_mat_complexity(RA,P_temp) / float(A.nnz)
+        Ac = RA * P_temp
+
+        P_temp = notay_pairwise(A=Ac, B=B, beta=beta, matchings=1,
+                                get_Cpts=False, cost=cost)
+        R_temp = notay_pairwise(A=Ac.T, B=Bh, beta=beta, matchings=1,
+                                get_Cpts=False, cost=cost)
+        
+        # Form updated R, P, get complexity
+        cost[0] += mat_mat_complexity(P,P_temp) / float(A.nnz)
+        cost[0] += mat_mat_complexity(R,R_temp) / float(A.nnz)
+        P = P * P_temp
+        R = R * R_temp
+
+    return R, P
 
 
 
