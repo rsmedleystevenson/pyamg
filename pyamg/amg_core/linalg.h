@@ -5,6 +5,7 @@
 #include <limits>
 #include <complex>
 #include <iostream>
+#include <vector>
 
 /*******************************************************************
  * Overloaded routines for real arithmetic for int, float and double
@@ -841,7 +842,7 @@ void svd_solve( T Ax[], I m, I n, T b[], F sing_vals[], T work[], I work_size)
     return;
 }
 
- /* Replace each block of A with a Moore-Penrose pseudoinverse of that block.
+/* Replace each block of A with a Moore-Penrose pseudoinverse of that block.
  * Routine is designed to invert many small matrices at once.
  * Parameters
  * ----------
@@ -952,6 +953,179 @@ void pinv_array(T AA[], const int AA_size,
 
     return;
 }
+
+
+/*******************************************************************
+ *              Sparse Linear Algebra Routines
+ *      templated for pyamg's complex class, float and double
+ *******************************************************************/
+
+
+/* Vector-matrix multiply with CSR matrix, or equivalently matrix-vector
+ * multiply with CSC matrix.
+ *
+ * Parameters
+ * ----------
+ *      x : array<double> 
+ *          Vector to multiply
+ *      indptr : array<int>
+ *          Row-pointer for CSR or column-pointer for CSC matrix.
+ *      indices : array<int>
+ *          Column indices for CSR or row indices for CSC matrix.
+ *      data : array<double>
+ *          Matrix data values
+ *      n : int
+ *          Matrix size
+ *
+ * Returns
+ * -------
+ *      b : std::vector<double>
+ *
+ */
+template<class I, class T>
+std::vector<T> sparse_vecmat(const std::vector<T> &x,
+                             const I indptr[],
+                             const I indices[],
+                             const T data[],
+                             I n )
+{
+    std::vector<T> b(n,0);
+    for(I i=0; i<n; i++) { 
+        I ind1 = indptr[i],
+            ind2 = indptr[i+1];
+        for(I j=ind1; j<ind2; j++) {
+            b[indices[j]] += x[i]*data[j];
+        }
+    }
+    return b;
+}
+
+
+/* Matrix-vector multiply with CSR matrix, or equivalently vector-matrix
+ * multiply with CSC matrix.
+ *
+ * Parameters
+ * ----------
+ *      x : array<double> 
+ *          Vector to multiply
+ *      indptr : array<int>
+ *          Row-pointer for CSR or column-pointer for CSC matrix.
+ *      indices : array<int>
+ *          Column indices for CSR or row indices for CSC matrix.
+ *      data : array<double>
+ *          Matrix data values
+ *      n : int
+ *          Matrix size
+ *
+ * Returns
+ * -------
+ *      b : std::vector<double>
+ *
+ */ 
+template<class I, class T>
+std::vector<T> sparse_matvec(const std::vector<T> &x,
+                             const I indptr[],
+                             const I indices[],
+                             const T data[],
+                             I n )
+{
+    std::vector<T> b(n,0);
+    for(I i=0; i<n; i++) { 
+        I ind1 = indptr[i],
+            ind2 = indptr[i+1];
+        for(I j=ind1; j<ind2; j++) {
+            b[i] += x[indices[j]]*data[j];
+        }
+    }
+    return b;
+}
+
+
+/* For CSR matrix A, compute
+ *
+ *      y += I_(n_left) \otimes A \otimes I_(n_right),
+ *
+ * for matrix sizes n_left, n_right. Computing a mat-vec
+ * by a Kronecker sum matrix A = \bigoplus_{i=1}^k A_i is then given as
+ * 
+ *      y = [0,...,0]
+ *      for i=1,...,k
+ *          partial_kronsum_matvec(A_i, x, y, n_1^(i-1), n_(i+1)^k, n_i)
+ *
+ * where n_i is the size of A_i, and
+ *
+ *      n_i^k = 1 * \prod_{l=i}^k n_l,
+ *
+ * for i <= k, and n_i^(i-1) = 1.
+ *
+ * Parameters
+ * ----------
+ *      A_rowptr : array<int>
+ *          Row pointer for A in csr format.
+ *      A_colinds : array<int>
+ *          Column indices for A in csr format.
+ *      A_data : array<double>
+ *          Data for A in csr format.
+ *      x : array<double>
+ *          Vector to multiply by, size (n_left * n_right * n).
+ *      y : array<double>
+ *          Output vector, size (n_left * n_right * n); solution *added* to y.
+ *      n_left : int
+ *          Size of identity on left of A.
+ *      n_right : int
+ *          Size of identity on right of A.
+ *      n : int
+ *          Size of A.
+ *      left_mult : bool
+ *          
+ *
+ * Returns
+ * -------
+ * Nothing, y is modified in place.
+ *
+ * References
+ * ----------
+ * [1] Buchholz, Peter, et al. "Complexity of Kronecker operations on sparse
+ *     matrices with applications to the solution of Markov models." (1997).
+ *
+ */
+template<class I, class T>
+void partial_kronsum_matvec(const I A_rowptr[], const I A1_rowptr_size,
+                            const I A_colinds[], const I A1_colinds_size,
+                            const T A_data[], const I A1_data_size,
+                            const T x[], const I x_size,
+                                  T y[], const I y_size,
+                            const I n_left,
+                            const I n_right,
+                            const I n,
+                            const I left_mult)
+{
+    I base = 0;
+    I jump = n * n_right;
+    std::vector<T> z(n,0);
+
+    for (I block=0; block<n_left; block++) {
+        for (I offset=0; offset<n_right; offset++) {
+
+            // Construct local vector, z, compute A_i*z
+            I index = base + offset;
+            for (I h=0; h<n; h++) {
+                z[h] = x[index];
+                index += n_right;
+            }
+            z = sparse_matvec(z,A_rowptr,A_colinds,A_data,n);
+            index = base + offset;
+
+            // Add A_i*z to output
+            for (I h=0; h<n; h++) {
+                y[index] += z[h];
+                index += n_right;
+            }
+        }
+        base += jump;
+    }
+}
+
 
 
 #endif

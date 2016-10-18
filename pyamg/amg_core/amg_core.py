@@ -179,6 +179,15 @@ def pinv_array(*args):
     """
     return _amg_core.pinv_array(*args)
 
+def partial_kronsum_matvec(*args):
+    """
+    partial_kronsum_matvec(int const [] A_rowptr, int const A1_rowptr_size, int const [] A_colinds, int const A1_colinds_size, float const [] A_data, int const A1_data_size, float const [] x, float [] y, int const n_left, int const n_right, int const n)
+    partial_kronsum_matvec(int const [] A_rowptr, int const A1_rowptr_size, int const [] A_colinds, int const A1_colinds_size, double const [] A_data, int const A1_data_size, double const [] x, double [] y, int const n_left, int const n_right, int const n)
+    partial_kronsum_matvec(int const [] A_rowptr, int const A1_rowptr_size, int const [] A_colinds, int const A1_colinds_size, std::complex< float > const [] A_data, int const A1_data_size, std::complex< float > const [] x, std::complex< float > [] y, int const n_left, int const n_right, int const n)
+    partial_kronsum_matvec(int const [] A_rowptr, int const A1_rowptr_size, int const [] A_colinds, int const A1_colinds_size, std::complex< double > const [] A_data, int const A1_data_size, std::complex< double > const [] x, std::complex< double > [] y, int const n_left, int const n_right, int const n)
+    """
+    return _amg_core.partial_kronsum_matvec(*args)
+
 def maximal_independent_set_serial(num_rows, Ap, Aj, active, C, F, x):
     """maximal_independent_set_serial(int const num_rows, int const [] Ap, int const [] Aj, int const active, int const C, int const F, int [] x) -> int"""
     return _amg_core.maximal_independent_set_serial(num_rows, Ap, Aj, active, C, F, x)

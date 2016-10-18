@@ -121,6 +121,13 @@ DECLARE_DATA_TYPE( std::complex<double> )
 %template(f_name)   f_name<int,double>;
 %enddef
 
+%define INSTANTIATE_COMPLEX( f_name )
+%template(f_name)   f_name<int,float>;
+%template(f_name)   f_name<int,double>;
+%template(f_name)   f_name<int,std::complex<float>>;
+%template(f_name)   f_name<int,std::complex<double>>;
+%enddef
+
 %define INSTANTIATE_INDEXDATA_INT( f_name )
 %template(f_name)   f_name<int,int>;
 %template(f_name)   f_name<int,float>;
@@ -139,6 +146,7 @@ DECLARE_DATA_TYPE( std::complex<double> )
   ---------------------------------------------------------------------------*/
 %include "linalg.h"
 INSTANTIATE_INDEXDATA_COMPLEX(pinv_array)
+INSTANTIATE_COMPLEX(partial_kronsum_matvec)
 
 /*----------------------------------------------------------------------------
   graph.h
