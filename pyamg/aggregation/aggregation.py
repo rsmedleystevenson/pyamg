@@ -323,6 +323,8 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         if A.symmetry == "nonsymmetric":
             BH = relaxation_as_linear_operator((fn, kwargs), AH, b) * BH
             levels[-1].BH = BH
+    # TODO : missing cost here??
+
 
     # Compute the strength-of-connection matrix C, where larger
     # C[i,j] denote stronger couplings between i and j.
@@ -363,7 +365,6 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     # Compute the aggregation matrix AggOp (i.e., the nodal coarsening of A).
     # AggOp is a boolean matrix, where the sparsity pattern for the k-th column
     # denotes the fine-grid nodes agglomerated into k-th coarse-grid node.
-    T = None
     fn, kwargs = unpack_arg(aggregate[len(levels)-1])
     if fn == 'standard':
         AggOp = standard_aggregation(C, **kwargs)[0]
@@ -371,14 +372,6 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         AggOp = naive_aggregation(C, **kwargs)[0]
     elif fn == 'lloyd':
         AggOp = lloyd_aggregation(C, **kwargs)[0]
-    elif fn == 'pairwise':
-        T = pairwise_aggregation(C, B, improve_candidates= \
-                                 improve_candidates[len(levels)-1],
-                                 **kwargs)
-        if A.symmetry == "nonsymmetric":
-            TH = pairwise_aggregation(C.H, BH, improve_candidates= \
-                                      improve_candidates[len(levels)-1],
-                                      **kwargs)
     elif fn == 'predefined':
         AggOp = kwargs['AggOp'].tocsr()
     else:

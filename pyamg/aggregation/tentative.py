@@ -3,7 +3,7 @@
 __docformat__ = "restructuredtext en"
 
 import numpy as np
-from scipy.sparse import isspmatrix_csr, bsr_matrix
+from scipy.sparse import isspmatrix_csr, bsr_matrix, csr_matrix
 from pyamg import amg_core
 
 __all__ = ['fit_candidates']
@@ -29,11 +29,11 @@ def fit_candidates(AggOp, B, tol=1e-10, cost=[0.0]):
 
     Returns
     -------
-    (Q, R) : (bsr_matrix, array)
-        The tentative prolongator Q is a sparse block matrix with dimensions
+    (T, Bc) : (bsr_matrix, array)
+        The tentative prolongator T is a sparse block matrix with dimensions
         (#blocks * blocksize, #aggregates * #candidates) formed by dense blocks
         of size (blocksize, #candidates).  The coarse level candidates are
-        stored in R which has dimensions (#aggregates * #candidates,
+        stored in Bc which has dimensions (#aggregates * #candidates,
         #candidates).
 
     See Also
@@ -43,8 +43,8 @@ def fit_candidates(AggOp, B, tol=1e-10, cost=[0.0]):
     Notes
     -----
         Assuming that each row of AggOp contains exactly one non-zero entry,
-        i.e. all unknowns belong to an aggregate, then Q and R satisfy the
-        relationship B = Q*R.  In other words, the near-nullspace candidates
+        i.e. all unknowns belong to an aggregate, then T and Bc satisfy the
+        relationship B = T*Bc.  In other words, the near-nullspace candidates
         are represented exactly by the tentative prolongator.
 
         If AggOp contains rows with no non-zero entries, then the range of the
@@ -74,13 +74,13 @@ def fit_candidates(AggOp, B, tol=1e-10, cost=[0.0]):
     ...      [1],
     ...      [1],
     ...      [1]]
-    >>> Q, R = fit_candidates(AggOp, B)
-    >>> Q.todense()
+    >>> T, Bc = fit_candidates(AggOp, B)
+    >>> T.todense()
     matrix([[ 0.70710678,  0.        ],
             [ 0.70710678,  0.        ],
             [ 0.        ,  0.70710678],
             [ 0.        ,  0.70710678]])
-    >>> R
+    >>> Bc
     array([[ 1.41421356],
            [ 1.41421356]])
     >>> # Two candidates, the constant vector and a linear function
@@ -88,13 +88,13 @@ def fit_candidates(AggOp, B, tol=1e-10, cost=[0.0]):
     ...      [1, 1],
     ...      [1, 2],
     ...      [1, 3]]
-    >>> Q, R = fit_candidates(AggOp, B)
-    >>> Q.todense()
+    >>> T, Bc = fit_candidates(AggOp, B)
+    >>> T.todense()
     matrix([[ 0.70710678, -0.70710678,  0.        ,  0.        ],
             [ 0.70710678,  0.70710678,  0.        ,  0.        ],
             [ 0.        ,  0.        ,  0.70710678, -0.70710678],
             [ 0.        ,  0.        ,  0.70710678,  0.70710678]])
-    >>> R
+    >>> Bc
     array([[ 1.41421356,  0.70710678],
            [ 0.        ,  0.70710678],
            [ 1.41421356,  3.53553391],
@@ -108,13 +108,13 @@ def fit_candidates(AggOp, B, tol=1e-10, cost=[0.0]):
     ...      [1],
     ...      [1],
     ...      [1]]
-    >>> Q, R = fit_candidates(AggOp, B)
-    >>> Q.todense()
+    >>> T, Bc = fit_candidates(AggOp, B)
+    >>> T.todense()
     matrix([[ 0.70710678,  0.        ],
             [ 0.70710678,  0.        ],
             [ 0.        ,  0.        ],
             [ 0.        ,  1.        ]])
-    >>> R
+    >>> Bc
     array([[ 1.41421356],
            [ 1.        ]])
 
@@ -138,23 +138,29 @@ def fit_candidates(AggOp, B, tol=1e-10, cost=[0.0]):
     K1 = int(B.shape[0] / N_fine)  # dof per supernode (e.g. 3 for 3d vectors)
     K2 = B.shape[1]                # candidates
 
-    # the first two dimensions of R and Qx are collapsed later
-    R = np.empty((N_coarse, K2, K2), dtype=B.dtype)  # coarse candidates
-    Qx = np.empty((AggOp.nnz, K1, K2), dtype=B.dtype)  # BSR data array
+    # the first two dimensions of Bc and Tx are collapsed later
+    Bc = np.empty((N_coarse, K2, K2), dtype=B.dtype)  # coarse candidates
+    Tx = np.empty((AggOp.nnz, K1, K2), dtype=B.dtype)  # BSR data array
 
     AggOp_csc = AggOp.tocsc()
 
     fn = amg_core.fit_candidates
     fn(N_fine, N_coarse, K1, K2,
-       AggOp_csc.indptr, AggOp_csc.indices, Qx.ravel(),
-       B.ravel(), R.ravel(), tol)
+       AggOp_csc.indptr, AggOp_csc.indices, Tx.ravel(),
+       B.ravel(), Bc.ravel(), tol)
 
     # TODO replace with BSC matrix here
-    Q = bsr_matrix((Qx.swapaxes(1, 2).copy(), AggOp_csc.indices,
-                    AggOp_csc.indptr), shape=(K2*N_coarse, K1*N_fine))
-    Q = Q.T.tobsr()
-    R = R.reshape(-1, K2)
+    if (A.getformat() == 'csc') and (B.shape[1] == 1):
+        T = csr_matrix((Tx.swapaxes(1, 2).copy(), AggOp_csc.indices,
+                        AggOp_csc.indptr))
+        T = T.T.tocsr()
+    else:
+        T = bsr_matrix((Tx.swapaxes(1, 2).copy(), AggOp_csc.indices,
+                        AggOp_csc.indptr), shape=(K2*N_coarse, K1*N_fine))
+        T = T.T.tobsr()
 
-    cost[0] += 2.0*B.shape[1]*B.shape[1]*float(Q.shape[0])
+    Bc = Bc.reshape(-1, K2)
 
-    return Q, R
+    cost[0] += 2.0*B.shape[1]*B.shape[1]*float(T.shape[0])
+
+    return T, Bc

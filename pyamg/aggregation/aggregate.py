@@ -11,7 +11,8 @@ from pyamg import amg_core
 from pyamg.graph import lloyd_cluster
 from pyamg.util.utils import relaxation_as_linear_operator, mat_mat_complexity
 
-__all__ = ['standard_aggregation', 'naive_aggregation', 'lloyd_aggregation', 'pairwise_aggregation']
+__all__ = ['standard_aggregation', 'naive_aggregation', 'lloyd_aggregation',
+           'notay_pairwise', 'weighted_matching']
 
 
 def standard_aggregation(C, cost=[0]):
@@ -365,6 +366,13 @@ def weighted_matching(A, B=None, matchings=2,
     if matchings < 1:
         raise ValueError("Number of matchings must be > 0.")
 
+    if (A.getformat() != 'csr'):
+        try:
+            A = A.tocsr()
+        except:
+            raise TypeError("Must pass in CSR matrix, or sparse matrix "
+                            "which can be converted to CSR.")
+
     n = A.shape[0]
 
     # If target vectors provided, take first.
@@ -406,28 +414,18 @@ def weighted_matching(A, B=None, matchings=2,
         shape = np.empty(2, dtype='intc')
         temp_cost = [0]
         if target is None:
-            amg_core.drake_matching(Ac.indptr, 
-                         Ac.indices,
-                         weights,
-                         rowptr,
-                         colinds,
-                         shape,
-                         temp_cost )
+            amg_core.drake_matching(Ac.indptr, Ac.indices, weights,
+                                    rowptr, colinds, shape, temp_cost )
             T_temp = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
         else:
             data = np.empty(n, dtype=float)
-            amg_core.drake_matching(Ac.indptr, 
-                                    Ac.indices,
-                                    weights,
-                                    target,
-                                    rowptr,
-                                    colinds,
-                                    data,
-                                    shape,
-                                    temp_cost )
+            amg_core.drake_matching(Ac.indptr, Ac.indices, weights,
+                                    target, rowptr, colinds, data,
+                                    shape, temp_cost )
             T_temp = csr_matrix( (data, colinds, rowptr), shape=shape )
 
         cost[0] += temp_cost[0] / float(A.nnz)
+
         # Form aggregation matrix 
         if i == 0:
             T = T_temp
@@ -471,7 +469,7 @@ def weighted_matching(A, B=None, matchings=2,
 
     # NEED TO IMPLEMENT A WAY TO CHOOSE C-POINTS
     if get_Cpts:
-        raise TypeError("Cannot return C-points - not yet implemented.")
+        raise ValueError("Cannot return C-points - not yet implemented.")
     else:
         return T
 
@@ -539,6 +537,13 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
     if matchings < 1:
         raise ValueError("Number of matchings must be > 0.")
 
+    if (A.getformat() != 'csr'):
+        try:
+            A = A.tocsr()
+        except:
+            raise TypeError("Must pass in CSR matrix, or sparse matrix "
+                            "which can be converted to CSR.")
+
     n = A.shape[0]
 
     # If target vectors provided, take first.
@@ -557,6 +562,7 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
 
     # Compute weights if function provided, otherwise let W = A
     Ac = A      # Let Ac reference A for loop purposes
+    T = None
 
     # Loop over the number of pairwise matchings to be done
     for i in range(0,matchings):
@@ -567,27 +573,15 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
         shape = np.empty(2, dtype='intc')
         temp_cost = [0]
         if target is None:
-            amg_core.notay_pairwise(Ac.indptr, 
-                                    Ac.indices,
-                                    Ac.data,
-                                    rowptr,
-                                    colinds,
-                                    shape,
-                                    temp_cost,
+            amg_core.notay_pairwise(Ac.indptr, Ac.indices, Ac.data,
+                                    rowptr, colinds, shape, temp_cost,
                                     beta )
             T_temp = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
         else:
             data = np.empty(n, dtype=float)
-            amg_core.notay_pairwise(Ac.indptr, 
-                                    Ac.indices,
-                                    Ac.data,
-                                    target,
-                                    rowptr,
-                                    colinds,
-                                    data,
-                                    shape,
-                                    temp_cost,
-                                    beta )
+            amg_core.notay_pairwise(Ac.indptr, Ac.indices, Ac.data,
+                                    target, rowptr, colinds, data,
+                                    shape, temp_cost, beta )
             T_temp = csr_matrix( (data, colinds, rowptr), shape=shape )
 
         cost[0] += temp_cost[0] / float(A.nnz)
@@ -643,7 +637,7 @@ def nonsymmetric_notay_pairwise(A, B=None, Bh=None, beta=0.25, matchings=2,
     P = notay_pairwise(A=A, B=B, beta=beta, matchings=1,
                        get_Cpts=False, cost=cost)
     R = notay_pairwise(A=A.T, B=Bh, beta=beta, matchings=1,
-                   get_Cpts=False, cost=cost)
+                       get_Cpts=False, cost=cost)
 
     # References for loop purposes
     P_temp = P

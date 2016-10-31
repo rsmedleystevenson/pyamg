@@ -24,22 +24,21 @@ from .smooth import jacobi_prolongation_smoother,\
 __all__ = ['smoothed_aggregation_solver']
 
 
-def smoothed_aggregation_solver(A, B=None, BH=None,
-                                symmetry='hermitian',
-                                aggregate='standard',
-                                smooth=('jacobi', {'omega': 4.0/3.0}),
-                                presmoother=('block_gauss_seidel',
-                                             {'sweep': 'symmetric'}),
-                                postsmoother=('block_gauss_seidel',
-                                              {'sweep': 'symmetric'}),
-                                improve_candidates=[('block_gauss_seidel',
-                                                    {'sweep': 'symmetric',
-                                                     'iterations': 4}),
-                                                    None],
-                                max_levels = 10, max_coarse = 10,
-                                keep=False, **kwargs):
+def pairwise_solver(A, B=None, BH=None,
+                    symmetry='hermitian',
+                    aggregate='standard',
+                    smooth=('jacobi', {'omega': 4.0/3.0}),
+                    presmoother=('block_gauss_seidel',
+                                 {'sweep': 'symmetric'}),
+                    postsmoother=('block_gauss_seidel',
+                                  {'sweep': 'symmetric'}),
+                    improve_candidates=[('block_gauss_seidel',
+                                        {'sweep': 'symmetric',
+                                         'iterations': 4}), None],
+                    max_levels = 10, max_coarse = 10,
+                    keep=False, **kwargs):
     """
-    Create a multilevel solver using classical-style Smoothed Aggregation (SA)
+    Create a multilevel solver using Pairwise Aggregation
 
     Parameters
     ----------
@@ -122,77 +121,13 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
 
     Notes
     -----
-        - This method implements classical-style SA, not root-node style SA
-          (see aggregation.rootnode_solver).
 
-        - The additional parameters are passed through as arguments to
-          multilevel_solver.  Refer to pyamg.multilevel_solver for additional
-          documentation.
 
-        - At each level, four steps are executed in order to define the coarser
-          level operator.
-
-          1. Matrix A is given and used to derive a strength matrix, C.
-
-          2. Based on the strength matrix, indices are grouped or aggregated.
-
-          3. The aggregates define coarse nodes and a tentative prolongation
-             operator T is defined by injection
-
-          4. The tentative prolongation operator is smoothed by a relaxation
-             scheme to improve the quality and extent of interpolation from the
-             aggregates to fine nodes.
-
-        - The parameters smooth, strength, aggregate, presmoother, postsmoother
-          can be varied on a per level basis.  For different methods on
-          different levels, use a list as input so that the i-th entry defines
-          the method at the i-th level.  If there are more levels in the
-          hierarchy than list entries, the last entry will define the method
-          for all levels lower.
-
-          Examples are:
-          smooth=[('jacobi', {'omega':1.0}), None, 'jacobi']
-          presmoother=[('block_gauss_seidel', {'sweep':symmetric}), 'sor']
-          aggregate=['standard', 'naive']
-          strength=[('symmetric', {'theta':0.25}), ('symmetric',
-                                                    {'theta':0.08})]
-
-        - Predefined strength of connection and aggregation schemes can be
-          specified.  These options are best used together, but aggregation can
-          be predefined while strength of connection is not.
-
-          For predefined strength of connection, use a list consisting of
-          tuples of the form ('predefined', {'C' : C0}), where C0 is a
-          csr_matrix and each degree-of-freedom in C0 represents a supernode.
-          For instance to predefine a three-level hierarchy, use
-          [('predefined', {'C' : C0}), ('predefined', {'C' : C1}) ].
-
-          Similarly for predefined aggregation, use a list of tuples.  For
-          instance to predefine a three-level hierarchy, use [('predefined',
-          {'AggOp' : Agg0}), ('predefined', {'AggOp' : Agg1}) ], where the
-          dimensions of A, Agg0 and Agg1 are compatible, i.e.  Agg0.shape[1] ==
-          A.shape[0] and Agg1.shape[1] == Agg0.shape[0].  Each AggOp is a
-          csr_matrix.
-
-    Examples
-    --------
-    >>> from pyamg import smoothed_aggregation_solver
-    >>> from pyamg.gallery import poisson
-    >>> from scipy.sparse.linalg import cg
-    >>> import numpy as np
-    >>> A = poisson((100,100), format='csr')           # matrix
-    >>> b = np.ones((A.shape[0]))                      # RHS
-    >>> ml = smoothed_aggregation_solver(A)            # AMG solver
-    >>> M = ml.aspreconditioner(cycle='V')             # preconditioner
-    >>> x,info = cg(A, b, tol=1e-8, maxiter=30, M=M)   # solve with CG
 
     References
     ----------
-    .. [1] Vanek, P. and Mandel, J. and Brezina, M.,
-       "Algebraic Multigrid by Smoothed Aggregation for
-       Second and Fourth Order Elliptic Problems",
-       Computing, vol. 56, no. 3, pp. 179--196, 1996.
-       http://citeseer.ist.psu.edu/vanek96algebraic.html
+
+
 
     """
 
@@ -295,39 +230,19 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         AH = A.H.asformat(A.format)
         BH = levels[-1].BH
 
-    # Improve near nullspace candidates by relaxing on A B = 0
-    fn, kwargs = unpack_arg(improve_candidates[len(levels)-1])
-    if fn is not None:
-        b = np.zeros((A.shape[0], 1), dtype=A.dtype)
-        B = relaxation_as_linear_operator((fn, kwargs), A, b) * B
-        levels[-1].B = B
-        if A.symmetry == "nonsymmetric":
-            BH = relaxation_as_linear_operator((fn, kwargs), AH, b) * BH
-            levels[-1].BH = BH
-
-    # Compute the aggregation matrix AggOp (i.e., the nodal coarsening of A).
-    # AggOp is a boolean matrix, where the sparsity pattern for the k-th column
-    # denotes the fine-grid nodes agglomerated into k-th coarse-grid node.
-    T = None
+    # Compute tentative interpolation operator T. Only fits one target
+    # per aggregate - if more are provided, they are fit in fit_candidates().
     fn, kwargs = unpack_arg(aggregate[len(levels)-1])
     if fn == 'notay':
-
-
-
-
+        AggOp = notay_pairwise(A, B=B, **kwargs)
     elif fn == 'matching':
-
-
-
-
-
-        T = pairwise_aggregation(C, B, improve_candidates= \
-                                 improve_candidates[len(levels)-1],
-                                 **kwargs)
+        AggOp = weighted_matching(A, B=B, improve_candidates=
+                                  improve_candidates[len(levels)-1],
+                                  **kwargs):
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
 
-    levels[-1].complexity['aggregation'] = kwargs['cost'][0] * (float(C.nnz)/A.nnz)
+    levels[-1].complexity['aggregation'] = kwargs['cost'][0]
 
     # Improve near nullspace candidates by relaxing on A B = 0
     temp_cost = [0.0]
@@ -345,12 +260,19 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     # Compute the tentative prolongator, T, which is a tentative interpolation
     # matrix from the coarse-grid to the fine-grid.  T exactly interpolates
     # B_fine = T B_coarse. Orthogonalization complexity ~ 2nk^2, k=B.shape[1].
+    # Note, if only one candidate vector is provided, T has already been
+    # constructed in the pairwise aggregation process. 
     temp_cost=[0.0]
-    T, B = fit_candidates(AggOp, B, cost=temp_cost)
+    if B.shape[1] > 1:  
+        T, B = fit_candidates(AggOp, B, cost=temp_cost)
+    else: 
+        T = AggOp
+        B = T.T*B
+
     if A.symmetry == "nonsymmetric":
         TH, BH = fit_candidates(AggOp, BH, cost=temp_cost)
 
-    levels[-1].complexity['tentative'] = temp_cost[0] / A.nnz
+    levels[-1].complexity['tentative'] = (temp_cost[0] + n) / float(A.nnz)
 
     # Smooth the tentative prolongator, so that it's accuracy is greatly
     # improved for algebraically smooth error.
@@ -370,8 +292,30 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
 
     levels[-1].complexity['smooth_P'] = kwargs['cost'][0]
 
-
-
+    # Compute the restriction matrix, R, which interpolates from the fine-grid
+    # to the coarse-grid.  If A is nonsymmetric, then R must be constructed
+    # based on A.H.  Otherwise R = P.H or P.T.
+    symmetry = A.symmetry
+    if symmetry == 'hermitian':
+        R = P.H
+    elif symmetry == 'symmetric':
+        R = P.T
+    elif symmetry == 'nonsymmetric':
+        fn, kwargs = unpack_arg(smooth[len(levels)-1])
+        if fn == 'jacobi':
+            R = jacobi_prolongation_smoother(AH, TH, C, BH, **kwargs).H
+        elif fn == 'richardson':
+            R = richardson_prolongation_smoother(AH, TH, **kwargs).H
+        elif fn == 'energy':
+            R = energy_prolongation_smoother(AH, TH, C, BH, None, (False, {}),
+                                             **kwargs)
+            R = R.H
+        elif fn is None:
+            R = T.H
+        else:
+            raise ValueError('unrecognized prolongation smoother method %s' %
+                             str(fn))
+        levels[-1].complexity['smooth_R'] = kwargs['cost'][0]
 
     if keep:
         levels[-1].C = C            # strength of connection matrix
