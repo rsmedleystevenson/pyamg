@@ -442,7 +442,7 @@ def weighted_matching(A, B=None, matchings=2,
             Ac = TA * T_temp
             if target is not None:
                 target = T_temp.T*target
-                cost[0] += T_temp.nnz / / float(A.nnz)
+                cost[0] += T_temp.nnz / float(A.nnz)
 
             # If not last iteration, improve target by relaxing on A*target = 0.
             # If last iteration, we will not use target - set to None.
@@ -602,7 +602,7 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
             Ac = TA * T_temp
             if target is not None:
                 target = T_temp.T*target
-                cost[0] += T_temp.nnz / / float(A.nnz)
+                cost[0] += T_temp.nnz / float(A.nnz)
 
             # If not last iteration, improve target by relaxing on A*target = 0.
             # If last iteration, we will not use target - set to None.

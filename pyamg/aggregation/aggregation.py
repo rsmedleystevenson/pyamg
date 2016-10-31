@@ -20,7 +20,7 @@ from pyamg.strength import classical_strength_of_connection,\
     energy_based_strength_of_connection, distance_strength_of_connection,\
     algebraic_distance, affinity_distance
 from .aggregate import standard_aggregation, naive_aggregation,\
-    lloyd_aggregation, pairwise_aggregation
+    lloyd_aggregation
 from .tentative import fit_candidates
 from .smooth import jacobi_prolongation_smoother,\
     richardson_prolongation_smoother, energy_prolongation_smoother

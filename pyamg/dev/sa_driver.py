@@ -20,10 +20,9 @@ from pyamg.gallery.diffusion import diffusion_stencil_2d
 from pyamg.gallery.stencil import stencil_grid
 from pyamg.aggregation.rootnode import rootnode_solver
 from pyamg.aggregation.aggregation import smoothed_aggregation_solver
+from pyamg.aggregation.pairwise import pairwise_solver
 from pyamg.util.utils import symmetric_rescaling
 from pyamg.gallery import poisson
-from Jacob_complexity import *
-
 
 from scipy import sparse
 from scipy.sparse import csr_matrix
@@ -78,7 +77,7 @@ strength_connection = None
 #	        ~ same - G[i,j] = C[i,j]
 #	        ~ sub  - G[i,j] = C[i,j] - min(C)
 aggregation = ('standard')
-aggregation = ('pairwise', {'matchings': 2, 'algorithm': 'drake', 'initial_target': 'rand'})
+pairwise = ('notay', {'matchings': 3, 'beta': 0.2})
 
 
 # Interpolation smooother (Jacobi seems slow...)
@@ -232,24 +231,53 @@ ml_sa = smoothed_aggregation_solver(A, B=None, symmetry='symmetric', strength=st
 sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals)
 end = time.clock()
 
-setup = setup_complexity(sa=ml_sa, strength=strength_connection, smooth=interp_smooth,
-						improve_candidates=improve_candidates, aggregate=aggregation,
-						presmoother=relaxation, postsmoother=relaxation, keep=keep,
-						max_levels=max_levels, max_coarse=max_coarse, coarse_solver=coarse_solver,
-						symmetry='symmetric')
-cycle = cycle_complexity(solver=ml_sa, presmoothing=relaxation, postsmoothing=relaxation, cycle='V')
+SC = ml_sa.setup_complexity()
+CC = ml_sa.cycle_complexity()
 
-nii_time = end-start
+sa_time = end-start
 sa_conv_factors = np.zeros((len(sa_residuals)-1,1))
-for i in range(0,len(sa_residuals)-1):
-	sa_conv_factors[i] = sa_residuals[i]/sa_residuals[i-1]
+for i in range(1,len(sa_residuals)):
+	sa_conv_factors[i-1] = sa_residuals[i]/sa_residuals[i-1]
 
 CF = np.mean(sa_conv_factors[1:])
-print "SA - ", nii_time, " seconds"
+print "SA - ", sa_time, " seconds"
 print " CF - ",CF
-print " Setup complexity - ",setup
-print " Cycle complexity - ",cycle
-# print " Effectve CF - ", CF**(1.0/cycle)
+print " Setup complexity - ",SC
+print " Cycle complexity - ",CC
+# print " Effectve CF - ", CF**(1.0/CC)
 
 
+
+# ----------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
+
+# Classical smoothed aggregation solver
+# --------------------------
+
+# pdb.set_trace()
+
+# Form classical smoothed aggregation multilevel solver object
+start = time.clock()
+ml_pw = pairwise_solver(A, B=None, symmetry='symmetric', aggregate=pairwise,
+						smooth=interp_smooth, max_levels=max_levels, max_coarse=max_coarse,
+						presmoother=relaxation, postsmoother=relaxation,
+						improve_candidates=improve_candidates, keep=keep )
+
+sol = ml_pw.solve(b, x0, tol, residuals=pw_residuals)
+end = time.clock()
+
+SC = ml_pw.setup_complexity()
+CC = ml_pw.cycle_complexity()
+
+pw_time = end-start
+pw_conv_factors = np.zeros((len(pw_residuals)-1,1))
+for i in range(1,len(pw_residuals)):
+	pw_conv_factors[i-1] = pw_residuals[i]/pw_residuals[i-1]
+
+CF = np.mean(sa_conv_factors[1:])
+print "PW - ", pw_time, " seconds"
+print " CF - ",CF
+print " Setup complexity - ",SC
+print " Cycle complexity - ",CC
+# print " Effectve CF - ", CF**(1.0/CC)
 

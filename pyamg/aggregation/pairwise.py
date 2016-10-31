@@ -16,12 +16,12 @@ from pyamg.util.utils import relaxation_as_linear_operator,\
     levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
     mat_mat_complexity, unpack_arg
 from .aggregate import standard_aggregation, naive_aggregation,\
-    lloyd_aggregation, pairwise_aggregation
+    lloyd_aggregation, notay_pairwise, weighted_matching
 from .tentative import fit_candidates
 from .smooth import jacobi_prolongation_smoother,\
     richardson_prolongation_smoother, energy_prolongation_smoother
 
-__all__ = ['smoothed_aggregation_solver']
+__all__ = ['pairwise_solver']
 
 
 def pairwise_solver(A, B=None, BH=None,
@@ -238,7 +238,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     elif fn == 'matching':
         AggOp = weighted_matching(A, B=B, improve_candidates=
                                   improve_candidates[len(levels)-1],
-                                  **kwargs):
+                                  **kwargs)
     else:
         raise ValueError('unrecognized aggregation method %s' % str(fn))
 
