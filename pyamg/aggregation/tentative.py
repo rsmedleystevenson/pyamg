@@ -150,15 +150,9 @@ def fit_candidates(AggOp, B, tol=1e-10, cost=[0.0]):
        B.ravel(), Bc.ravel(), tol)
 
     # TODO replace with BSC matrix here
-    if (A.getformat() == 'csc') and (B.shape[1] == 1):
-        T = csr_matrix((Tx.swapaxes(1, 2).copy(), AggOp_csc.indices,
-                        AggOp_csc.indptr))
-        T = T.T.tocsr()
-    else:
-        T = bsr_matrix((Tx.swapaxes(1, 2).copy(), AggOp_csc.indices,
-                        AggOp_csc.indptr), shape=(K2*N_coarse, K1*N_fine))
-        T = T.T.tobsr()
-
+    T = bsr_matrix((Tx.swapaxes(1, 2).copy(), AggOp_csc.indices,
+                    AggOp_csc.indptr), shape=(K2*N_coarse, K1*N_fine))
+    T = T.T.tobsr()
     Bc = Bc.reshape(-1, K2)
 
     cost[0] += 2.0*B.shape[1]*B.shape[1]*float(T.shape[0])

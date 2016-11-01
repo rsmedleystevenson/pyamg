@@ -15,6 +15,10 @@ from pyamg.util.utils import relaxation_as_linear_operator,\
     eliminate_diag_dom_nodes, blocksize,\
     levelize_strength_or_aggregation, levelize_smooth_or_improve_candidates, \
     mat_mat_complexity, unpack_arg
+from pyamg.strength import classical_strength_of_connection,\
+    symmetric_strength_of_connection, evolution_strength_of_connection,\
+    energy_based_strength_of_connection, distance_strength_of_connection,\
+    algebraic_distance, affinity_distance
 from .aggregate import standard_aggregation, naive_aggregation,\
     lloyd_aggregation, notay_pairwise, weighted_matching
 from .tentative import fit_candidates
@@ -26,6 +30,7 @@ __all__ = ['pairwise_solver']
 
 def pairwise_solver(A, B=None, BH=None,
                     symmetry='hermitian',
+                    strength=None,
                     aggregate='standard',
                     smooth=('jacobi', {'omega': 4.0/3.0}),
                     presmoother=('block_gauss_seidel',
@@ -209,7 +214,7 @@ def pairwise_solver(A, B=None, BH=None,
     while len(levels) < max_levels and\
             int(levels[-1].A.shape[0]/blocksize(levels[-1].A)) > max_coarse:
         extend_hierarchy(levels, strength, aggregate, smooth,
-                         improve_candidates, diagonal_dominance, keep)
+                         improve_candidates, keep)
 
     # Construct and return multilevel hierarchy
     ml = multilevel_solver(levels, **kwargs)
@@ -217,8 +222,8 @@ def pairwise_solver(A, B=None, BH=None,
     return ml
 
 
-def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
-                     diagonal_dominance=False, keep=True):
+def extend_hierarchy(levels, strength, aggregate, smooth,
+                     improve_candidates, keep=True):
     """Service routine to implement the strength of connection, aggregation,
     tentative prolongation construction, and prolongation smoothing.  Called by
     smoothed_aggregation_solver.
@@ -230,19 +235,37 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         AH = A.H.asformat(A.format)
         BH = levels[-1].BH
 
-    # Compute tentative interpolation operator T. Only fits one target
-    # per aggregate - if more are provided, they are fit in fit_candidates().
-    fn, kwargs = unpack_arg(aggregate[len(levels)-1])
-    if fn == 'notay':
-        AggOp = notay_pairwise(A, B=B, **kwargs)
-    elif fn == 'matching':
-        AggOp = weighted_matching(A, B=B, improve_candidates=
-                                  improve_candidates[len(levels)-1],
-                                  **kwargs)
+    # Compute the strength-of-connection matrix C, where larger
+    # C[i,j] denote stronger couplings between i and j. Note, this
+    # is not used for aggregation, only as sparsity pattern for
+    # energy-min smoothing, or filtering Jacobi smoothing of T.
+    fn, kwargs = unpack_arg(strength[len(levels)-1])
+    if fn == 'symmetric':
+        C = symmetric_strength_of_connection(A, **kwargs)
+    elif fn == 'classical':
+        C = classical_strength_of_connection(A, **kwargs)
+    elif fn == 'distance':
+        C = distance_strength_of_connection(A, **kwargs)
+    elif (fn == 'ode') or (fn == 'evolution'):
+        if 'B' in kwargs:
+            C = evolution_strength_of_connection(A, **kwargs)
+        else:
+            C = evolution_strength_of_connection(A, B, **kwargs)
+    elif fn == 'energy_based':
+        C = energy_based_strength_of_connection(A, **kwargs)
+    elif fn == 'predefined':
+        C = kwargs['C'].tocsr()
+    elif fn == 'algebraic_distance':
+        C = algebraic_distance(A, **kwargs)
+    elif fn == 'affinity':
+        C = affinity_distance(A, **kwargs)
+    elif fn is None:
+        C = A.tocsr()
     else:
-        raise ValueError('unrecognized aggregation method %s' % str(fn))
+        raise ValueError('unrecognized strength of connection method: %s' %
+                         str(fn))
 
-    levels[-1].complexity['aggregation'] = kwargs['cost'][0]
+    levels[-1].complexity['strength'] = kwargs['cost'][0]
 
     # Improve near nullspace candidates by relaxing on A B = 0
     temp_cost = [0.0]
@@ -257,22 +280,46 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
 
     levels[-1].complexity['candidates'] = temp_cost[0] * B.shape[1]
 
+    # Get choice of aggregation routine and arguments
+    fn, kwargs = unpack_arg(aggregate[len(levels)-1])
+
+    # Check for boolean "improve_candidates." If true, target vectors are
+    # improved each level of pairwise aggregation with chosen relaxation scheme. 
+    if ('improve_candidates' in kwargs) and \
+       (kwargs['improve_candidates'] == True):
+       kwargs['improve_candidates'] = improve_candidates[len(levels)-1]
+    else:
+       kwargs['improve_candidates'] = None
+
+    # Compute tentative interpolation operator T. Only fits one target
+    # per aggregate - if more are provided, they are fit in fit_candidates().
+    if fn == 'notay':
+        AggOp = notay_pairwise(A, B=B, **kwargs)
+    elif fn == 'matching':
+        AggOp = weighted_matching(A, B=B, **kwargs)
+    else:
+        raise ValueError('unrecognized aggregation method %s' % str(fn))
+
+    levels[-1].complexity['aggregation'] = kwargs['cost'][0]
+
+    # TODO : Need option for B=None because this saves cost in computing
+    #        pairwise... 
+
     # Compute the tentative prolongator, T, which is a tentative interpolation
     # matrix from the coarse-grid to the fine-grid.  T exactly interpolates
     # B_fine = T B_coarse. Orthogonalization complexity ~ 2nk^2, k=B.shape[1].
     # Note, if only one candidate vector is provided, T has already been
     # constructed in the pairwise aggregation process. 
     temp_cost=[0.0]
-    if B.shape[1] > 1:  
-        T, B = fit_candidates(AggOp, B, cost=temp_cost)
-    else: 
-        T = AggOp
-        B = T.T*B
-
+    T, B = fit_candidates(AggOp, B, cost=temp_cost)
     if A.symmetry == "nonsymmetric":
         TH, BH = fit_candidates(AggOp, BH, cost=temp_cost)
 
-    levels[-1].complexity['tentative'] = (temp_cost[0] + n) / float(A.nnz)
+    levels[-1].complexity['tentative'] = temp_cost[0] / float(A.nnz)
+
+    # TODO : hypothetically AggOp coming out of pairwise should be
+    #        T already built, but this diverges. Needs to be normalized
+    #        somehow. For now just use fit_candidates.
 
     # Smooth the tentative prolongator, so that it's accuracy is greatly
     # improved for algebraically smooth error.

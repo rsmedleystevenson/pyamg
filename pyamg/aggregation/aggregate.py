@@ -393,7 +393,7 @@ def weighted_matching(A, B=None, matchings=2,
     Ac = A      # Let Ac reference A for loop purposes
     if get_weights:
         weights = np.empty((A.nnz,),dtype=A.dtype)
-        temp_cost = [0]
+        temp_cost = np.ones((1,), dtype='float64')
         if target is None:
             amg_core.compute_weights(A.indptr, A.indices, A.data,
                                      weights, temp_cost)
@@ -412,7 +412,7 @@ def weighted_matching(A, B=None, matchings=2,
         rowptr = np.empty(n+1, dtype='intc')
         colinds = np.empty(n, dtype='intc')
         shape = np.empty(2, dtype='intc')
-        temp_cost = [0]
+        temp_cost = np.ones((1,), dtype='float64')
         if target is None:
             amg_core.drake_matching(Ac.indptr, Ac.indices, weights,
                                     rowptr, colinds, shape, temp_cost )
@@ -475,6 +475,7 @@ def weighted_matching(A, B=None, matchings=2,
 
 
 def notay_pairwise(A, B=None, beta=0.25, matchings=2,
+                   improve_candidates=None,
                    get_Cpts=False, cost=[0.0]):
     """ Pairwise aggregation of nodes using Notay approach. 
 
@@ -571,7 +572,7 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
         rowptr = np.empty(n+1, dtype='intc')
         colinds = np.empty(n, dtype='intc')
         shape = np.empty(2, dtype='intc')
-        temp_cost = [0]
+        temp_cost = np.ones((1,), dtype='float64')
         if target is None:
             amg_core.notay_pairwise(Ac.indptr, Ac.indices, Ac.data,
                                     rowptr, colinds, shape, temp_cost,
@@ -611,7 +612,6 @@ def notay_pairwise(A, B=None, beta=0.25, matchings=2,
                 b = np.zeros((n, 1), dtype=Ac.dtype)
                 target = relaxation_as_linear_operator((improve_fn, improve_args),
                                                        Ac, b, cost) * target         
-
 
     # NEED TO IMPLEMENT A WAY TO CHOOSE C-POINTS
     if get_Cpts:

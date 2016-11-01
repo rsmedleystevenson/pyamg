@@ -39,7 +39,7 @@ is_pdef 		   = True		# Assume matrix positive definite (only for aSA)
 keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operators
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
-accel = None
+accel = 'cg'
 keep = True
 
 # Strength of connection 
@@ -54,7 +54,7 @@ keep = True
 #		+ block_flag (F)- True / False for block matrices
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
-strength_connection = ('symmetric', {'theta': 0.0} )
+strength_connection = ('classical', {'theta': 0.2} )
 # strength_connection =  ('evolution', {'k': 2, 'epsilon': 4.0, 'symmetrize_measure':True})	# 'symmetric', 'classical', 'evolution'
 strength_connection = None
 
@@ -77,7 +77,8 @@ strength_connection = None
 #	        ~ same - G[i,j] = C[i,j]
 #	        ~ sub  - G[i,j] = C[i,j] - min(C)
 aggregation = ('standard')
-pairwise = ('notay', {'matchings': 3, 'beta': 0.2})
+# pairwise = ('notay', {'matchings': 3, 'beta': 0.2, 'improve_candidates': True})
+pairwise = ('matching', {'matchings': 3, 'improve_candidates': False})
 
 
 # Interpolation smooother (Jacobi seems slow...)
@@ -149,7 +150,7 @@ interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree': 1 })
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
 # relaxation = ('jacobi', {'omega': 2.0/3.0, 'iterations': 1} )
-relaxation = ('gauss_seidel', {'sweep': 'forward', 'iterations': 1} )
+relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 
@@ -168,8 +169,8 @@ improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 4})]
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 400
-epsilon 	= 0.0				# 'Strength' of aniostropy (only for 2d)
+N 			= 1000
+epsilon 	= 0.01				# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
 # Empty arrays to store residuals
@@ -210,7 +211,6 @@ else:
 	x0 = np.zeros(vec_size,1)
 
 
-sa_residuals = []
 
 
 # ----------------------------------------------------------------------------- #
@@ -220,6 +220,7 @@ sa_residuals = []
 # --------------------------
 
 # pdb.set_trace()
+sa_residuals = []
 
 # Form classical smoothed aggregation multilevel solver object
 start = time.clock()
@@ -228,7 +229,7 @@ ml_sa = smoothed_aggregation_solver(A, B=None, symmetry='symmetric', strength=st
 									max_coarse=max_coarse, presmoother=relaxation, postsmoother=relaxation,
 						 			improve_candidates=improve_candidates, keep=keep )
 
-sol = ml_sa.solve(b, x0, tol, residuals=sa_residuals)
+sol = ml_sa.solve(b, x0, tol, accel=accel, residuals=sa_residuals)
 end = time.clock()
 
 SC = ml_sa.setup_complexity()
@@ -254,7 +255,7 @@ print " Cycle complexity - ",CC
 # Classical smoothed aggregation solver
 # --------------------------
 
-# pdb.set_trace()
+pw_residuals = []
 
 # Form classical smoothed aggregation multilevel solver object
 start = time.clock()
@@ -263,7 +264,7 @@ ml_pw = pairwise_solver(A, B=None, symmetry='symmetric', aggregate=pairwise,
 						presmoother=relaxation, postsmoother=relaxation,
 						improve_candidates=improve_candidates, keep=keep )
 
-sol = ml_pw.solve(b, x0, tol, residuals=pw_residuals)
+sol = ml_pw.solve(b, x0, tol, accel=accel, residuals=pw_residuals)
 end = time.clock()
 
 SC = ml_pw.setup_complexity()
@@ -274,7 +275,7 @@ pw_conv_factors = np.zeros((len(pw_residuals)-1,1))
 for i in range(1,len(pw_residuals)):
 	pw_conv_factors[i-1] = pw_residuals[i]/pw_residuals[i-1]
 
-CF = np.mean(sa_conv_factors[1:])
+CF = np.mean(pw_conv_factors[1:])
 print "PW - ", pw_time, " seconds"
 print " CF - ",CF
 print " Setup complexity - ",SC

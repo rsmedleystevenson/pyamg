@@ -1,0 +1,25 @@
+commit 4aa08d266b78a9440104f0a9cf66b6b9181bc4bd
+Author: Ben Southworth <ben@Europa.local>
+Date:   Mon Oct 31 16:17:49 2016 -0600
+
+    smalll changes
+
+diff --git a/pyamg/aggregation/aggregation.py b/pyamg/aggregation/aggregation.py
+index 3aff8f4..25858d0 100644
+--- a/pyamg/aggregation/aggregation.py
++++ b/pyamg/aggregation/aggregation.py
+@@ -72,12 +72,11 @@ def smoothed_aggregation_solver(A, B=None, BH=None,
+         all nonzero entries of the matrix are considered strong.
+         See notes below for varying this parameter on a per level basis.  Also,
+         see notes below for using a predefined strength matrix on each level.
+-    aggregate : {list} : default ['standard', 'lloyd', 'naive', 'pairwise',
++    aggregate : {list} : default ['standard', 'lloyd', 'naive',
+                 ('predefined', {'AggOp' : csr_matrix})]
+         Method used to aggregate nodes.  See notes below for varying this
+         parameter on a per level basis.  Also, see notes below for using a
+-        predefined aggregation on each level. Method-specific parameters may be
+-        passed in using a tuple, e.g. aggregate=('pairwise',{'num_matchings': 2 })
++        predefined aggregation on each level.
+     smooth : {list} : default ['jacobi', 'richardson', 'energy', None]
+         Method used to smooth the tentative prolongator.  Method-specific
+         parameters may be passed in using a tuple, e.g.  smooth=

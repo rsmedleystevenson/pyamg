@@ -3,7 +3,6 @@ from __future__ import absolute_import
 
 __docformat__ = "restructuredtext en"
 
-import pdb 
 from warnings import warn
 import numpy as np
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr,\
@@ -313,18 +312,6 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
         AH = A.H.asformat(A.format)
         BH = levels[-1].BH
 
-    # Improve near nullspace candidates by relaxing on A B = 0
-    fn, kwargs = unpack_arg(improve_candidates[len(levels)-1])
-    if fn is not None:
-        b = np.zeros((A.shape[0], 1), dtype=A.dtype)
-        B = relaxation_as_linear_operator((fn, kwargs), A, b) * B
-        levels[-1].B = B
-        if A.symmetry == "nonsymmetric":
-            BH = relaxation_as_linear_operator((fn, kwargs), AH, b) * BH
-            levels[-1].BH = BH
-    # TODO : missing cost here??
-
-
     # Compute the strength-of-connection matrix C, where larger
     # C[i,j] denote stronger couplings between i and j.
     fn, kwargs = unpack_arg(strength[len(levels)-1])
@@ -399,7 +386,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     if A.symmetry == "nonsymmetric":
         TH, BH = fit_candidates(AggOp, BH, cost=temp_cost)
 
-    levels[-1].complexity['tentative'] = temp_cost[0] / A.nnz
+    levels[-1].complexity['tentative'] = temp_cost[0]/A.nnz
 
     # Smooth the tentative prolongator, so that it's accuracy is greatly
     # improved for algebraically smooth error.
