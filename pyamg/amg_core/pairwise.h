@@ -879,6 +879,8 @@ void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
 }
 
 
+// TODO : seg-fault with beta != 0.
+
 template<class I, class T>
 void notay_pairwise(const I A_rowptr[], const int A_rowptr_size,
                     const I A_colinds[], const int A_colinds_size,

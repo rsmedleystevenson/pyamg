@@ -56,7 +56,6 @@ keep = True
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
 strength_connection = ('classical', {'theta': 0.2} )
 # strength_connection =  ('evolution', {'k': 2, 'epsilon': 4.0, 'symmetrize_measure':True})	# 'symmetric', 'classical', 'evolution'
-strength_connection = None
 
 
 # Aggregation 
@@ -77,8 +76,8 @@ strength_connection = None
 #	        ~ same - G[i,j] = C[i,j]
 #	        ~ sub  - G[i,j] = C[i,j] - min(C)
 aggregation = ('standard')
-# pairwise = ('notay', {'matchings': 3, 'beta': 0.2, 'improve_candidates': True})
-pairwise = ('matching', {'matchings': 3, 'improve_candidates': False})
+# pairwise = ('notay', {'matchings': 2, 'beta': 0.1, 'improve_candidates': False})
+pairwise = ('matching', {'matchings': 3, 'improve_candidates': True, 'get_weights': False})
 
 
 # Interpolation smooother (Jacobi seems slow...)
@@ -107,8 +106,11 @@ pairwise = ('matching', {'matchings': 3, 'improve_candidates': False})
 #			~ local - local row-wise weight, avoids under-damping 
 #			~ diagonal - inverse of diagonal of A
 #			~ block - block diagonal inverse for A, USE FOR BLOCK SYSTEMS
-interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree': 1 })
-# interp_smooth = ('richardson', {'omega': 3.0/2.0} )
+# interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree': 1 })
+interp_smooth = ('energy', {'degree': 3, 
+							'prefilter': {'theta': 0.1}, 
+							'postfilter': {'theta': 0.1},
+							'maxiter': 5} )
  
 # interp_smooth2 = interp_smooth1
 
@@ -149,15 +151,15 @@ interp_smooth = ('jacobi', {'omega': 4.0/3.0, 'degree': 1 })
 # Note, Schwarz relaxation, polynomial relaxation, Cimmino relaxation,
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
-# relaxation = ('jacobi', {'omega': 2.0/3.0, 'iterations': 1} )
-relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+relaxation = ('jacobi', {'omega': 2.0/3.0, 'iterations': 1} )
+# relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
 
 # Improve near null space candidates
 # ----------------------------------
-improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 4})]
-# improve_candidates = [('jacobi', {'omega': 2.0/3.0, 'iterations': 4})]
+# improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 4})]
+improve_candidates = [('jacobi', {'omega': 2.0/3.0, 'iterations': 4})]
 # improve_candidates = ('richardson', {'omega': 3.0/2.0, 'iterations': 4} )
 
 # ----------------------------------------------------------------------------- #
@@ -169,14 +171,10 @@ improve_candidates = [('gauss_seidel', {'sweep': 'forward', 'iterations': 4})]
 rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
-N 			= 1000
-epsilon 	= 0.01				# 'Strength' of aniostropy (only for 2d)
+N 			= 750
+epsilon 	= 0.00				# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
-# Empty arrays to store residuals
-sa_residuals = []
-asa_residuals = []
-new_asa_residuals = []
 
 # 1d Poisson 
 if problem_dim == 1:
@@ -242,10 +240,10 @@ for i in range(1,len(sa_residuals)):
 
 CF = np.mean(sa_conv_factors[1:])
 print "SA - ", sa_time, " seconds"
-print " CF - ",CF
-print " Setup complexity - ",SC
-print " Cycle complexity - ",CC
-# print " Effectve CF - ", CF**(1.0/CC)
+print "\tCF - ",CF
+print "\tSetup complexity - ",SC
+print "\tCycle complexity - ",CC
+print "\tEffectve CF - ", CF**(1.0/CC)
 
 
 
@@ -259,7 +257,7 @@ pw_residuals = []
 
 # Form classical smoothed aggregation multilevel solver object
 start = time.clock()
-ml_pw = pairwise_solver(A, B=None, symmetry='symmetric', aggregate=pairwise,
+ml_pw = pairwise_solver(A, B=None, strength=strength_connection, symmetry='symmetric', aggregate=pairwise,
 						smooth=interp_smooth, max_levels=max_levels, max_coarse=max_coarse,
 						presmoother=relaxation, postsmoother=relaxation,
 						improve_candidates=improve_candidates, keep=keep )
@@ -277,8 +275,8 @@ for i in range(1,len(pw_residuals)):
 
 CF = np.mean(pw_conv_factors[1:])
 print "PW - ", pw_time, " seconds"
-print " CF - ",CF
-print " Setup complexity - ",SC
-print " Cycle complexity - ",CC
-# print " Effectve CF - ", CF**(1.0/CC)
+print "\tCF - ",CF
+print "\tSetup complexity - ",SC
+print "\tCycle complexity - ",CC
+print "\tEffectve CF - ", CF**(1.0/CC)
 

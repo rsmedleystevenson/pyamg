@@ -284,7 +284,7 @@ def lloyd_aggregation(C, ratio=0.03, distance='unit', maxiter=10, cost=[0]):
 
 
 def weighted_matching(A, B=None, matchings=2,
-                      get_weights=False,
+                      get_weights=True,
                       improve_candidates=('gauss_seidel',
                                           {'sweep': 'forward',
                                            'iterations': 4}),
@@ -393,7 +393,7 @@ def weighted_matching(A, B=None, matchings=2,
     Ac = A      # Let Ac reference A for loop purposes
     if get_weights:
         weights = np.empty((A.nnz,),dtype=A.dtype)
-        temp_cost = np.ones((1,), dtype='float64')
+        temp_cost = np.ones((1,), dtype=A.dtype)
         if target is None:
             amg_core.compute_weights(A.indptr, A.indices, A.data,
                                      weights, temp_cost)
@@ -412,13 +412,13 @@ def weighted_matching(A, B=None, matchings=2,
         rowptr = np.empty(n+1, dtype='intc')
         colinds = np.empty(n, dtype='intc')
         shape = np.empty(2, dtype='intc')
-        temp_cost = np.ones((1,), dtype='float64')
+        temp_cost = np.ones((1,), dtype=A.dtype)
         if target is None:
             amg_core.drake_matching(Ac.indptr, Ac.indices, weights,
                                     rowptr, colinds, shape, temp_cost )
             T_temp = csr_matrix( (np.ones(n,), colinds, rowptr), shape=shape )
         else:
-            data = np.empty(n, dtype=float)
+            data = np.empty(n, dtype=A.dtype)
             amg_core.drake_matching(Ac.indptr, Ac.indices, weights,
                                     target, rowptr, colinds, data,
                                     shape, temp_cost )
@@ -454,13 +454,13 @@ def weighted_matching(A, B=None, matchings=2,
 
             # Compute optional weights on coarse grid operator
             if get_weights:
-                weights = np.empty((A.nnz,),dtype=A.dtype)
-                temp_cost = [0.0]
+                weights = np.empty((Ac.nnz,),dtype=Ac.dtype)
+                temp_cost = np.ones((1,), dtype=Ac.dtype)
                 if target is None:
-                    amg_core.compute_weights(A.indptr, A.indices, A.data,
+                    amg_core.compute_weights(Ac.indptr, Ac.indices, Ac.data,
                                              weights, temp_cost)
                 else:
-                    amg_core.compute_weights(A.indptr, A.indices, A.data,
+                    amg_core.compute_weights(Ac.indptr, Ac.indices, Ac.data,
                                              weights, target, temp_cost)
 
                 cost[0] += temp_cost[0] / float(A.nnz)
