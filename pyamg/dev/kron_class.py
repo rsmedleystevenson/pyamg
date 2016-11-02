@@ -9,6 +9,8 @@ from copy import deepcopy
 # Overloading example
 # http://code.activestate.com/recipes/189971-basic-linear-algebra-matrix/
 
+# The constructor for this class should take in Kron sums, kron prods,
+# or other kron tensors.
 class GenTensor():
 """ Class for general tensor-structure matrix, that is as a sum
 	of tensor products:
@@ -34,10 +36,8 @@ class GenTensor():
 		except:
 			raise TypeError("Must provide list of matrices to constructor.")
 	
-		self.num_mats = len(matrices)
-		self.products = products
-		self.num_rows = []
-		self.num_cols = []
+		self.num_prods = len(products)
+		self.products = []
 
 		# Get data type and matrix type of first element in list
 		self.dtype = products[0].dtype
@@ -46,20 +46,6 @@ class GenTensor():
 		else:
 			self.issparse = False
 
-		# Ensure consistent storage types.
-		for i in range(0,self.num_mats):
-			if self.issparse:
-				try:
-					self.products.append(csr_matrix(products[i],dtype=self.dtype))
-				except:
-					raise TypeError("Need sparse products to be of Scipy CSR "
-									"format, or convertible to CSR.")
-			else:
-				try:
-					self.products.append(np.asarray(products[i],dtype=self.dtype))
-				except:
-					raise TypeError("Need dense arrays to be of Numpy array "
-									"format, or convertible to Numpy array.")					
 
 		self.set_shape()
 		self.nnz = self.count_nonzero()
@@ -76,12 +62,6 @@ class GenTensor():
 # TODO:
 #	- Address multiplying by multiple vectors / dense 2d array
 #	- Add __get_item__() to get (i,j) element of complete matrix
-#	- Addition and subtraction, __add__(), __sub__() will return a
-#	  general GenTensor() object when I make that class. 
-#	- np.asarray() and csr_matrix() do not throw exceptions when I
-#	  want them to. What if we want to have a dense vector kron
-#	  with a sparse matrix though? Need to be stored in csr format
-#	  for mult algorithm...
 class KronProd():
 """
 
@@ -111,16 +91,22 @@ class KronProd():
 		Boolean denoting if product matrices are sparse matrices.
 		The alternative is a set of dense vectors. 
 
-		TODO : for low-rank work, is it the tensor of a column
-			vector with row-vector? If so, how do we account for
-			this?
-
 	Methods
 	-------
 	__mul__()
 		Unassembled matrix-vector multiplication with global matix A.
 	__rmul__()
 		Unassembled vector-matrix multiplication with global matix A.
+
+	Notes
+	-----
+	  - Right now a kronecker product must consist of only sparse or
+		only dense operators. Of course theoretically this need not
+		be the case, but the multiplication algorithms are designed
+		that way. 
+	  - For low-rank work, do you ever use the tensor of a column
+	    vector with row-vector (i.e. a dense rank 2 matrix)? If so,
+	    how should we account for this in the class?
 
 
 	"""
@@ -155,16 +141,21 @@ class KronProd():
 		for i in range(0,self.num_mats):
 			if self.issparse:
 				try:
-					self.matrices.append(csr_matrix(matrices[i],dtype=self.dtype))
+					self.matrices.append(matrices[i].tocsr())
+					self.matrices[i].dtype = self.dtype
 				except:
 					raise TypeError("Need sparse matrices to be of Scipy CSR "
 									"format, or convertible to CSR.")
 			else:
-				try:
-					self.matrices.append(np.asarray(matrices[i],dtype=self.dtype))
-				except:
-					raise TypeError("Need dense arrays to be of Numpy array "
-									"format, or convertible to Numpy array.")					
+				if type(matrices[i]) is 'numpy.ndarray':
+					self.matrices.append(matrices[i])
+					self.matrices[i].dtype = self.dtype
+				else:
+					try:
+						self.matrices.append(np.array(matrices[i],dtype=self.dtype))
+					except:
+						raise TypeError("Need dense arrays to be of Numpy array "
+										"format, or convertible to Numpy array.")					
 
 		self.set_shape()
 		self.nnz = self.count_nonzero()
@@ -191,6 +182,62 @@ class KronProd():
 			return np.prod(nnzs)
 		else:
 			return np.prod(self.shape)
+
+
+	def __add__(self, X):
+	""" Add Kronecker product or general tensor to this Kronecker product. 
+
+		Notes
+		-----
+			Does not accept Kronecker sum, as this will likely muck
+			up the design of GenTensor class. 
+		"""
+		if (not isinstance(X,KronProd)) and (not isinstance(X,GenTensor)):
+			raise TypeError("Can only add Kronecker product, or general"
+							"tensor to Kronecker product object.")
+		if X.shape != self.shape:
+			raise ValueError("Cannot add operators of different dimension.")
+		kron1 = deepcopy(X)
+		kron2 = deepcopy(self)
+		return GenTensor([kron1,kron2])
+
+
+	def __sub__(self, X):
+	""" Subtract Kronecker product or general tensor from this Kronecker product. 
+
+		Notes
+		-----
+			Does not accept Kronecker sum, as this will likely muck
+			up the design of GenTensor class. 
+		"""
+		if (not isinstance(X,KronProd)) and (not isinstance(X,GenTensor)):
+			raise TypeError("Can only add Kronecker product, or general"
+							"tensor to Kronecker product object.")
+		if X.shape != self.shape:
+			raise ValueError("Cannot add operators of different dimension.")
+		kron1 = deepcopy(X)
+		kron1 *= -1
+		kron2 = deepcopy(self)
+		return GenTensor([kron1,kron2])
+
+
+	def __rsub__(self, X):
+	""" Subtract this Kronecker product froom general tensor or Kronecker product. 
+
+		Notes
+		-----
+			Does not accept Kronecker sum, as this will likely muck
+			up the design of GenTensor class. 
+		"""
+		if (not isinstance(X,KronProd)) and (not isinstance(X,GenTensor)):
+			raise TypeError("Can only add Kronecker product, or general"
+							"tensor to Kronecker product object.")
+		if X.shape != self.shape:
+			raise ValueError("Cannot add operators of different dimension.")
+		kron1 = deepcopy(X)
+		kron2 = deepcopy(self)
+		kron2 *= -1
+		return GenTensor([kron1,kron2])
 
 
 	def __mul__(self, x):
@@ -249,6 +296,7 @@ class KronProd():
 			return self.mat_mul(x, copy=False)
 		else:
 			raise TypeError("Cannot multiply in place by type "type(x))
+
 
 	def scalar_multiply(self, C, copy=True):
 	""" Scalar multiplication of self by constant. Constant can
@@ -467,6 +515,10 @@ class KronProd():
 
 
 
+# TODO:
+#	- count / bound nnz in kron sum (assume nonzero diagonal?)
+# 	- What if multiply by dense array, e.g. 3 columns vectors?
+#	  Should be able to handle this, need to adjust code.
 class KronSum():
 	"""
 
@@ -476,11 +528,23 @@ class KronSum():
 		List of sparse CSR matrices defining this object.
 	num_mats : int 
 		Number of matrices.
-	mat_sizes : list
-		Size of matrices (num rows = num cols).
-	n : int
-		Number of columns and rows of Kronecker sum matrix, A.
-		Equal to product of elements of mat_sizes.
+	num_rows : list<int>
+		Number of rows in product matrices.
+	num_cols : list<int>
+		Number of columns in product matrices.
+	shape : [n, n]
+		Shape of Kronecker product matrix. Total rows, m, equal
+		to product of elements of num_rows, and similarly, total
+		columns, n, equal to product of elements of num_cols.
+	ndim : 2
+		Currently only supports 2-dimensional arrays
+	dtype : type
+		Data type of object. All product matrices must have same type.
+	nnz : int
+		Number of nonzeros in global matrix.
+	issparse : bool
+		Boolean denoting if product matrices are sparse matrices.
+		The alternative is a set of dense vectors. 
 
 	Methods
 	-------
@@ -511,72 +575,224 @@ class KronSum():
 			raise TypeError("Must provide list of matrices to constructor.")
 	
 		self.num_mats = len(matrices)
-		self.matrices = matrices
-		self.mat_sizes = []
-		for i in range(0,self.num_mats):
-			self.mat_sizes.append(matrices[i].shape[0])
+		self.matrices = []
+		self.num_rows = []
+		self.num_cols = []
 
-		self.n = np.prod(self.mat_sizes)
+		# Get data type and matrix type of first element in list
+		self.dtype = matrices[0].dtype
+		self.issparse = True
+
+		# Ensure consistent storage types.
+		for i in range(0,self.num_mats):
+			try:
+				self.matrices.append(matrices[i].tocsr())
+				self.matrices[i].dtype = self.dtype
+			except:
+				raise TypeError("Need sparse matrices to be of Scipy CSR "
+								"format, or convertible to CSR.")
+
+		self.set_shape()
+		self.nnz = self.count_nonzero()
+
+
+	def set_shape(self):
+	""" Get dimensions of each product matrix and total Kronecker product.
+		Check that all matrices are square. 
+		"""
+		self.num_rows = []
+		self.num_cols = []
+		for i in range(0,self.num_mats):
+			if (self.matrices[i].shape[0] != self.matrices[i].shape[1]):
+				raise ValueError("Kronecker sum only defined for square matrices.")
+			self.num_rows.append(self.matrices[i].shape[0])
+			self.num_cols.append(self.matrices[i].shape[1])
+		self.shape = [np.prod(self.num_rows), np.prod(self.num_cols)]
+
+
+	def count_nonzero(self):
+	""" Count total number of nonzeros *in full matrix.* 
+
+		"""
+		return 0
+
+
+	def check_dims(self, X):
+	""" Check if dimensions of matrices in self and X are compatible.
+		"""
+		if X.shape != self.shape:
+			raise ValueError("Operators must have same dimensions.")
+		if X.num_mats != self.num_mats:
+			raise ValueError("Kronecker sums must consist of same number "
+							 "of matrices.")
+		for i in range(0,self.num_mats):
+			if (self.matrices[i].shape != X.matrices[i].shape):
+				raise ValueError("All sum-matrices must have equal dimension.")
+
+
+	def __add__(self, X):
+	""" Build Kronecker sum as sum of X and this Kronecker sum 
+
+		Notes
+		-----
+			Does not accept Kronecker product or General Tensors. 
+		"""
+		if (not isinstance(X,KronSum)):
+			raise TypeError("Can only add Kronecker sum to Kronecker sum.")
+		self.check_dims(X)
+		temp = []
+		for i in range(0,self.num_mats):
+			temp.append(self.matrices[i] + X.matrices[i])
+		return KronSum(temp)
+
+
+	def __iadd__(self, X):
+	""" Add Kronecker sum to this Kronecker sum. 
+
+		Notes
+		-----
+			Does not accept Kronecker product or General Tensors. 
+		"""
+		if (not isinstance(X,KronSum)):
+			raise TypeError("Can only add Kronecker sum to Kronecker sum.")
+		self.check_dims(X)
+		for i in range(0,self.num_mats):
+			self.matrices[i] += X.matrices[i]
+		self.nnz = self.count_nonzero()
+		return self
+
+
+	def __sub__(self, X):
+	""" Build Kronecker sum as difference of this Kronecker sum and X.
+
+		Notes
+		-----
+			Does not accept Kronecker product or General Tensors. 
+		"""
+		if (not isinstance(X,KronSum)):
+			raise TypeError("Can only subtract Kronecker sum from Kronecker sum.")
+		self.check_dims(X)
+		temp = []
+		for i in range(0,self.num_mats):
+			temp.append(self.matrices[i] - X.matrices[i])
+		return KronSum(temp)
+
+
+	def __rsub__(self, X):
+	""" Build Kronecker sum as difference of X and this Kronecker sum.
+
+		Notes
+		-----
+			Does not accept Kronecker product or General Tensors. 
+		"""
+		if (not isinstance(X,KronSum)):
+			raise TypeError("Can only subtract Kronecker sum from Kronecker sum.")
+		self.check_dims(X)
+		temp = []
+		for i in range(0,self.num_mats):
+			temp.append(X.matrices[i] - self.matrices[i])
+		return KronSum(temp)
+
+
+	def __isub__(self, X):
+	""" Subtract Kronecker sum from this Kronecker sum. 
+
+		Notes
+		-----
+			Does not accept Kronecker product or General Tensors. 
+		"""
+		if (not isinstance(X,KronSum)):
+			raise TypeError("Can only subtract Kronecker sum from Kronecker sum.")
+		self.check_dims(X)
+		for i in range(0,self.num_mats):
+			self.matrices[i] -= X.matrices[i]
+		self.nnz = self.count_nonzero()
+		return self
 
 
 	def __mul__(self, x):
-	""" Overloaded functions to multiply by a scalar, vector,
-		or kronecker product on the right. 
+	""" Overloaded functions to multiply by a scalar or vector
+		on the right. 
 		"""
 		if isinstance(x, numbers.Number):
-			return self.scalar_multiply(x)
+			return self.scalar_multiply(x, copy=True)
 		elif isinstance(x, list):
 			try:
-				y = np.array(x)
+				y = np.asarray(x, dtype=self.dtype)
 				return self.mult_vec(y, 0)
 			except:
 				raise TypeError("If list-type passed in, must be "
 								"convertible to numpy array.")
-		elif isinstance(x, KronProd):
-			return self.mat_mul(x)
 		else:
-			raise TypeError("Cannot multiply by type "x.dtype)
+			raise TypeError("Cannot multiply by type "type(x))
 
 
 	def __rmul__(self, x):
-	""" Overloaded functions to multiply by a scalar, vector,
-		or kronecker product on the left (where self is the
-		operator on the right). 
+	""" Overloaded functions to multiply by a scalar or vector
+		on the left. 
 		"""
 		if isinstance(x, numbers.Number):
-			return self.scalar_multiply(x)
+			return self.scalar_multiply(x, copy=True)
 		elif isinstance(x, list):
 			try:
-				y = np.array(x)
+				y = np.asarray(x, dtype=self.dtype)
 				return self.mult_vec(y, 0)
 			except:
 				raise TypeError("If list-type passed in, must be "
 								"convertible to numpy array.")
-		elif isinstance(x, KronProd):
-			return self.rmat_mul(x)
 		else:
-			raise TypeError("Cannot multiply by type "x.dtype)
+			raise TypeError("Cannot multiply by type "type(x))
 
 
-	def scalar_multiply(self, C):
+	def __imul__(self, x):
+	""" Overloaded functions to multiply by scalar in place.
+		"""
+		if isinstance(x, numbers.Number):
+			return self.scalar_multiply(x, copy=False)
+		else:
+			raise TypeError("Cannot multiply in place by type "type(x))
+
+
+	def scalar_multiply(self, C, copy=True):
 	""" Scalar multiplication of self by constant.
 		"""
-		temp = deepcopy(self.matrices)
-		for mat in temp:
-			mat *= C
-		return KronSum(temp)
+		if copy:
+			temp = deepcopy(self.matrices)
+			for mat in temp:
+				mat *= C
+			return KronSum(temp)
+		else:
+			for mat in self.matrices:
+				mat *= C
+			return self
+
 
 	def mult_vec(self, x, left_mult):
-		"""
+	""" Multiply Kronecker sum by vector.
+
+		Parameters
+		----------
+			x : array-like
+				1d vector to multiply by.
+			left_mult : bool
+				Boolean on left multiplication. If left_mult = 1,
+				return A*x, otherwise return x*A.
+
+		Returns
+		-------
+			y : numpy array
+				Output of multiplication as dense numpy array.
 
 		"""
 		# Check for compatible dimensions
 		if x.shape[0] != self.n:
 			raise ValueError("Incompatible dimensions.")		
+		if (left_mult != 0) and (left_mult != 1):
+			raise ValueError("Parameter 'left_mult' must be 0 or 1.")
 
 		# Function to compute product of matrix sizes for
 		# A_{ind1}, ..., A_{ind2}
-		def get_np.prod(ind1,ind2):
+		def get_prod(ind1,ind2):
 			if ind2 < ind1:
 				return 1
 			else:
@@ -586,10 +802,10 @@ class KronSum():
 		# in summation,
 		#	A = A_1\otimes I_2 \otimes ... + I_1\otimes A_2 \otimes I_3 ...
 		mult = amg_core.partial_kronsum_matvec
-		y = np.zeros((self.n,))
+		y = np.zeros((self.n,),dtype=self.dtype)
 		for i in range(0,num_mats):
-			n_left = get_np.prod(0,i-1)
-			n_right = get_np.prod(i+1,self.num_mats)
+			n_left = get_prod(0,i-1)
+			n_right = get_prod(i+1,self.num_mats)
 			mult(self.matrices[i].indptr,
 				 self.matrices[i].indices,
 				 self.matrices[i].data,
@@ -603,6 +819,24 @@ class KronSum():
 		return y
 
 
+	def transpose(self, copy=True):
+	""" Transpose Kronecker sum by transposing each sum matrix.
+
+		Parameters
+		----------
+			copy : bool
+				If true, copies object and underlying matrices, returns
+				transpose. If false, takes transpose of each sum matrix
+				in place. 
+		"""
+
+		if copy:
+			temp = [self.matrices[i].transpose(copy=True) for i in range(0,self.num_mats)]
+			return KronProd(temp)
+		else:
+			for i in range(0,self.num_mats):
+				self.matrices[i] = self.matrices[i].transpose(copy=False)
+			return self
 
 
 
