@@ -78,7 +78,8 @@
     (      ctype temp [], const int temp_size),
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
-    (      ctype cost [], const int cost_size)
+    (      ctype cost [], const int cost_size),
+    (const ctype A_data[], const int A_data_size)
 };
 %enddef
 
@@ -146,7 +147,9 @@ DECLARE_DATA_TYPE( std::complex<double> )
   ---------------------------------------------------------------------------*/
 %include "linalg.h"
 INSTANTIATE_INDEXDATA_COMPLEX(pinv_array)
-INSTANTIATE_COMPLEX(partial_kronsum_matvec)
+INSTANTIATE_INDEXDATA(partial_kronsum_matvec)
+INSTANTIATE_INDEXDATA(partial_kronprod_matvec)
+INSTANTIATE_INDEXDATA(partial_kronprod_vecmat)
 
 /*----------------------------------------------------------------------------
   graph.h

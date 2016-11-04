@@ -381,7 +381,7 @@ void partial_kronprod_matvec(const int A_rowptr[], const int A_rowptr_size,
 							 const int A_colinds[], const int A_colinds_size,
 							 const double A_data[], const int A_data_size,
 						    	   double y[], const int y_size,
-						    	   double q[], const int q_size,
+						    	   double x[], const int x_size,
 						     const int num_rows,
 							 const int num_cols,
 							 const int num_left,
@@ -408,7 +408,7 @@ void partial_kronprod_matvec(const int A_rowptr[], const int A_rowptr_size,
 			// Add A_i * z to output vector.
 			int index_j = base_j + ir;
 			for (int row=0; row<num_rows; row++) {
-				q[index_j] = z[row];
+				x[index_j] = z[row];
 				index_j += n_right;
 			}
 		}
@@ -417,9 +417,9 @@ void partial_kronprod_matvec(const int A_rowptr[], const int A_rowptr_size,
 		base_j += num_rows*n_right;
 	}
 
-	// Update values of y with new values of q.
+	// Update values of y with new values of x.
 	for (int k=0; k<y_size; k++) {
-		y[k] = q[k];
+		y[k] = x[k];
 	}
 }
 
@@ -428,7 +428,7 @@ void partial_kronprod_vecmat(const int A_rowptr[], const int A_rowptr_size,
 							 const int A_colinds[], const int A_colinds_size,
 							 const double A_data[], const int A_data_size,
 						    	   double y[], const int y_size,
-						    	   double q[], const int q_size,
+						    	   double x[], const int x_size,
 						     const int num_rows,
 							 const int num_cols,
 							 const int num_left,
@@ -455,7 +455,7 @@ void partial_kronprod_vecmat(const int A_rowptr[], const int A_rowptr_size,
 			// Add z * A_i to output vector.
 			int index_j = base_j + ir;
 			for (int col=0; col<num_cols; col++) {
-				q[index_j] = z[col];
+				x[index_j] = z[col];
 				index_j += n_right;
 			}
 		}
@@ -465,7 +465,7 @@ void partial_kronprod_vecmat(const int A_rowptr[], const int A_rowptr_size,
 	}
 	// Update values of x with new values of y.
 	for (int k=0; k<y_size; k++) {
-		y[k] = q[k];
+		y[k] = x[k];
 	}
 }
 

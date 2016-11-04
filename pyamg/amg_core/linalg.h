@@ -987,10 +987,11 @@ std::vector<T> sparse_vecmat(const std::vector<T> &x,
                              const I indptr[],
                              const I indices[],
                              const T data[],
+                             I m,
                              I n )
 {
     std::vector<T> b(n,0);
-    for(I i=0; i<n; i++) { 
+    for(I i=0; i<m; i++) { 
         I ind1 = indptr[i],
             ind2 = indptr[i+1];
         for(I j=ind1; j<ind2; j++) {
@@ -1027,10 +1028,11 @@ std::vector<T> sparse_matvec(const std::vector<T> &x,
                              const I indptr[],
                              const I indices[],
                              const T data[],
+                             I m,
                              I n )
 {
-    std::vector<T> b(n,0);
-    for(I i=0; i<n; i++) { 
+    std::vector<T> b(m,0);
+    for(I i=0; i<m; i++) { 
         I ind1 = indptr[i],
             ind2 = indptr[i+1];
         for(I j=ind1; j<ind2; j++) {
@@ -1074,9 +1076,11 @@ std::vector<T> sparse_matvec(const std::vector<T> &x,
  *          Size of identity on left of A.
  *      n_right : int
  *          Size of identity on right of A.
- *      n : int
- *          Size of A.
- *      left_mult : bool
+ *      num_rows : int
+ *          Number of rows in A
+ *      num_cols : int
+ *          Number of columns in A. Currently must equal num_rows. 
+ *      right_mult : bool
  *          
  *
  * Returns
@@ -1090,34 +1094,48 @@ std::vector<T> sparse_matvec(const std::vector<T> &x,
  *
  */
 template<class I, class T>
-void partial_kronsum_matvec(const I A_rowptr[], const I A1_rowptr_size,
-                            const I A_colinds[], const I A1_colinds_size,
-                            const T A_data[], const I A1_data_size,
+void partial_kronsum_matvec(const I A_rowptr[], const I A_rowptr_size,
+                            const I A_colinds[], const I A_colinds_size,
+                            const T A_data[], const I A_data_size,
                             const T x[], const I x_size,
                                   T y[], const I y_size,
+                            const I num_rows,
+                            const I num_cols,
                             const I n_left,
                             const I n_right,
-                            const I n,
-                            const I left_mult)
+                            const I right_mult)
 {
     I base = 0;
-    I jump = n * n_right;
-    std::vector<T> z(n,0);
+    I jump = num_cols * n_right;
+    std::vector<T> z(num_cols,0);
+    if (num_rows != num_cols) {
+        std::cout << "Warning : only works for square matrices.\n";
+    }
+
+    // Function pointer for mat-vec or vec-mat
+    std::vector<T> (*comp)(const std::vector<T>&, const I[],
+                           const I[], const T[], I, I);
+    if (right_mult == 1) {
+        comp = &sparse_vecmat;
+    }
+    else {
+        comp = &sparse_matvec;
+    }
 
     for (I block=0; block<n_left; block++) {
         for (I offset=0; offset<n_right; offset++) {
 
             // Construct local vector, z, compute A_i*z
             I index = base + offset;
-            for (I h=0; h<n; h++) {
+            for (I h=0; h<num_cols; h++) {
                 z[h] = x[index];
                 index += n_right;
             }
-            z = sparse_matvec(z,A_rowptr,A_colinds,A_data,n);
+            z = comp(z,A_rowptr,A_colinds,A_data,num_rows,num_cols);
             index = base + offset;
 
             // Add A_i*z to output
-            for (I h=0; h<n; h++) {
+            for (I h=0; h<num_cols; h++) {
                 y[index] += z[h];
                 index += n_right;
             }
@@ -1125,6 +1143,102 @@ void partial_kronsum_matvec(const I A_rowptr[], const I A1_rowptr_size,
         base += jump;
     }
 }
+
+
+template<class I, class T>
+void partial_kronprod_matvec(const I A_rowptr[], const I A_rowptr_size,
+                             const I A_colinds[], const I A_colinds_size,
+                             const T A_data[], const I A_data_size,
+                                   T y[], const I y_size,
+                                   T x[], const I x_size,
+                             const I num_rows,
+                             const I num_cols,
+                             const I n_left,
+                             const I n_right )
+{
+    I base_i = 0;
+    I base_j = 0;
+
+    for (I il=0; il<n_left; il++) {
+        for (I ir=0; ir<n_right; ir++) {
+
+            // Construct local vector, z.
+            std::vector<T> z(num_cols,0);
+            I index_i = base_i + ir;
+            for (I col=0; col<num_cols; col++) {
+                z[col] = y[index_i];
+                index_i += n_right;
+            }
+
+            // Compute A_i * z.
+            z = sparse_matvec(z,A_rowptr,A_colinds,A_data,
+                              num_rows,num_cols);
+
+            // Add A_i * z to output vector.
+            I index_j = base_j + ir;
+            for (I row=0; row<num_rows; row++) {
+                x[index_j] = z[row];
+                index_j += n_right;
+            }
+        }
+        // Update indices
+        base_i += num_cols*n_right;
+        base_j += num_rows*n_right;
+    }
+
+    // Update values of y with new values of x.
+    for (I k=0; k<y_size; k++) {
+        y[k] = x[k];
+    }
+}
+
+
+template<class I, class T>
+void partial_kronprod_vecmat(const I A_rowptr[], const I A_rowptr_size,
+                             const I A_colinds[], const I A_colinds_size,
+                             const T A_data[], const I A_data_size,
+                                   T y[], const I y_size,
+                                   T x[], const I x_size,
+                             const I num_rows,
+                             const I num_cols,
+                             const I n_left,
+                             const I n_right )
+{
+    I base_i = 0;
+    I base_j = 0;
+
+    for (I il=0; il<n_left; il++) {
+        for (I ir=0; ir<n_right; ir++) {
+
+            // Construct local vector, z.
+            std::vector<T> z(num_rows,0);
+            I index_i = base_i + ir;
+            for (I row=0; row<num_rows; row++) {
+                z[row] = y[index_i];
+                index_i += n_right;
+            }
+
+            // Compute z * A_i.
+            z = sparse_vecmat(z,A_rowptr,A_colinds,A_data,
+                              num_cols,num_rows);
+
+            // Add z * A_i to output vector.
+            I index_j = base_j + ir;
+            for (I col=0; col<num_cols; col++) {
+                x[index_j] = z[col];
+                index_j += n_right;
+            }
+        }
+        // Update indices
+        base_i += num_rows*n_right;
+        base_j += num_cols*n_right;
+    }
+    // Update values of x with new values of y.
+    for (I k=0; k<y_size; k++) {
+        y[k] = x[k];
+    }
+}
+
 
 
 
