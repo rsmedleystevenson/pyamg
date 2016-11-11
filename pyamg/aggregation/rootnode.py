@@ -479,7 +479,7 @@ def extend_hierarchy(levels, strength, aggregate, splitting, smooth,
         T = direct_interpolation(A, C, splitting)
         cost[0] += 0.0      # TODO
         # Create necessary root node matrices
-        Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp=None, T))
+        Cpt_params = (True, get_Cpt_params(A, Cnodes, AggOp=None, T=T))
 
     # Set coarse grid near nullspace modes as injected fine grid near
     # null-space modes

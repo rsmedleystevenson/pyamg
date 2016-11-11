@@ -176,6 +176,7 @@ INSTANTIATE_INDEXDATA_COMPLEX(apply_householders)
 INSTANTIATE_INDEXDATA_COMPLEX(householder_hornerscheme)
 INSTANTIATE_INDEXDATA_COMPLEX(apply_givens)
 INSTANTIATE_INDEXDATA(tracemin_preconditioner)
+INSTANTIATE_INDEXDATA(tracemin_diag_precondition)
 
 /*----------------------------------------------------------------------------
   relaxation.h

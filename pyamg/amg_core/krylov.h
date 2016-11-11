@@ -244,5 +244,47 @@ void tracemin_preconditioner(const I S_rowptr[], const int S_rowptr_size,
     }
 }
 
+/* Get diagonal preconditioning vector. 
+ * TODO : fill in
+ *
+ *
+ *
+ *
+ *
+ */
+template <class I, class T> 
+void tracemin_diag_precondition(const I A_rowptr[], const int A_rowptr_size,
+                                const I A_colinds[], const int A_colinds_size,
+                                const T A_data[], const int A_data_size,
+                                const I S_rowptr[], const int S_rowptr_size,
+                                const I S_colinds[], const int S_colinds_size,
+                                T S_data[], const int S_data_size)
+{
+    I n = S_rowptr_size -1;
+
+    // Build preconditioner for each row of S. All elements of
+    // the ith row of S are preconditioned by 1 / A_{ii}.
+    for (I i=0; i<n; i++) {
+
+        // Get 1 / A_{ii} 
+        T temp = 0.0;
+        for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
+            if (A_colinds[j] == i) {
+                temp = 1.0 / A_data[j];
+            }
+        }
+
+        // Fill in preconditioning data for this row.
+        for (I j=S_rowptr[i]; j<S_rowptr[i+1]; j++) {
+            S_data[j] = temp;
+        }
+    }
+}
+
+
+
+
+
+
 
 #endif

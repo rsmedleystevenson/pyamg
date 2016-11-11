@@ -26,10 +26,10 @@ from pyamg.classical.split import RS, PMIS, PMISc, MIS, CLJP, CLJPc
 from pyamg.classical.cr import CR
 
 
-__all__ = ['trace_min_solver']
+__all__ = ['tracemin_solver']
 
 
-def trace_min_solver(A, B=None, BH=None,
+def tracemin_solver(A, B=None, BH=None,
                     symmetry='hermitian',
                     strength='symmetric',
                     aggregate=None,

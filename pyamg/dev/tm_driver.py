@@ -10,10 +10,12 @@ from matplotlib import cm
 from mpl_toolkits.mplot3d import Axes3D
 
 from pyamg.gallery import poisson
+from pyamg.gallery.elasticity import linear_elasticity
 from pyamg.gallery.diffusion import diffusion_stencil_2d
 from pyamg.gallery.stencil import stencil_grid
 from pyamg.util.utils import symmetric_rescaling
-from pyamg.aggregation.trace_min import trace_min_solver
+from pyamg.aggregation.trace_min import tracemin_solver
+from pyamg.aggregation.rootnode import rootnode_solver
 
 # from poisson import get_poisson
 
@@ -30,7 +32,7 @@ keep_levels 	   = False		# Also store SOC, aggregation, and tentative P operator
 diagonal_dominance = False		# Avoid coarsening diagonally dominant rows 
 coarse_solver = 'pinv'
 accel = 'cg'
-keep = False
+keep = True
 
 # Strength of connection 
 # ----------------------
@@ -44,8 +46,8 @@ keep = False
 #		+ block_flag (F)- True / False for block matrices
 #		+ symmetrize_measure (T)- True / False, True --> Atilde = 0.5*(Atilde + Atilde.T)
 #		+ proj_type (l2)- Define norm for constrained min prob, l2 or D_A
-# strength = ('classical', {'theta': 0.35} )
-strength = ('evolution', {'k': 2, 'epsilon': 5.0})
+strength = ('classical', {'theta': 0.35} )
+# strength = ('evolution', {'k': 2, 'epsilon': 5.0})
 
 # AMG CF-splitting 
 # ----------------
@@ -67,8 +69,8 @@ strength = ('evolution', {'k': 2, 'epsilon': 5.0})
 #	- CR : Compatible relaxation
 #		+ 
 #		+ 
-splitting = 'RS'
-# splitting = None
+# splitting = 'RS'
+splitting = None
 
 # Aggregation 
 # -----------
@@ -88,7 +90,7 @@ splitting = 'RS'
 #	        ~ same - G[i,j] = C[i,j]
 #	        ~ sub  - G[i,j] = C[i,j] - min(C)
 aggregate = ('standard')
-aggregate = None
+# aggregate = None
 
 
 # Relaxation
@@ -129,18 +131,32 @@ aggregate = None
 # Kaczmarz relaxation, indexed Gauss-Seidel, and one other variant of 
 # Gauss-Seidel are also available - see relaxation.py. 
 # relaxation = ('jacobi', {'omega': 4.0/3.0, 'iterations': 1} )
-relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+# relaxation = ('gauss_seidel', {'sweep': 'symmetric', 'iterations': 1} )
+relaxation = ('schwarz', {'sweep': 'symmetric', 'iterations': 1} )
 # relaxation = ('richardson', {'iterations': 1})
 
-improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 4})
+improve_candidates = ('gauss_seidel', {'sweep': 'forward', 'iterations': 2})
+# improve_candidates = None
 # improve_candidates = ('jacobi', {'omega': 4.0/3.0, 'iterations': 4})
 
 
 # Trace-minimization parameters
 # -----------------------------
-trace_min={'deg': 1, 'maxiter': 10,
+deg = 2
+maxiter = 5
+exact = False
+tau = 0.01
+trace_min={'deg': deg, 'maxiter': maxiter,
            'tol': 1e-8, 'debug': False,
-           'get_tau': 1.0, 'precondition': True}
+           'get_tau': tau, 'precondition': True,
+           'exact' : exact}
+
+interp_smooth = ('energy', {'krylov': 'cg', \
+							'degree': deg, \
+							'maxiter': maxiter, \
+							'weighting': 'diagonal'})
+							# 'prefilter' : {'theta' : pre}, \
+							# 'postfilter' : {'theta' : post} })
 
 
 # ----------------------------------------------------------------------------- #
@@ -153,22 +169,27 @@ rand_guess 	= True
 zero_rhs 	= True
 problem_dim = 2
 N 			= 1000
-epsilon 	= 0.00			# 'Strength' of aniostropy (only for 2d)
+epsilon 	= 1.0			# 'Strength' of aniostropy (only for 2d)
 theta 		= 3.0*math.pi/16.0	# Angle of anisotropy (only for 2d)
 
-# 1d Poisson 
-if problem_dim == 1:
-	grid_dims = [N,1]
-	A = poisson((N,), format='csr')
-# 2d Poisson
-elif problem_dim == 2:
-	grid_dims = [N,N]
-	stencil = diffusion_stencil_2d(epsilon,theta)
-	A = stencil_grid(stencil, grid_dims, format='csr')
+# # 1d Poisson 
+# if problem_dim == 1:
+# 	grid_dims = [N,1]
+# 	A = poisson((N,), format='csr')
+# # 2d Poisson
+# elif problem_dim == 2:
+# 	grid_dims = [N,N]
+# 	stencil = diffusion_stencil_2d(epsilon,theta)
+# 	A = stencil_grid(stencil, grid_dims, format='csr')
+
+# A, B = linear_elasticity((10, 500), nu=0.35)
+A, B = linear_elasticity((200, 300), nu=0.495)
+# A = A.tocsr()
+
 
 # # Vectors and additional variables
 [d,d,A] = symmetric_rescaling(A)
-vec_size = np.prod(grid_dims)
+vec_size = A.shape[0]
 
 # Zero right hand side or sin(pi x)
 if zero_rhs:
@@ -192,6 +213,9 @@ else:
 # A, b = get_poisson(n=n0,eps=eps,theta=theta,rand=True)
 # x0 = np.random.rand(A.shape[0],1)
 
+# B = np.random.rand(A.shape[0],1)
+# B = None
+
 # ----------------------------------------------------------------------------- #
 # ----------------------------------------------------------------------------- #
 
@@ -199,7 +223,7 @@ else:
 # -------------------
 residuals = []
 start = time.clock()
-ml = trace_min_solver(A=A, strength=strength, splitting=splitting, aggregate=aggregate,
+ml = tracemin_solver(A=A, B=B, strength=strength, splitting=splitting, aggregate=aggregate,
 					  trace_min=trace_min, presmoother=relaxation, postsmoother=relaxation,
                       improve_candidates=improve_candidates, max_levels=max_levels,
                       max_coarse=max_coarse, keep=keep)
@@ -230,5 +254,45 @@ print "\tCycle complexity 	 = ",CC
 print "\tConvergence factor 	 = ",CF
 
 
-pdb.set_trace()
+# ----------------------------------------------------------------------------- #
+# ----------------------------------------------------------------------------- #
+
+# Root-node solver
+# -------------------
+rn_residuals = []
+start = time.clock()
+ml_rn = rootnode_solver(A=A, B=B, strength=strength, splitting=splitting, aggregate=aggregate,
+					  smooth=interp_smooth, presmoother=relaxation, postsmoother=relaxation,
+                      improve_candidates=improve_candidates, max_levels=max_levels,
+                      max_coarse=max_coarse, keep=keep)
+end = time.clock()
+setup_time = end-start;
+
+start = time.clock()
+sol = ml_rn.solve(b, x0, tol, residuals=rn_residuals, accel=accel)
+end = time.clock()
+solve_time = end-start
+
+OC = ml_rn.operator_complexity()
+CC = ml_rn.cycle_complexity()
+SC = ml_rn.setup_complexity()
+
+rn_conv_factors = np.zeros((len(rn_residuals)-1,1))
+for i in range(1,len(rn_residuals)-1):
+	rn_conv_factors[i] = rn_residuals[i]/rn_residuals[i-1]
+
+CF = np.mean(rn_conv_factors)
+
+print "Root-node, problem size ",A.shape[0]," x ",A.shape[0],", ",A.nnz," nonzeros"
+print "\tSetup time 		 = ",setup_time
+print "\tSolve time 		 = ",solve_time
+print "\tSetup complexity 	 = ",SC
+print "\tOperator complexity 	 = ",OC
+print "\tCycle complexity 	 = ",CC
+print "\tConvergence factor 	 = ",CF
+
+
+
+
+# pdb.set_trace()
 

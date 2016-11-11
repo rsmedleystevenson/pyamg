@@ -277,6 +277,13 @@ def tracemin_preconditioner(*args):
     """
     return _amg_core.tracemin_preconditioner(*args)
 
+def tracemin_diag_precondition(*args):
+    """
+    tracemin_diag_precondition(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] S_rowptr, int const [] S_colinds, float [] S_data)
+    tracemin_diag_precondition(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] S_rowptr, int const [] S_colinds, double [] S_data)
+    """
+    return _amg_core.tracemin_diag_precondition(*args)
+
 def gauss_seidel(*args):
     """
     gauss_seidel(int const [] Ap, int const [] Aj, float const [] Ax, float [] x, float const [] b, int const row_start, int const row_stop, int const row_step)

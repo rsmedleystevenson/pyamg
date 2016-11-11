@@ -1,0 +1,140 @@
+
+def tracemin_constrained_cg(A, Bc, BctBcinv, W, Cpts, Fpts, maxiter,
+                            tol, cost, debug=False):
+
+    """"
+    CG to minimize trace functional with constraints to
+    exactly interpolate PBc = Bf. Fill this in. 
+
+    """
+    # Function to return trace
+    def get_trace(A):
+        return np.sum(A.diagonal())
+
+    # Function to efficiently stack two csr matrices. Note,
+    # does not check for CSR or matching dimensions. 
+    def stack(W, I):
+        temp = W.indptr[-1]
+        P = sparse.csr_matrix( (np.concatenate((W.data, I.data)),
+                         np.concatenate((W.indices, I.indices)),
+                         np.concatenate((W.indptr, temp+I.indptr[1:])) ),
+                        shape=[(W.shape[0]+I.shape[0]), W.shape[1]] )
+        return P
+
+    # Function pointers for C++ backend
+    mat_mult_s2s = pyamg.amg_core.incomplete_mat_mult_bsr
+    mat_subtract = pyamg.amg_core.incomplete_mat_subtract
+    preconditioner = pyamg.amg_core.tracemin_diag_precondition
+
+    # Problem dimensions
+    n = A.shape[0]
+    nc = len(Cpts) 
+    nf = len(Fpts)
+    nb = Bc.shape[1]
+
+    # Save structure of sparsity pattern by reference
+    W.sort_indices()
+    indptr = W.indptr
+    indices = W.indices
+    sp_nnz = W.nnz
+
+    # RHS C0 = -Afc restricted to sparsity pattern of C0
+    C0 = np.zeros((sp_nnz,))
+    temp = A[Fpts,:][:,Cpts]
+    temp.sort_indices()
+    mat_subtract(indptr, indices, C0, temp.indptr,
+                 temp.indices, temp.data, 1.0)
+    cost[0] += sp_nnz / float(A.nnz)
+    del temp
+
+    # Get preconditioner
+    #   TODO : add options for block preconditioning (see RN cg)?
+    Aff = sparse.csr_matrix(A[Fpts,:][:,Fpts])
+    Pre = np.zeros((sp_nnz,))
+    Pre = preconditioner(Aff.indptr, Aff.indices, Aff.data,
+                         indptr, indices, Pre)
+
+    # Form initial residual, R = C0 - Aff*W (restricted to sparsity)
+    D = sparse.csr_matrix(W, copy=True)
+    correction = np.zeros((sp_nnz,))
+    mat_mult_s2s(Aff.indptr, Aff.indices, Aff.data,
+                 indptr, indices, W.data, indptr,
+                 indices, correction, nf, nc, 1, 1, 1)
+    cost[0] += mat_mat_complexity(Aff,D,incomplete=True,keep_zeros=True) / float(A.nnz)
+
+    R = C0 - correction
+    cost[0] += sp_nnz / float(A.nnz)
+
+    # TODO : enforce R*Bc = 0
+    temp_cost=[0.0]
+    Satisfy_Constraints(R, Bc, BctBcinv, cost=temp_cost)
+    cost[0] += temp_cost[0] / float(A.nnz)
+
+    # Form Z0 as preconditioned residual, Z0 = Pre*R0
+    Z = np.array(R, copy=True)
+    Z *= Pre
+    D.data[:] = Z[:]
+    rzold = np.dot(Z, R)
+    res = float("inf")
+    it = 0
+    cost[0] += 2 * sp_nnz / float(A.nnz)
+
+    # Do CG iterations until residual tolerance or maximum
+    # number of iterations reached
+    while it < maxiter and res > tol:
+
+        # Form matrix products
+        # correction = Aff*D, restricted to sparsity pattern
+        #   - Important to set data to zero before calling
+        correction[:] = 0
+        mat_mult_s2s(Aff.indptr, Aff.indices, Aff.data,
+                     D.indptr, D.indices, D.data,
+                     indptr, indices, correction,
+                     nf, nc, 1, 1, 1)
+        cost[0] += mat_mat_complexity(Aff,D,incomplete=True,keep_zeros=True) / float(A.nnz)
+
+        # TODO : Enforce correction*Bc = 0. This ensures that
+        # the updated R, Z and D all satisfy R*Bc = 0, etc.,
+        # and thus the constraint W*Bc = Bf is maintained,
+        #       W_{new}*Bc = W_{old}*Bc = Bf
+        temp_cost=[0.0]
+        Satisfy_Constraints(correction, Bc, BctBcinv, cost=temp_cost)
+        cost[0] += temp_cost[0] / float(A.nnz)
+
+        # Compute and add correction, where 
+        #       alpha = <R,Z> / <A*D, D>_F
+        alpha = rzold / np.multiply(D.data, correction).sum()
+        W.data += alpha * D.data
+        cost[0] += 2 * sp_nnz / float(A.nnz)
+
+        # Skip second half of loop if last iteration
+        if (it == (maxiter-1)):
+            break
+
+        # Get residual, R_{k+1} = R_k - Aff*D
+        R -= alpha * correction
+        Z = Pre * R
+        rznew = np.dot(Z, R)
+        cost[0] += 3 * sp_nnz / float(A.nnz)
+
+        # Get new search direction, increase iteration count    
+        D.data *= (rznew/rzold)
+        D.data += Z
+        cost[0] += sp_nnz / float(A.nnz)    # Mult/add in one FLOP
+        rzold = rznew
+        it += 1;
+
+        if debug:
+            print('Iter ',it,' - |Res| = %3.7f'%res )
+
+    # Get sizes and permutation matrix from [F, C] block
+    # ordering to natural matrix ordering.
+    permute = sparse.eye(n,format='csr')
+    permute.indices = np.concatenate((Fpts,Cpts))
+    permute = permute.T
+
+    # Form P = [W; I], reorder and return
+    P = stack(W, sparse.eye(nc, format='csr'))
+    P = sparse.csr_matrix(permute * P)
+
+    return P
