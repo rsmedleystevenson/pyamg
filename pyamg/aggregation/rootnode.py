@@ -362,6 +362,31 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     else:
         raise ValueError('unrecognized strength of connection method: %s' %
                          str(fn))
+    if A.symmetry == 'nonsymmetric':
+        if fn == 'symmetric':
+            CH = symmetric_strength_of_connection(A.H.tobsr(), **kwargs)
+        elif fn == 'classical':
+            CH = classical_strength_of_connection(A.H.tobsr(), **kwargs)
+        elif fn == 'distance':
+            CH = distance_strength_of_connection(A.H.tobsr(), **kwargs)
+        elif (fn == 'ode') or (fn == 'evolution'):
+            if 'BH' in kwargs:
+                CH = evolution_strength_of_connection(A.H.tobsr(), **kwargs)
+            else:
+                CH = evolution_strength_of_connection(A.H.tobsr(), BH, **kwargs)
+        elif fn == 'energy_based':
+            CH = energy_based_strength_of_connection(A.H.tobsr(), **kwargs)
+        elif fn == 'predefined':
+            CH = kwargs['CH'].tocsr()
+        elif fn == 'algebraic_distance':
+            CH = algebraic_distance(A.H.tobsr(), **kwargs)
+        elif fn == 'affinity':
+            CH = affinity_distance(A.H.tobsr(), **kwargs)
+        elif fn is None:
+            CH = A.T.tocsr()
+        else:
+            raise ValueError('unrecognized strength of connection method: %s' %
+                             str(fn))
     
     levels[-1].complexity['strength'] = kwargs['cost'][0]
 
@@ -421,6 +446,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     levels[-1].complexity['tentative'] += T.nnz / float(A.nnz)
     if A.symmetry == "nonsymmetric":
         TH = scale_T(TH, Cpt_params[1]['P_I'], Cpt_params[1]['I_F'])
+        # TH = Cpt_params[1]['P_I'].tobsr(copy=True)
         levels[-1].complexity['tentative'] += TH.nnz / float(A.nnz)
 
     # Set coarse grid near nullspace modes as injected fine grid near
@@ -454,6 +480,7 @@ def extend_hierarchy(levels, strength, aggregate, smooth, improve_candidates,
     elif symmetry == 'nonsymmetric':
         fn, kwargs = unpack_arg(smooth[len(levels)-1])
         if fn == 'energy':
+            # kwargs['degree'] += 1
             R = energy_prolongation_smoother(AH, TH, C, BH, levels[-1].BH,
                                              Cpt_params=Cpt_params, **kwargs)
             R = R.H
