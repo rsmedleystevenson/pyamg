@@ -134,6 +134,7 @@ void maximum_row_value(const I n_row,
 #define F_NODE 0
 #define C_NODE 1
 #define U_NODE 2
+#define PRE_F_NODE 3
 
 /*
  * Compute a C/F (coarse-fine( splitting using the classical coarse grid
@@ -148,6 +149,7 @@ void maximum_row_value(const I n_row,
  *   Sj[]      - CSR index array
  *   Tp[]      - CSR pointer array
  *   Tj[]      - CSR index array
+ *   influence - array that influences splitting (values stored here are added to lambda for each point)
  *   splitting - array to store the C/F splitting
  *
  * Notes:
@@ -160,13 +162,23 @@ void rs_cf_splitting(const I n_nodes,
                      const I Sj[], const int Sj_size,
                      const I Tp[], const int Tp_size,
                      const I Tj[], const int Tj_size,
+                     const I influence[], const int influence_size,
                            I splitting[], const int splitting_size)
 {
+  // printf("Entered CF splitting\n");
     std::vector<I> lambda(n_nodes,0);
 
     //compute lambdas
+    // printf("   Compute lambdas\n");
+    I lambda_max = 0;
     for(I i = 0; i < n_nodes; i++){
-        lambda[i] = Tp[i+1] - Tp[i];
+        lambda[i] = Tp[i+1] - Tp[i] + influence[i];
+        if (lambda[i] > lambda_max) lambda_max = lambda[i];
+        // if (lambda[i] > n_nodes)
+        // {
+        //   printf("Lamda was set too large\n");
+        //   lambda[i] = n_nodes;
+        // }
     }
 
     //for each value of lambda, create an interval of nodes with that value
@@ -174,21 +186,25 @@ void rs_cf_splitting(const I n_nodes,
     // count - is the number of indices in that interval
     // index to node - the node located at a given index
     // node to index - the index of a given node
-    std::vector<I> interval_ptr(n_nodes+1,0);
-    std::vector<I> interval_count(n_nodes+1,0);
+    lambda_max = lambda_max*2;
+    if (n_nodes+1 > lambda_max) lambda_max = n_nodes+1;
+    // printf("lambda_max = %d\n", lambda_max);
+    std::vector<I> interval_ptr(lambda_max,0);
+    std::vector<I> interval_count(lambda_max,0);
     std::vector<I> index_to_node(n_nodes);
     std::vector<I> node_to_index(n_nodes);
 
     for(I i = 0; i < n_nodes; i++){
         interval_count[lambda[i]]++;
     }
-    for(I i = 0, cumsum = 0; i < n_nodes; i++){
+    for(I i = 0, cumsum = 0; i < lambda_max; i++){
         interval_ptr[i] = cumsum;
         cumsum += interval_count[i];
         interval_count[i] = 0;
     }
     for(I i = 0; i < n_nodes; i++){
         I lambda_i = lambda[i];
+        // printf("lambda_i = %d, lambda_max = %d\n", lambda_i, lambda_max);
         I index    = interval_ptr[lambda_i] + interval_count[lambda_i];
         index_to_node[index] = i;
         node_to_index[i]     = index;
@@ -197,6 +213,7 @@ void rs_cf_splitting(const I n_nodes,
 
 
     std::fill(splitting, splitting + n_nodes, U_NODE);
+    // printf("Did the fill\n");
 
     // all nodes with no neighbors become F nodes
     for(I i = 0; i < n_nodes; i++){
@@ -205,33 +222,71 @@ void rs_cf_splitting(const I n_nodes,
     }
 
     //Now add elements to C and F, in descending order of lambda
+    // printf("   Add elements to C and F in descending order of lambda\n");
     for(I top_index = n_nodes - 1; top_index != -1; top_index--){
         I i        = index_to_node[top_index];
         I lambda_i = lambda[i];
+        // printf("lambda_i = %d, lambda_max = %d\n", lambda_i, lambda_max);
 
-        //if (n_nodes == 4)
-        //    std::cout << "selecting node #" << i << " with lambda " << lambda[i] << std::endl;
+        // if (i == 73)
+        // {
+        //   std::cout << "LOOK HERE: i = 73, top_index = " << top_index << std::endl;
+        //   for (I j = n_nodes - 1; j > -1; j--)
+        //   {
+        //     std::cout << "             index: " << j << ", node: " << index_to_node[j] << ", lamda: " << lambda[index_to_node[j]] << std::endl;
+        //   }
+        // }
 
         //remove i from its interval
         interval_count[lambda_i]--;
 
         if(splitting[i] == F_NODE)
-        {
+        {        
+          // if (n_nodes == 121)
+            // std::cout << "Fine node #" << i << " with lambda " << lambda[i] << std::endl;
             continue;
         }
         else
         {
             assert(splitting[i] == U_NODE);
 
+            // Search over this interval to make sure we process nodes in descending node order
+            I max_node = i;
+            I max_index = top_index;
+            for (I j = interval_ptr[lambda_i]; j < interval_ptr[lambda_i] + interval_count[lambda_i]; j++)
+            {
+              if (index_to_node[j] > max_node)
+              {
+                max_node = index_to_node[j];
+                max_index = j;
+              }
+            }
+
+            node_to_index[index_to_node[top_index]] = max_index;
+            node_to_index[index_to_node[max_index]] = top_index;
+
+
+            std::swap(index_to_node[top_index], index_to_node[max_index]);
+            i = index_to_node[top_index];
+
+
             splitting[i] = C_NODE;
+            // if (n_nodes == 121)
+              // std::cout << "Coarse node #" << i << " with lambda " << lambda[i] << std::endl;
 
             //For each j in S^T_i /\ U
-            for(I jj = Tp[i]; jj < Tp[i+1]; jj++){
+            for(I jj = Tp[i]; jj < Tp[i+1]; jj++)
+            {
                 I j = Tj[jj];
+                if(splitting[j] == U_NODE) splitting[j] = PRE_F_NODE;
+            }
 
-                if(splitting[j] == U_NODE){
+            for(I jj = Tp[i]; jj < Tp[i+1]; jj++)
+            {
+                I j = Tj[jj];
+                if(splitting[j] == PRE_F_NODE)
+                {
                     splitting[j] = F_NODE;
-
                     //For each k in S_j /\ U
                     for(I kk = Sp[j]; kk < Sp[j+1]; kk++){
                         I k = Sj[kk];
@@ -241,11 +296,12 @@ void rs_cf_splitting(const I n_nodes,
                             if(lambda[k] >= n_nodes - 1) continue;
 
                             // TODO make this robust
-                            //if(lambda[k] >= n_nodes -1)
+                            // if(lambda[k] >= n_nodes -1)
                             //    std::cout << std::endl << "lambda[" << k << "]=" << lambda[k] << " n_nodes=" << n_nodes << std::endl;
-                            //assert(lambda[k] < n_nodes - 1);//this would cause problems!
+                            // assert(lambda[k] < n_nodes - 1);//this would cause problems!
 
                             I lambda_k = lambda[k];
+                            // printf("lambda_k = %d, lambda_max = %d\n", lambda_k, lambda_max);
                             I old_pos  = node_to_index[k];
                             I new_pos  = interval_ptr[lambda_k] + interval_count[lambda_k] - 1;
 
@@ -260,6 +316,14 @@ void rs_cf_splitting(const I n_nodes,
 
                             //increment lambda_k
                             lambda[k]++;
+                            // if (lambda[i] > n_nodes)
+                            // {
+                            //   printf("Lamda was set too large\n");
+                            //   lambda[i] = n_nodes;
+                            // }
+                            // if (n_nodes == 121)
+                              // std::cout << "    increment node #" << k << " to lambda " << lambda[k] << std::endl;
+
                         }
                     }
                 }
@@ -275,6 +339,7 @@ void rs_cf_splitting(const I n_nodes,
 
                     //move j to the beginning of its current interval
                     I lambda_j = lambda[j];
+                    // printf("lambda_j = %d, lambda_max = %d\n", lambda_j, lambda_max);
                     I old_pos  = node_to_index[j];
                     I new_pos  = interval_ptr[lambda_j];
 
@@ -290,10 +355,91 @@ void rs_cf_splitting(const I n_nodes,
 
                     //decrement lambda_j
                     lambda[j]--;
+                    // std::cout << "    decrement node #" << j << " to lambda " << lambda[j] << std::endl;
                 }
             }
         }
     }
+  // printf("Leaving CF splitting\n");
+}
+
+
+ /* Find the boundary-adjacent points in a matrix (assuming that row sum nonzero corresponds to boundary-adjacent points) */
+template<class I, class T>
+void find_boundary_adjacent_points(const I n_nodes,
+                                   const I Ap[], const int Ap_size,
+                                   const I Aj[], const int Aj_size,
+                                   const T Ax[], const int Ax_size,
+                                         I splitting[], const int splitting_size)
+{
+    for(I i = 0; i < n_nodes; i++)
+    {
+        T row_sum = 0.0;
+        for(I j = Ap[i]; j < Ap[i+1]; j++)
+        {
+          row_sum += Ax[j];
+          // printf("     Ax[%d] = %e\n", j, Ax[j]);
+        }
+        // printf("  row_sum = %e\n", row_sum);
+        if ( std::abs(row_sum) > 0.00001 && Ap[i+1] - Ap[i] > 1)
+        {
+            splitting[i] = 1;
+            if (Ap[i+1] - Ap[i] == 4) splitting[i]++; // Try to influence the corner boundary adjacent points more (!!! only works for 2D 9pt stencil type operators !!!)
+        }
+        else splitting[i] = 0;
+        // printf("  splitting[i] = %d\n", splitting[i]);
+    }
+}
+
+
+
+ /* Compute a C/F splitting for a uniform 2D problem that is a shifted version of RS coarsening on Poisson:
+
+    C - f - C - f - C
+    f - f - f - f - f
+    C - f - C - f - C
+    f - f - f - f - f
+    C - f - C - f - C
+
+    Note: acceptable grid sizes are nxn elements where n = 2^i + 2 for some i
+ *
+ * Parameters:
+ *   n_nodes   - number of rows in A
+ *   Sp[]      - CSR pointer array
+ *   Sj[]      - CSR index array
+ *   Tp[]      - CSR pointer array
+ *   Tj[]      - CSR index array
+ *   splitting - array to store the C/F splitting
+ *
+ * Notes:
+ *   The splitting array must be preallocated
+ *
+ */
+template<class I>
+void shifted_2d_coarsening(const I n_nodes,
+                     const I Sp[], const int Sp_size,
+                           I splitting[], const int splitting_size)
+{
+  // First count how many interior nodes (to determine grid size)
+  int cnt = 0;
+  for (int i = 0; i < splitting_size; i++)
+  {
+    if (Sp[i+1] - Sp[i] > 1) cnt++;
+  }
+  int n = std::sqrt(cnt)+1; 
+
+  // Now loop through and set splitting
+  cnt = 0;
+  for (int i = 0; i < splitting_size; i++)
+  {
+    if (Sp[i+1] - Sp[i] > 1) // If an interior node
+    {
+      if ( ( (cnt % (n-1)) % 2 == 0 ) && ( (cnt/(n-1) % 2 == 0) ) ) splitting[i] = 1;
+      else splitting[i] = 0;
+      cnt++;
+    }
+    else splitting[i] = 0;
+  }
 }
 
 /*
@@ -595,17 +741,12 @@ void rs_direct_interpolation_pass2(const I n_nodes,
 }
 
 
-
-
-
 /*
  *   Produce the Ruge-Stuben prolongator using standard interpolation
  *
  *
  *   The first pass uses the strength of connection matrix 'S'
  *   and C/F splitting to compute the row pointer for the prolongator.
- *   The first pass is identical to the direct interpolation pass 1 
- *   above, so we do not duplicate it here.
  *
  *   The second pass fills in the nonzero entries of the prolongator
  *
@@ -613,6 +754,27 @@ void rs_direct_interpolation_pass2(const I n_nodes,
  *      Page 144 "A Multigrid Tutorial"
  *
  */
+template<class I>
+void rs_standard_interpolation_pass1(const I n_nodes,
+                                   const I Sp[], const int Sp_size,
+                                   const I Sj[], const int Sj_size,
+                                   const I splitting[], const int splitting_size,
+                                         I Bp[], const int Bp_size)
+{
+    I nnz = 0;
+    Bp[0] = 0;
+    for(I i = 0; i < n_nodes; i++){
+        if( splitting[i] == C_NODE ){
+            nnz++;
+        } else {
+            for(I jj = Sp[i]; jj < Sp[i+1]; jj++){
+                if ( (splitting[Sj[jj]] == C_NODE) && (Sj[jj] != i) )
+                    nnz++;
+            }
+        }
+        Bp[i+1] = nnz;
+    }
+}
 
 template<class I, class T>
 void rs_standard_interpolation_pass2(const I n_nodes,
@@ -628,9 +790,9 @@ void rs_standard_interpolation_pass2(const I n_nodes,
                                          T Bx[], const int Bx_size)
 {
 
-    for(I i = 0; i < n_nodes; i++){
+    for(I i = 0; i < n_nodes; i++) {
         // If node i is a C-point, then set interpolation as injection
-        if(splitting[i] == C_NODE){
+        if(splitting[i] == C_NODE) {
             Bj[Bp[i]] = i;
             Bx[Bp[i]] = 1;
         } 
@@ -639,58 +801,81 @@ void rs_standard_interpolation_pass2(const I n_nodes,
 
             // Calculate denominator
             T denominator = 0;
+
             // Start by summing entire row of A
-            for(I mm = Ap[i]; mm < Ap[i+1]; mm++) denominator += Ax[mm];
+            for(I mm = Ap[i]; mm < Ap[i+1]; mm++) {
+                denominator += Ax[mm];
+            }
+
             // Then subtract off the strong connections so that you are left with 
             // denominator = a_ii + sum_{m in weak connections} a_im
-            for(I mm = Sp[i]; mm < Sp[i+1]; mm++){
+            for(I mm = Sp[i]; mm < Sp[i+1]; mm++) {
                 if ( Sj[mm] != i ) denominator -= Sx[mm]; // making sure to leave the diagonal entry in there
             }
 
             // Set entries in P (interpolation weights w_ij from strongly connected C-points)
             I nnz = Bp[i];
-            for(I jj = Sp[i]; jj < Sp[i+1]; jj++){
-                if ( (splitting[Sj[jj]] == C_NODE) && (Sj[jj] != i) ){
-                    // Set temporary value for Bj to be mapped to appropriate coarse-grid column index later and get column index j
+            for(I jj = Sp[i]; jj < Sp[i+1]; jj++) {
+                if ( (splitting[Sj[jj]] == C_NODE) && (Sj[jj] != i) ) {
+                    // Set temporary value for Bj to be mapped to appropriate coarse-grid
+                    // column index later and get column index j
                     Bj[nnz] = Sj[jj];
                     I j = Sj[jj];
-                    // printf("Weight i = %d, j = %d\n", i, j);
+
                     // Initialize numerator as a_ij
                     T numerator = Sx[jj];
-                    // printf("  numerator initialized to %f\n", numerator);
+                    // printf("  numerator initialized to %e\n", numerator);
                     // Sum over strongly connected fine points
-                    for(I kk = Sp[i]; kk < Sp[i+1]; kk++){
-                        if ( (splitting[Sj[kk]] == F_NODE) && (Sj[kk] != i) ){
+                    for(I kk = Sp[i]; kk < Sp[i+1]; kk++) {
+                        if ( (splitting[Sj[kk]] == F_NODE) && (Sj[kk] != i) ) {
                             // Get column index k
                             I k = Sj[kk];
-                            // printf("  top sum k = %d\n", k);
-                            // Calculate sum for inner denominator (loop over strongly connected C-points)
-                            T inner_denominator = 0;
-                            for(I ll = Sp[i]; ll < Sp[i+1]; ll++){
-                                if ( (splitting[Sj[ll]] == C_NODE) && (Sj[ll] != i) ){
-                                    // Get column index l
-                                    I l = Sj[ll];
-                                    // Add connection a_kl if present in matrix (search over kth row in A for connection)
-                                    for(I search_ind = Ap[k]; search_ind < Ap[k+1]; search_ind++){
-                                        if ( Aj[search_ind] == l ) inner_denominator += Ax[search_ind];
-                                    }
+
+                            // Get a_kj (have to search over k'th row in A for connection a_kj)
+                            T a_kj = 0;
+                            for(I search_ind = Ap[k]; search_ind < Ap[k+1]; search_ind++) {
+                                if ( Aj[search_ind] == j ){
+                                    a_kj = Ax[search_ind];
                                 }
                             }
-                            // printf("    inner_denominator = %f\n", i, inner_denominator);
-                            // Add a_ik*a_kj/inner_denominator to the numerator (have to search over k'th row in A for connection a_kj)
-                            //
-                            // TODO: the below check on inner denominator is required, even for a simple elasticity 
-                            // example 'bar' This (may) mean that there is an error in the code.
-                            for(I search_ind = Ap[k]; search_ind < Ap[k+1]; search_ind++){
-                                if ( (Aj[search_ind] == j) && (inner_denominator != 0.0) ){
-                                    numerator += Sx[kk]*Ax[search_ind]/inner_denominator;
-                                    // printf("    a_ik = %f, a_kj = %f\n", Sx[kk], Ax[search_ind]);
+
+                            // If a_kj == 0, then we don't need to do any more work, otherwise
+                            // proceed to account for node k's contribution
+                            if (a_kj != 0) {
+                                // Calculate sum for inner denominator (loop over strongly connected C-points)
+                                T inner_denominator = 0;
+                                I inner_denom_added_to = 0;
+                                for(I ll = Sp[i]; ll < Sp[i+1]; ll++) {
+                                    if ( (splitting[Sj[ll]] == C_NODE) && (Sj[ll] != i) ) {
+                                        // Get column index l
+                                        I l = Sj[ll];
+                                        // Add connection a_kl if present in matrix (search over kth row in A for connection)
+                                        for(I search_ind = Ap[k]; search_ind < Ap[k+1]; search_ind++) {
+                                            // Note: we check here to make sure a_kj and a_kl are same sign
+                                            if ( Aj[search_ind] == l && a_kj*Ax[search_ind] > 0) {
+                                                inner_denom_added_to = 1;
+                                                inner_denominator += Ax[search_ind];
+                                            }
+                                        }
+                                    }
                                 }
+
+                                // Add a_ik*a_kj/inner_denominator to the numerator 
+                                if (inner_denominator == 0 && !inner_denom_added_to) {
+                                    printf("Inner denominator was zero: there was a stronly
+                                        connected fine point with no connections to points in C_i\n");
+                                }
+                                if (inner_denominator == 0 && inner_denom_added_to) {
+                                    printf("Inner denominator was zero due to cancellations!\n");
+                                }
+                                numerator += Sx[kk]*a_kj/inner_denominator;
                             }
                         }
                     }
                     // Set w_ij = -numerator/denominator
-                    // printf("  numerator = %f, denominator = %f\n", numerator, denominator);
+                    if (denominator == 0) {
+                        printf("Outer denominator was zero: diagonal plus sum of weak connections was zero\n");
+                    }
                     Bx[nnz] = -numerator/denominator;
                     nnz++;
                 }
@@ -698,13 +883,12 @@ void rs_standard_interpolation_pass2(const I n_nodes,
         }
     }
 
-
     std::vector<I> map(n_nodes);
-    for(I i = 0, sum = 0; i < n_nodes; i++){
+    for(I i = 0, sum = 0; i < n_nodes; i++) {
         map[i]  = sum;
         sum    += splitting[i];
     }
-    for(I i = 0; i < Bp[n_nodes]; i++){
+    for(I i = 0; i < Bp[n_nodes]; i++) {
         Bj[i] = map[Bj[i]];
     }
 }
