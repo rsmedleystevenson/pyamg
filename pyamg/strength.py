@@ -135,7 +135,7 @@ def distance_strength_of_connection(A, V, theta=2.0, relative_drop=True, cost=[0
     return C
 
 
-def classical_strength_of_connection(A, theta=0.0, cost=[0]):
+def classical_strength_of_connection(A, theta=0.0, do_amalgamation=True, cost=[0]):
     """
     Return a strength of connection matrix using the classical AMG measure
     An off-diagonal entry A[i,j] is a strong connection iff::
@@ -216,7 +216,7 @@ def classical_strength_of_connection(A, theta=0.0, cost=[0]):
     # One pass through nnz to find largest entry, one to filter
     cost[0] += 2
 
-    if blocksize > 1:
+    if blocksize > 1 and do_amalgamation:
         S = amalgamate(S, blocksize)
 
     # Strength represents "distance", so take the magnitude

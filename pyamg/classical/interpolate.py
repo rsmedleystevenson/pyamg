@@ -6,9 +6,9 @@ __docformat__ = "restructuredtext en"
 import numpy as np
 from scipy.sparse import csr_matrix, isspmatrix_csr
 from pyamg import amg_core
+from pyamg.relaxation.relaxation import boundary_relaxation
 
 __all__ = ['direct_interpolation', 'standard_interpolation']
-
 
 def direct_interpolation(A, C, splitting, cost=[0]):
     """Create prolongator using direct interpolation
@@ -123,19 +123,16 @@ def standard_interpolation(A, C, splitting, cost=[0]):
     C = C.multiply(A)
 
     Pp = np.empty_like(A.indptr)
-
-    amg_core.rs_direct_interpolation_pass1(A.shape[0],
-                                           C.indptr, C.indices, splitting, Pp)
+    amg_core.rs_standard_interpolation_pass1(A.shape[0], C.indptr,
+    										 C.indices, splitting, Pp)
 
     nnz = Pp[-1]
     Pj = np.empty(nnz, dtype=Pp.dtype)
     Px = np.empty(nnz, dtype=A.dtype)
 
     amg_core.rs_standard_interpolation_pass2(A.shape[0],
-                                           A.indptr, A.indices, A.data,
-                                           C.indptr, C.indices, C.data,
-                                           splitting,
-                                           Pp, Pj, Px)
-
-    return  csr_matrix((Px, Pj, Pp)) 
-
+                                             A.indptr, A.indices, A.data,
+                                             C.indptr, C.indices, C.data,
+                                             splitting,
+                                             Pp, Pj, Px)
+    return  csr_matrix((Px, Pj, Pp))

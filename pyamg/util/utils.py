@@ -22,7 +22,8 @@ __all__ = ['unpack_arg', 'blocksize', 'diag_sparse', 'profile_solver',
            'get_Cpt_params', 'compute_BtBinv', 'eliminate_diag_dom_nodes',
            'levelize_strength_or_aggregation',
            'levelize_smooth_or_improve_candidates', 'filter_matrix_columns',
-           'filter_matrix_rows', 'truncate_rows', 'mat_mat_complexity']
+           'filter_matrix_rows', 'truncate_rows', 'mat_mat_complexity',
+           'extract_diagonal_blocks']
 
 try:
     from scipy.sparse._sparsetools import csr_scale_rows, bsr_scale_rows
@@ -2334,3 +2335,16 @@ def mat_mat_complexity(A, P, test_cols=10, incomplete=False):
     else:
         return A.nnz * (float(P.nnz) / P.shape[0])
 
+
+# Get the square diagonal blocks of csr_matrix A
+# where the row start indices of the blocks are stored in block_starts
+def extract_diagonal_blocks(A, block_starts):
+
+    # Will return a list of csr matrices
+    A_diag = []
+
+    for block in range(len(block_starts) - 1):
+        A_diag.append( A[ block_starts[block]:block_starts[block+1] , block_starts[block]:block_starts[block+1] ] )
+
+
+    return A_diag

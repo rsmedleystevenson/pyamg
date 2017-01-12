@@ -48,7 +48,8 @@
     (      ctype splitting [], const int splitting_size),
     (      ctype indices [], const int indices_size),
     (const ctype A_rowptr [], const int A_rowptr_size),
-    (const ctype A_colinds [], const int A_colinds_size)
+    (const ctype A_colinds [], const int A_colinds_size),
+    (const ctype influence [], const int influence_size)
 
 };
 %enddef
@@ -78,6 +79,7 @@
     (      ctype temp [], const int temp_size),
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
+    (const ctype X [], const int X_size),
     (      ctype cost [], const int cost_size)
 };
 %enddef
@@ -173,8 +175,10 @@ INSTANTIATE_INDEXDATA_COMPLEX(apply_givens)
 %include "relaxation.h"
 
 INSTANTIATE_INDEXDATA_COMPLEX(gauss_seidel)
+INSTANTIATE_INDEXDATA_COMPLEX(f_relaxation)
 INSTANTIATE_INDEXDATA_COMPLEX(bsr_gauss_seidel)
 INSTANTIATE_INDEXDATA_COMPLEX(jacobi)
+INSTANTIATE_INDEXDATA_COMPLEX(boundary_relaxation)
 INSTANTIATE_INDEXDATA_COMPLEX(bsr_jacobi)
 INSTANTIATE_INDEXDATA_COMPLEX(gauss_seidel_indexed)
 INSTANTIATE_INDEXDATA_COMPLEX(jacobi_ne)
@@ -214,9 +218,12 @@ INSTANTIATE_INDEXDATA_COMPLEX(classical_strength_of_connection)
 INSTANTIATE_INDEXDATA_COMPLEX(maximum_row_value)
 
 INSTANTIATE_INDEX_ONLY(rs_cf_splitting)
+INSTANTIATE_INDEXDATA(find_boundary_adjacent_points)
+INSTANTIATE_INDEX_ONLY(shifted_2d_coarsening)
 INSTANTIATE_INDEX_ONLY(cljp_naive_splitting)
 INSTANTIATE_INDEX_ONLY(rs_direct_interpolation_pass1)
 INSTANTIATE_INDEXDATA(rs_direct_interpolation_pass2)
+INSTANTIATE_INDEX_ONLY(rs_standard_interpolation_pass1)
 INSTANTIATE_INDEXDATA(rs_standard_interpolation_pass2)
 INSTANTIATE_INDEXDATA(cr_helper)
 

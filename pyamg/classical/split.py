@@ -107,7 +107,13 @@ __all__ = ['RS', 'PMIS', 'PMISc', 'MIS']
 __docformat__ = "restructuredtext en"
 
 
-def RS(S, cost=[0]):
+def FindBoundaryAdjacentPoints(A):
+    influence = np.empty(A.shape[0], dtype='intc')
+    amg_core.find_boundary_adjacent_points(A.shape[0], A.indptr, A.indices, A.data, influence)
+    return influence
+
+
+def RS(S, influence=None, cost=[0]):
     """Compute a C/F splitting using Ruge-Stuben coarsening
 
     Parameters
@@ -115,6 +121,7 @@ def RS(S, cost=[0]):
     S : csr_matrix
         Strength of connection matrix indicating the strength between nodes i
         and j (S_ij)
+    influence : TODO -- what is this?
 
     Returns
     -------
@@ -148,9 +155,13 @@ def RS(S, cost=[0]):
 
     splitting = np.empty(S.shape[0], dtype='intc')
 
+    if (influence == None):
+        influence = np.zeros(S.shape[0], dtype='intc')
+
     amg_core.rs_cf_splitting(S.shape[0],
                              S.indptr, S.indices,
                              T.indptr, T.indices,
+                             influence,
                              splitting)
 
     return splitting

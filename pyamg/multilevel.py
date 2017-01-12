@@ -7,6 +7,8 @@ from pyamg.util.utils import unpack_arg
 
 import scipy as sp
 import numpy as np
+from pyamg.vis.vis_coarse import vis_splitting
+from pyamg.relaxation.relaxation import boundary_relaxation, f_relaxation
 
 __all__ = ['multilevel_solver', 'coarse_grid_solver']
 
@@ -44,6 +46,10 @@ class multilevel_solver:
         A measure of the size of the multigrid hierarchy.
     solve()
         Iteratively solves a linear system for the right hand side.
+    visualize_coarse_grids()
+        Dump a visualization of the coarse grids in the given directory.
+    save_operators()
+        Dump operators in desired format in the given directory.
     """
 
     class level:
@@ -72,6 +78,8 @@ class multilevel_solver:
             such as constructing P or computing strength-of-connection
         SC : float
             Setup complexity on this level in WUs relative to fine grid. 
+        verts : n x 2 array
+            degree of freedom locations
 
         Notes
         -----
@@ -488,7 +496,7 @@ class multilevel_solver:
 
 
     def solve(self, b, x0=None, tol=1e-5, maxiter=100, cycle='V', accel=None,
-              callback=None, residuals=None, return_residuals=False):
+              callback=None, residuals=None, return_residuals=False, cyclesPerLevel=1):
         """Main solution call to execute multigrid cycling.
 
         Parameters
@@ -514,6 +522,8 @@ class multilevel_solver:
             called as callback(xk) where xk is the k-th iterate vector.
         residuals : list
             List to contain residual norms at each iteration.
+        cyclesPerLevel: int
+            number of V-cycles on each level for an F-cycle
 
         Returns
         -------
@@ -641,7 +651,7 @@ class multilevel_solver:
                 # hierarchy has only 1 level
                 x = self.coarse_solver(A, b)
             else:
-                self.__solve(0, x, b, cycle)
+                self._solve(0, x, b, cycle, cyclesPerLevel)
 
             residuals.append(residual_norm(A, x, b))
 
@@ -672,12 +682,18 @@ class multilevel_solver:
             cycle = 'V',    V-cycle
             cycle = 'W',    W-cycle
             cycle = 'F',    F-cycle
+            cycle = 'FAMG', FAMG-cycle
             cycle = 'AMLI', AMLI-cycle
+        cyclesPerLevel: number of V-cycles on each level for an FAMG cycle
         """
 
         A = self.levels[lvl].A
 
-        self.levels[lvl].presmoother(A, x, b)
+        if (cycle != 'FAMG'):
+            self.levels[lvl].presmoother(A, x, b)
+        else:
+            for i in range(0):
+                self.levels[lvl].presmoother(A, x, b)
 
         residual = b - A * x
 
@@ -688,13 +704,15 @@ class multilevel_solver:
             coarse_x[:] = self.coarse_solver(self.levels[-1].A, coarse_b)
         else:
             if cycle == 'V':
-                self.__solve(lvl + 1, coarse_x, coarse_b, 'V')
+                self._solve(lvl + 1, coarse_x, coarse_b, 'V', cyclesPerLevel)
             elif cycle == 'W':
-                self.__solve(lvl + 1, coarse_x, coarse_b, cycle)
-                self.__solve(lvl + 1, coarse_x, coarse_b, cycle)
+                self._solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
+                self._solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
             elif cycle == 'F':
-                self.__solve(lvl + 1, coarse_x, coarse_b, cycle)
-                self.__solve(lvl + 1, coarse_x, coarse_b, 'V')
+                self._solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
+                self._solve(lvl + 1, coarse_x, coarse_b, 'V', cyclesPerLevel)
+            elif cycle == 'FAMG':
+                self._solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
             elif cycle == "AMLI":
                 # Run nAMLI AMLI cycles, which compute "optimal" corrections by
                 # orthogonalizing the coarse-grid corrections in the A-norm
@@ -705,8 +723,8 @@ class multilevel_solver:
                 for k in range(nAMLI):
                     # New search direction --> M^{-1}*residual
                     p[k, :] = 1
-                    self.__solve(lvl + 1, p[k, :].reshape(coarse_b.shape),
-                                 coarse_b, cycle)
+                    self._solve(lvl + 1, p[k, :].reshape(coarse_b.shape),
+                                 coarse_b, cycle, cyclesPerLevel)
 
                     # Orthogonalize new search direction to old directions
                     for j in range(k):  # loops from j = 0...(k-1)
@@ -727,9 +745,20 @@ class multilevel_solver:
             else:
                 raise TypeError('Unrecognized cycle type (%s)' % cycle)
 
-        x += self.levels[lvl].P * coarse_x   # coarse grid correction
-
+        x += self.levels[lvl].P * coarse_x #+ self.levels[lvl].b_zero  # coarse grid correction
         self.levels[lvl].postsmoother(A, x, b)
+
+
+    def visualize_coarse_grids(self, directory):
+        # Dump a visualization of the coarse grids in the given directory.
+        # If called for, output a visualization of the C/F splitting
+        if (self.levels[0].verts.any()):
+            for i in range(len(self.levels) - 1):
+                filename = directory + '/cf_' + str(i) + '.vtu'
+                vis_splitting(self.levels[i].verts, self.levels[i].splitting, fname=filename)
+        else:
+            print 'Cannot visulize coarse grids: missing dof locations or splittings in multilevel instance. \
+                Pass in parameters verts = [nx2 array of dof locations] and keep = True when creating multilevel instance.'
 
 
 def coarse_grid_solver(solver):
