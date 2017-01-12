@@ -44,11 +44,17 @@
     (      ctype level [], const int level_size),
     (      ctype components [], const int components_size),
     (const ctype Id [], const int Id_size),
+    (const ctype Cpts [], const int Cpts_size),
     (const ctype splitting [], const int splitting_size),
     (      ctype splitting [], const int splitting_size),
     (      ctype indices [], const int indices_size),
+    (const ctype rowptr [], const int rowptr_size),
+    (      ctype rowptr [], const int rowptr_size),
+    (      ctype colinds [], const int colinds_size),
     (const ctype A_rowptr [], const int A_rowptr_size),
     (const ctype A_colinds [], const int A_colinds_size),
+    (const ctype C_rowptr [], const int C_rowptr_size),
+    (const ctype C_colinds [], const int C_colinds_size),
     (const ctype influence [], const int influence_size)
 
 };
@@ -80,6 +86,10 @@
     (      ctype gamma [], const int gamma_size),
     (const ctype omega [], const int omega_size),
     (const ctype X [], const int X_size),
+    (      ctype data [], const int data_size),
+    (const ctype A_data [], const int A_data_size),
+    (const ctype C_data [], const int C_data_size),
+    (      ctype C_data [], const int C_data_size),
     (      ctype cost [], const int cost_size)
 };
 %enddef
@@ -218,14 +228,14 @@ INSTANTIATE_INDEXDATA_COMPLEX(classical_strength_of_connection)
 INSTANTIATE_INDEXDATA_COMPLEX(maximum_row_value)
 
 INSTANTIATE_INDEX_ONLY(rs_cf_splitting)
-INSTANTIATE_INDEXDATA(find_boundary_adjacent_points)
-INSTANTIATE_INDEX_ONLY(shifted_2d_coarsening)
 INSTANTIATE_INDEX_ONLY(cljp_naive_splitting)
 INSTANTIATE_INDEX_ONLY(rs_direct_interpolation_pass1)
 INSTANTIATE_INDEXDATA(rs_direct_interpolation_pass2)
 INSTANTIATE_INDEX_ONLY(rs_standard_interpolation_pass1)
 INSTANTIATE_INDEXDATA(rs_standard_interpolation_pass2)
 INSTANTIATE_INDEXDATA(cr_helper)
+INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass1)
+INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass2)
 
 /*----------------------------------------------------------------------------
   evolution_strength.h

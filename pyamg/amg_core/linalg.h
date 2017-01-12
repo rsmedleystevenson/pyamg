@@ -1367,7 +1367,7 @@ void least_squares(T A[],
                    const I &n,
                    const I is_col_major=0)
 {
-    // Funciton pointer for row or column major matrices
+    // Function pointer for row or column major matrices
     I (*get_ind)(const I&, const I&, const I&);
     if (is_col_major) {
         get_ind = &col_major;
