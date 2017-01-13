@@ -14,7 +14,7 @@ from pyamg.strength import classical_strength_of_connection, \
     distance_strength_of_connection, energy_based_strength_of_connection,\
     algebraic_distance, affinity_distance
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks
-from .interpolate import direct_interpolation, standard_interpolation,
+from .interpolate import direct_interpolation, standard_interpolation,\
      trivial_interpolation, approximate_ideal_restriction
 from .split import *
 from .cr import CR
@@ -30,7 +30,7 @@ def ruge_stuben_solver(A,
                        presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                        postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                        max_levels=20, max_coarse=20, keep=False,
-                       verts=None, block_starts=None, **kwargs):
+                       block_starts=None, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
@@ -67,8 +67,6 @@ def ruge_stuben_solver(A,
         Flag to indicate keeping extra operators in the hierarchy for
         diagnostics.  For example, if True, then strength of connection (C) and
         tentative prolongation (T) are kept.
-    verts: array of tuples
-        Physical locations of dofs. Used for visualizing coarse grids.
     block_starts: list of integers
         If non-trivial, list of starting row indices of blocks of A if A represents a system
         (used for unknown-based approach for systems).
@@ -148,11 +146,6 @@ def ruge_stuben_solver(A,
     levels = [multilevel_solver.level()]
     levels[-1].A = A
     levels[-1].block_starts = block_starts
-    if verts is None:
-        levels[-1].verts = np.zeros(1)
-    else:
-        levels[-1].verts = verts
-
     levels[-1].influence = influence
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
@@ -169,7 +162,6 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
 
     A = levels[-1].A
     block_starts = levels[-1].block_starts
-    verts = levels[-1].verts
     influence = levels[-1].influence
 
     # If this is a system, apply the unknown approach by coarsening and
@@ -233,7 +225,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
             splitting.append( CLJPc(C_diag[-1], **kwargs) )
         elif fn == 'CR':
             splitting.append( CR(C_diag[-1], **kwargs) )
-        elif fn == 'weighted_matching'
+        elif fn == 'weighted_matching':
             sp, soc = weighted_matching(C_diag[-1], **kwargs)
             splitting.append(sp)
             if soc is not None:
@@ -262,12 +254,23 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
         fn, kwargs = unpack_arg(restrict)
         if fn is None:
             R_diag.append(P_diag[-1].T.tocsr())
-        elif restrict == 'air':
-            R_diag.append( approximate_ideal_restriction(A, C,splitting, **kwargs) )
+        elif fn == 'air':
+            R_diag.append( approximate_ideal_restriction(mat, C_diag[-1], splitting[-1], **kwargs) )
+        else:
+            raise ValueError('unknown restriction method (%s)' % restrict)
+
 
     # Build P to be block diagonal and R = P^T.
-    P = block_diag(P_diag)
-    R = block_diag(R_diag)
+    P = block_diag(P_diag, format='csr')
+    R = block_diag(R_diag, format='csr')
+
+
+
+    Fpts = np.array(np.where(splitting[0] == 0)[0], dtype='int32')
+    Aff =  A[Fpts,:][:,Fpts]
+    import pdb
+    pdb.set_trace()
+
 
     # Store relevant information for this level
     splitting = np.concatenate(splitting)

@@ -651,7 +651,7 @@ class multilevel_solver:
                 # hierarchy has only 1 level
                 x = self.coarse_solver(A, b)
             else:
-                self._solve(0, x, b, cycle, cyclesPerLevel)
+                self.__solve(0, x, b, cycle, cyclesPerLevel)
 
             residuals.append(residual_norm(A, x, b))
 
@@ -666,7 +666,7 @@ class multilevel_solver:
             return x
 
 
-    def __solve(self, lvl, x, b, cycle):
+    def __solve(self, lvl, x, b, cycle, cyclesPerLevel):
         """
         Parameters
         ----------
@@ -704,15 +704,15 @@ class multilevel_solver:
             coarse_x[:] = self.coarse_solver(self.levels[-1].A, coarse_b)
         else:
             if cycle == 'V':
-                self._solve(lvl + 1, coarse_x, coarse_b, 'V', cyclesPerLevel)
+                self.__solve(lvl + 1, coarse_x, coarse_b, 'V', cyclesPerLevel)
             elif cycle == 'W':
-                self._solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
-                self._solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
+                self.__solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
+                self.__solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
             elif cycle == 'F':
-                self._solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
-                self._solve(lvl + 1, coarse_x, coarse_b, 'V', cyclesPerLevel)
+                self.__solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
+                self.__solve(lvl + 1, coarse_x, coarse_b, 'V', cyclesPerLevel)
             elif cycle == 'FAMG':
-                self._solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
+                self.__solve(lvl + 1, coarse_x, coarse_b, cycle, cyclesPerLevel)
             elif cycle == "AMLI":
                 # Run nAMLI AMLI cycles, which compute "optimal" corrections by
                 # orthogonalizing the coarse-grid corrections in the A-norm
@@ -723,7 +723,7 @@ class multilevel_solver:
                 for k in range(nAMLI):
                     # New search direction --> M^{-1}*residual
                     p[k, :] = 1
-                    self._solve(lvl + 1, p[k, :].reshape(coarse_b.shape),
+                    self.__solve(lvl + 1, p[k, :].reshape(coarse_b.shape),
                                  coarse_b, cycle, cyclesPerLevel)
 
                     # Orthogonalize new search direction to old directions

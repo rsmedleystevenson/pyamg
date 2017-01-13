@@ -459,6 +459,10 @@ def preprocess(S, coloring_method=None):
     return (weights, G, S, T)
 
 
+
+# TODO : This cannot coarsen well on lower levels
+
+
 def weighted_matching(A, B=None, theta=0.5, use_weights=True, get_SOC=False, cost=[0.0], **kwargs):
     """ Pairwise aggregation of nodes using Drake approximate
         1/2-matching algorithm.

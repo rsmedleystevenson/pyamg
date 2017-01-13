@@ -1107,8 +1107,8 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         least_squares(&A0[0], &b0[0], &data[rowptr[row]], size_N, size_N, is_col_major);
 
         // Add identity for C-point in this row
-        colinds[ind+1] = cpoint;
-        data[ind+1] = 1.0;
+        colinds[ind] = cpoint;
+        data[ind] = 1.0;
     }
 }
 

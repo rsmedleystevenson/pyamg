@@ -140,7 +140,7 @@ def standard_interpolation(A, C, splitting, cost=[0]):
 
 def trivial_interpolation(A, splitting):
 
-    Cpts = np.where(splitting == 1)
+    Cpts = np.where(splitting == 1)[0]
     Nc = Cpts.shape[0]
     R_rowptr = np.ones((Nc,),dtype='int32')
     return csr_matrix((np.ones((Nc,)),Cpts,R_rowptr),dtype=A.dtype).T
@@ -152,8 +152,7 @@ def trivial_interpolation(A, splitting):
 
 
 
-def approximate_ideal_restriction(A, C, splitting, max_row=None):
-
+def approximate_ideal_restriction(A, C, splitting, max_row=None, cost=[0]):
 
     if not isspmatrix_csr(A):
         raise TypeError('expected csr_matrix for A')
@@ -161,10 +160,12 @@ def approximate_ideal_restriction(A, C, splitting, max_row=None):
     if not isspmatrix_csr(C):
         raise TypeError('expected csr_matrix for C')
 
-    Cpts = np.where(splitting == 1)
+    Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
+    nc = Cpts.shape[0]
+    n = A.shape[0]
 
     # Form row pointer for R
-    R_rowptr = np.empty(Cpts.shape[0], dtype='int32')
+    R_rowptr = np.empty(nc+1, dtype='int32')
     if max_row is None:
         amg_core.approx_ideal_restriction_pass1(R_rowptr, C.indptr, C.indices,
                                                 C.data, Cpts, splitting)
@@ -174,14 +175,15 @@ def approximate_ideal_restriction(A, C, splitting, max_row=None):
 
     # Build restriction operator
     nnz = R_rowptr[-1]
-    R_colinds = np.empty(nnz, dtype='int32')
-    R_data = np.empty(nnz, dtype=A.dtype)
+    R_colinds = np.zeros(nnz, dtype='int32')
+    R_data = np.zeros(nnz, dtype=A.dtype)
     amg_core.approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
                                             A.indices, A.data, C.indptr, C.indices,
                                             C.data, Cpts, splitting)
 
-    return  csr_matrix((R_data, R_colinds, R_rowptr))
-
+    R = csr_matrix((R_data, R_colinds, R_rowptr), shape=[nc,n])
+    R.eliminate_zeros()
+    return R
 
 
 

@@ -219,7 +219,8 @@ void drake_CF_matching(const I A_rowptr[], const int A_rowptr_size,
             }
             // Check if strongly connected to F-points
             for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
-                if (is_larger(j,diag_ind,A_data,theta) && (M[A_colinds[j]] == F_NODE)) {
+                if ((diag_ind != j) && is_larger(j,diag_ind,A_data,theta) && 
+                    (M[A_colinds[j]] == F_NODE)) {
                     M[i] = C_NODE;
                     break;
                 }
