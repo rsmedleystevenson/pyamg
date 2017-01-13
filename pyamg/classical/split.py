@@ -102,8 +102,9 @@ from scipy.sparse import csr_matrix, isspmatrix_csr
 from pyamg.graph import vertex_coloring
 from pyamg import amg_core
 from pyamg.util.utils import remove_diagonal
+from pyamg.strength import classical_strength_of_connection
 
-__all__ = ['RS', 'PMIS', 'PMISc', 'MIS']
+__all__ = ['RS', 'PMIS', 'PMISc', 'MIS', 'weighted_matching']
 __docformat__ = "restructuredtext en"
 
 
@@ -456,3 +457,106 @@ def preprocess(S, coloring_method=None):
         weights = weights + (sp.rand(len(weights)) + coloring)/num_colors
 
     return (weights, G, S, T)
+
+
+def weighted_matching(A, B=None, theta=0.5, use_weights=True, get_SOC=False, cost=[0.0], **kwargs):
+    """ Pairwise aggregation of nodes using Drake approximate
+        1/2-matching algorithm.
+
+    Parameters
+    ----------
+    A : csr_matrix or bsr_matrix
+        matrix for linear system.
+    B : array_like : default None
+        Right near-nullspace candidates stored in the columns of an NxK array.
+        If no target vector provided, constant vector is used. In the case of
+        multiple targets, k>1, only the first is used to construct coarse grid
+        matrices for pairwise aggregations. 
+    use_weights : {bool} : default True
+        Optional function handle to compute weights used in the matching,
+        e.g. a strength of connection routine. Additional arguments for
+        this routine should be provided in **kwargs. 
+    get_SOC : {bool} : default False
+        TODO
+    theta : float
+        connections deemed "strong" if |a_ij| > theta*|a_ii|
+
+    NOTES
+    -----
+        - Not implemented for block systems or complex. 
+            + Need to define how a matching is done nodally.
+            + Also must consider what targets are used to form coarse grid
+              in nodal approach...
+            + Drake should be accessible in complex, but not Notay due to the
+              hard minimum. Is there a < operator overloaded for complex?
+              Could I overload it perhaps? Probably would do magnitude or something
+              though, which is not what we want... 
+
+    REFERENCES
+    ----------
+    [1] D'Ambra, Pasqua, and Panayot S. Vassilevski. "Adaptive AMG with
+    coarsening based on compatible weighted matching." Computing and
+    Visualization in Science 16.2 (2013): 59-76.
+
+    [2] Drake, Doratha E., and Stefan Hougardy. "A simple approximation
+    algorithm for the weighted matching problem." Information Processing
+    Letters 85.4 (2003): 211-213.
+
+    """
+
+    def unpack_arg(v):
+        if isinstance(v, tuple):
+            return v[0], v[1]
+        else:
+            return v, {}
+
+    if A.dtype == 'complex':
+        raise TypeError("Not currently implemented for complex.")
+
+    if (A.getformat() != 'csr'):
+        try:
+            A = A.tocsr()
+        except:
+            raise TypeError("Must pass in CSR matrix, or sparse matrix "
+                            "which can be converted to CSR.")
+
+    n = A.shape[0]
+
+    # If target vectors provided, take first.
+    if B is not None:
+        if len(B.shape) == 2:
+            target = B[:,0]
+        else:
+            target = B[:,]
+    else:
+        target = None
+
+    # Compute weights if function provided, otherwise let W = A
+    if use_weights:
+        weights = np.empty((A.nnz,),dtype=A.dtype)
+        temp_cost = np.ones((1,), dtype=A.dtype)
+        if target is None:
+            amg_core.compute_weights(A.indptr, A.indices, A.data,
+                                     weights, temp_cost)
+        else:
+            amg_core.compute_weights(A.indptr, A.indices, A.data,
+                                     weights, target, temp_cost)
+
+        cost[0] += temp_cost[0] / float(A.nnz)
+    else:
+        weights = A.data
+
+    # Get CF splitting
+    temp_cost = np.ones((1,), dtype=A.dtype)
+    splitting = np.empty(n, dtype='int32')
+    amg_core.drake_CF_matching(A.indptr, A.indices, weights, splitting, theta, temp_cost )
+    cost[0] += temp_cost[0] / float(A.nnz)
+
+    if get_SOC:
+        temp = csr_matrix((weights, A.indices, A.indptr), copy=True)
+        C = classical_strength_of_connection(temp, theta, cost=cost)
+        return splitting, C
+    else:
+        return splitting, None
+
+

@@ -14,8 +14,9 @@ from pyamg.strength import classical_strength_of_connection, \
     distance_strength_of_connection, energy_based_strength_of_connection,\
     algebraic_distance, affinity_distance
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks
-from .interpolate import direct_interpolation, standard_interpolation
-from . import split
+from .interpolate import direct_interpolation, standard_interpolation,
+     trivial_interpolation, approximate_ideal_restriction
+from .split import *
 from .cr import CR
 
 __all__ = ['ruge_stuben_solver']
@@ -25,6 +26,7 @@ def ruge_stuben_solver(A,
                        CF='RS',
                        influence=None,
                        interp='standard',
+                       restrict=None,
                        presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                        postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                        max_levels=20, max_coarse=20, keep=False,
@@ -49,6 +51,8 @@ def ruge_stuben_solver(A,
         This makes points with high influence values more likely to become C points
     interp : {string} : default 'standard'
         Use direct or standard interpolation.
+    restrict : {string} : default None
+        Optional flag to use R != P^T. only option is 'air'.
     presmoother : {string or dict}
         Method used for presmoothing at each level.  Method-specific parameters
         may be passed in using a tuple, e.g.
@@ -152,7 +156,7 @@ def ruge_stuben_solver(A,
     levels[-1].influence = influence
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
-        extend_hierarchy(levels, strength, CF, interp, keep)
+        extend_hierarchy(levels, strength, CF, interp, restrict, keep)
 
     ml = multilevel_solver(levels, **kwargs)
     change_smoothers(ml, presmoother, postsmoother)
@@ -160,7 +164,7 @@ def ruge_stuben_solver(A,
 
 
 # internal function
-def extend_hierarchy(levels, strength, CF, interp, keep):
+def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
     """ helper function for local methods """
 
     A = levels[-1].A
@@ -183,11 +187,12 @@ def extend_hierarchy(levels, strength, CF, interp, keep):
     # Empty arrays to store operators for each diagonal block of A
     C_diag = []
     P_diag = []
+    R_diag = []
     splitting = []
     next_lvl_block_starts = [0]
     block_cnt = 0
 
-    # Form interpolation for each diagonal block in A
+    # Form interpolation for each diagonal block in A (nodal AMG interpolation)
     for mat in A_diag:
 
         # Compute the strength-of-connection matrix C, where larger
@@ -217,17 +222,22 @@ def extend_hierarchy(levels, strength, CF, interp, keep):
         # Generate the C/F splitting
         fn, kwargs = unpack_arg(CF)
         if fn == 'RS':
-            splitting.append( split.RS(C_diag[-1], influence, **kwargs) )
+            splitting.append( RS(C_diag[-1], influence, **kwargs) )
         elif fn == 'PMIS':
-            splitting.append( split.PMIS(C_diag[-1], **kwargs) )
+            splitting.append( PMIS(C_diag[-1], **kwargs) )
         elif fn == 'PMISc':
-            splitting.append( split.PMISc(C_diag[-1], **kwargs) )
+            splitting.append( PMISc(C_diag[-1], **kwargs) )
         elif fn == 'CLJP':
-            splitting.append( split.CLJP(C_diag[-1], **kwargs) )
+            splitting.append( CLJP(C_diag[-1], **kwargs) )
         elif fn == 'CLJPc':
-            splitting.append( split.CLJPc(C_diag[-1], **kwargs) )
+            splitting.append( CLJPc(C_diag[-1], **kwargs) )
         elif fn == 'CR':
             splitting.append( CR(C_diag[-1], **kwargs) )
+        elif fn == 'weighted_matching'
+            sp, soc = weighted_matching(C_diag[-1], **kwargs)
+            splitting.append(sp)
+            if soc is not None:
+                C_diag[-1] = soc
         else:
             raise ValueError('unknown C/F splitting method (%s)' % CF)
         levels[-1].complexity['CF'] += kwargs['cost'][0] * C_diag[-1].nnz / float(A.nnz)
@@ -239,6 +249,8 @@ def extend_hierarchy(levels, strength, CF, interp, keep):
             P_diag.append( standard_interpolation(mat, C_diag[-1], splitting[-1], **kwargs) )
         elif fn == 'direct':
             P_diag.append( direct_interpolation(mat, C_diag[-1], splitting[-1], **kwargs) )
+        elif fn == 'trivial':
+            P_diag.append( trivial_interpolation(mat, splitting[-1], **kwargs) )
         else:
             raise ValueError('unknown interpolation method (%s)' % interp)
         levels[-1].complexity['interpolate'] += kwargs['cost'][0] * mat.nnz / float(A.nnz)
@@ -246,10 +258,16 @@ def extend_hierarchy(levels, strength, CF, interp, keep):
         next_lvl_block_starts.append( next_lvl_block_starts[-1] + P_diag[-1].shape[1])
         block_cnt = block_cnt + 1
 
+        # Build restriction operator
+        fn, kwargs = unpack_arg(restrict)
+        if fn is None:
+            R_diag.append(P_diag[-1].T.tocsr())
+        elif restrict == 'air':
+            R_diag.append( approximate_ideal_restriction(A, C,splitting, **kwargs) )
 
     # Build P to be block diagonal and R = P^T.
     P = block_diag(P_diag)
-    R = P.T.tocsr()
+    R = block_diag(R_diag)
 
     # Store relevant information for this level
     splitting = np.concatenate(splitting)

@@ -1113,33 +1113,4 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 #endif

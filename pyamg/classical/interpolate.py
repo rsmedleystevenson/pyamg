@@ -8,7 +8,7 @@ from scipy.sparse import csr_matrix, isspmatrix_csr
 from pyamg import amg_core
 from pyamg.relaxation.relaxation import boundary_relaxation
 
-__all__ = ['direct_interpolation', 'standard_interpolation']
+__all__ = ['direct_interpolation', 'standard_interpolation', 'trivial_interpolation', 'approximate_ideal_restriction']
 
 def direct_interpolation(A, C, splitting, cost=[0]):
     """Create prolongator using direct interpolation
@@ -136,3 +136,52 @@ def standard_interpolation(A, C, splitting, cost=[0]):
                                              splitting,
                                              Pp, Pj, Px)
     return  csr_matrix((Px, Pj, Pp))
+
+
+def trivial_interpolation(A, splitting):
+
+    Cpts = np.where(splitting == 1)
+    Nc = Cpts.shape[0]
+    R_rowptr = np.ones((Nc,),dtype='int32')
+    return csr_matrix((np.ones((Nc,)),Cpts,R_rowptr),dtype=A.dtype).T
+
+
+# TODO : add interpolation by injection, i.e. interpolate F-points from strongest connected C-point
+
+
+
+
+
+def approximate_ideal_restriction(A, C, splitting, max_row=None):
+
+
+    if not isspmatrix_csr(A):
+        raise TypeError('expected csr_matrix for A')
+
+    if not isspmatrix_csr(C):
+        raise TypeError('expected csr_matrix for C')
+
+    Cpts = np.where(splitting == 1)
+
+    # Form row pointer for R
+    R_rowptr = np.empty(Cpts.shape[0], dtype='int32')
+    if max_row is None:
+        amg_core.approx_ideal_restriction_pass1(R_rowptr, C.indptr, C.indices,
+                                                C.data, Cpts, splitting)
+    else:
+        amg_core.approx_ideal_restriction_pass1(R_rowptr, C.indptr, C.indices,
+                                                C.data, Cpts, splitting, max_row)
+
+    # Build restriction operator
+    nnz = R_rowptr[-1]
+    R_colinds = np.empty(nnz, dtype='int32')
+    R_data = np.empty(nnz, dtype=A.dtype)
+    amg_core.approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
+                                            A.indices, A.data, C.indptr, C.indices,
+                                            C.data, Cpts, splitting)
+
+    return  csr_matrix((R_data, R_colinds, R_rowptr))
+
+
+
+

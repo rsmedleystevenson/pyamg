@@ -11,6 +11,7 @@
 #include "relaxation.h"
 #include "smoothed_aggregation.h"
 #include "ruge_stuben.h"
+#include "pairwise.h"
 #include "evolution_strength.h"
 %}
 
@@ -90,6 +91,7 @@
     (const ctype A_data [], const int A_data_size),
     (const ctype C_data [], const int C_data_size),
     (      ctype C_data [], const int C_data_size),
+    (      ctype weights [], const int weights_size),
     (      ctype cost [], const int cost_size)
 };
 %enddef
@@ -236,6 +238,14 @@ INSTANTIATE_INDEXDATA(rs_standard_interpolation_pass2)
 INSTANTIATE_INDEXDATA(cr_helper)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass1)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass2)
+
+/*----------------------------------------------------------------------------
+  pairwise.h
+  ---------------------------------------------------------------------------*/
+%include "pairwise.h"
+INSTANTIATE_INDEXDATA(drake_CF_matching)
+INSTANTIATE_INDEXDATA(compute_weights)
+
 
 /*----------------------------------------------------------------------------
   evolution_strength.h

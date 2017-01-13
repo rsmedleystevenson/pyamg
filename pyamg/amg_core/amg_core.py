@@ -517,6 +517,22 @@ def approx_ideal_restriction_pass2(*args):
     """
     return _amg_core.approx_ideal_restriction_pass2(*args)
 
+def drake_CF_matching(*args):
+    """
+    drake_CF_matching(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] splitting, float const theta, float [] cost)
+    drake_CF_matching(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] splitting, double const theta, double [] cost)
+    """
+    return _amg_core.drake_CF_matching(*args)
+
+def compute_weights(*args):
+    """
+    compute_weights(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float [] weights, float const [] B, float [] cost)
+    compute_weights(int const [] A_rowptr, int const [] A_colinds, float const [] A_data, float [] weights, float [] cost)
+    compute_weights(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double [] weights, double const [] B, double [] cost)
+    compute_weights(int const [] A_rowptr, int const [] A_colinds, double const [] A_data, double [] weights, double [] cost)
+    """
+    return _amg_core.compute_weights(*args)
+
 def apply_distance_filter(*args):
     """
     apply_distance_filter(int const n_row, float const epsilon, int const [] Sp, int const [] Sj, float [] Sx)
