@@ -1217,7 +1217,7 @@ std::vector<T> QR(T A[],
  * solution are unused, they will be set to zero.
  *
  */        
-template<class I, class T, class F>
+template<class I, class T>
 void upper_tri_solve(const T R[],
                      const T rhs[],
                      T x[],
@@ -1288,7 +1288,7 @@ void upper_tri_solve(const T R[],
  * solution are unused, they will be set to zero.
  *
  */
-template<class I, class T, class F>
+template<class I, class T>
 void lower_tri_solve(const T L[],
                      const T rhs[],
                      T x[],

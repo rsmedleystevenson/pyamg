@@ -468,17 +468,6 @@ def rs_cf_splitting(n_nodes, Sp, Sj, Tp, Tj, influence, splitting):
     """rs_cf_splitting(int const n_nodes, int const [] Sp, int const [] Sj, int const [] Tp, int const [] Tj, int const [] influence, int [] splitting)"""
     return _amg_core.rs_cf_splitting(n_nodes, Sp, Sj, Tp, Tj, influence, splitting)
 
-def find_boundary_adjacent_points(*args):
-    """
-    find_boundary_adjacent_points(int const n_nodes, int const [] Ap, int const [] Aj, float const [] Ax, int [] splitting)
-    find_boundary_adjacent_points(int const n_nodes, int const [] Ap, int const [] Aj, double const [] Ax, int [] splitting)
-    """
-    return _amg_core.find_boundary_adjacent_points(*args)
-
-def shifted_2d_coarsening(n_nodes, Sp, splitting):
-    """shifted_2d_coarsening(int const n_nodes, int const [] Sp, int [] splitting)"""
-    return _amg_core.shifted_2d_coarsening(n_nodes, Sp, splitting)
-
 def cljp_naive_splitting(n, Sp, Sj, Tp, Tj, splitting, colorflag):
     """cljp_naive_splitting(int const n, int const [] Sp, int const [] Sj, int const [] Tp, int const [] Tj, int [] splitting, int const colorflag)"""
     return _amg_core.cljp_naive_splitting(n, Sp, Sj, Tp, Tj, splitting, colorflag)
@@ -511,6 +500,22 @@ def cr_helper(*args):
     cr_helper(int const [] A_rowptr, int const [] A_colinds, double const [] B, double [] e, int [] indices, int [] splitting, double [] gamma, double const thetacs, double [] cost)
     """
     return _amg_core.cr_helper(*args)
+
+def approx_ideal_restriction_pass1(*args):
+    """
+    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, float [] C_data, int const [] Cpts, int const [] splitting, int const max_row)
+    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, float [] C_data, int const [] Cpts, int const [] splitting)
+    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, double [] C_data, int const [] Cpts, int const [] splitting, int const max_row)
+    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, double [] C_data, int const [] Cpts, int const [] splitting)
+    """
+    return _amg_core.approx_ideal_restriction_pass1(*args)
+
+def approx_ideal_restriction_pass2(*args):
+    """
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting)
+    """
+    return _amg_core.approx_ideal_restriction_pass2(*args)
 
 def apply_distance_filter(*args):
     """

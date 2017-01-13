@@ -784,8 +784,8 @@ void rs_standard_interpolation_pass2(const I n_nodes,
 
                                 // Add a_ik*a_kj/inner_denominator to the numerator 
                                 if (inner_denominator == 0 && !inner_denom_added_to) {
-                                    printf("Inner denominator was zero: there was a stronly
-                                        connected fine point with no connections to points in C_i\n");
+                                    printf("Inner denominator was zero: there was a strongly " \
+                                        "connected fine point with no connections to points in C_i\n");
                                 }
                                 if (inner_denominator == 0 && inner_denom_added_to) {
                                     printf("Inner denominator was zero due to cancellations!\n");
@@ -975,12 +975,14 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
                                           T C_data[], const int C_data_size,
                                     const I Cpts[], const int Cpts_size,
                                     const I splitting[], const int splitting_size,
-                                    const I max_row = std::numeric_limits<I>::max() )                                    )
+                                    const I max_row = std::numeric_limits<I>::max() )
 {
     // Function to sort two pairs by the second argument
-    bool sort_2nd(const std::pair<I,T> &left, const std::pair<I,T> &right) {
-        return left.second < right.second;
-    }
+    struct sort_2nd {
+        bool operator()(const std::pair<I,T> &left, const std::pair<I,T> &right) {
+            return left.second < right.second;
+        }
+    };
 
     I nnz = 0;
     rowptr[0] = 0;
@@ -991,10 +993,10 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
 
         // Determine number of strongly connected F-points in sparsity for R.
         // Store strength values and indices.
-        std::vector<std::pair<I,T>> neighborhood;
+        std::vector<std::pair<I,T> > neighborhood;
         for (I i=C_rowptr[cpoint]; i<C_rowptr[cpoint+1]; i++) {
             if ( (splitting[C_colinds[i]] == F_NODE) && (C_data[i] > 1e-16) ) {
-                neighborhood.push_back(std::make_pair(i, C_data[i]))
+                neighborhood.push_back(std::make_pair(i, C_data[i]));
             }
         }
 
@@ -1003,15 +1005,15 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
         // smallest elements (i.e. no longer strongly connected).
         I size = neighborhood.size();
         if (size > max_row) {
-            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd);
-            for (I i=max_row, i<size; i++) {
+            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd());
+            for (I i=max_row; i<size; i++) {
                 C_data[neighborhood[i].first] = 0;
             }
         }
 
         // Set row-pointer for this row of R (including identity on C-points).
         nnz += (1 + std::min(size, max_row));
-        rowptr[i+1] = nnz; 
+        rowptr[row+1] = nnz; 
     }
 }
 
@@ -1051,7 +1053,7 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         // C-point, that is A0^T = A[Nf, Nf]. System stored in column major
         // for ease of iteation - each column of A0 corresponds to a row in
         // A and A is stored in CSR. 
-        bool is_col_major = true;
+        I is_col_major = true;
         I size_N = ind - rowptr[row];
         std::vector<T> A0(size_N*size_N);
         I temp_A = 0;
@@ -1102,7 +1104,7 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         // Solve linear system (least squares solves exactly when full rank)
         // s.t. (RA)_ij = 0 for (i,j) within the sparsity pattern of R. Store
         // solution in data vector for R.
-        least_squares(&A0[0], &b0[0], data[rowptr[row]], size_N, size_N, is_col_major);
+        least_squares(&A0[0], &b0[0], &data[rowptr[row]], size_N, size_N, is_col_major);
 
         // Add identity for C-point in this row
         colinds[ind+1] = cpoint;
