@@ -995,7 +995,7 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
         // Store strength values and indices.
         std::vector<std::pair<I,T> > neighborhood;
         for (I i=C_rowptr[cpoint]; i<C_rowptr[cpoint+1]; i++) {
-            if ( (splitting[C_colinds[i]] == F_NODE) && (C_data[i] > 1e-16) ) {
+            if ( (splitting[C_colinds[i]] == F_NODE) && (std::abs(C_data[i]) > 1e-16) ) {
                 neighborhood.push_back(std::make_pair(i, C_data[i]));
             }
         }
@@ -1038,7 +1038,7 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
 
         // Set column indices for R as strongly connected F-points.
         for (I i=C_rowptr[cpoint]; i<C_rowptr[cpoint+1]; i++) {
-            if ( (splitting[C_colinds[i]] == F_NODE) && (C_data[i] > 1e-16) ) {
+            if ( (splitting[C_colinds[i]] == F_NODE) && (std::abs(C_data[i]) > 1e-16) ) {
                 colinds[ind] = C_colinds[i];
                 ind +=1 ;
             }
