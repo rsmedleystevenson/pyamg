@@ -49,6 +49,7 @@
     (const ctype splitting [], const int splitting_size),
     (      ctype splitting [], const int splitting_size),
     (      ctype indices [], const int indices_size),
+    (const ctype indices [], const int indices_size),
     (const ctype rowptr [], const int rowptr_size),
     (      ctype rowptr [], const int rowptr_size),
     (      ctype colinds [], const int colinds_size),
@@ -190,13 +191,16 @@ INSTANTIATE_INDEXDATA_COMPLEX(gauss_seidel)
 INSTANTIATE_INDEXDATA_COMPLEX(f_relaxation)
 INSTANTIATE_INDEXDATA_COMPLEX(bsr_gauss_seidel)
 INSTANTIATE_INDEXDATA_COMPLEX(jacobi)
+INSTANTIATE_INDEXDATA_COMPLEX(jacobi_indexed)
 INSTANTIATE_INDEXDATA_COMPLEX(boundary_relaxation)
 INSTANTIATE_INDEXDATA_COMPLEX(bsr_jacobi)
+INSTANTIATE_INDEXDATA_COMPLEX(bsr_jacobi_indexed)
 INSTANTIATE_INDEXDATA_COMPLEX(gauss_seidel_indexed)
 INSTANTIATE_INDEXDATA_COMPLEX(jacobi_ne)
 INSTANTIATE_INDEXDATA_COMPLEX(gauss_seidel_nr)
 INSTANTIATE_INDEXDATA_COMPLEX(gauss_seidel_ne)
 INSTANTIATE_INDEXDATA_COMPLEX(block_jacobi)
+INSTANTIATE_INDEXDATA_COMPLEX(block_jacobi_indexed)
 INSTANTIATE_INDEXDATA_COMPLEX(block_gauss_seidel)
 INSTANTIATE_INDEXDATA_COMPLEX(extract_subblocks)
 INSTANTIATE_INDEXDATA_COMPLEX(overlapping_schwarz_csr)

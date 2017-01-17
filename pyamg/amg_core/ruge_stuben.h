@@ -968,6 +968,8 @@ void cr_helper(const I A_rowptr[], const int A_rowptr_size,
 
 
 
+
+
 template<class I, class T>
 void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
                                     const I C_rowptr[], const int C_rowptr_size,
@@ -1030,6 +1032,8 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
                                     const I Cpts[], const int Cpts_size,
                                     const I splitting[], const int splitting_size )
 {
+    I is_col_major = true;
+
     // Build column indices and data for each row of R.
     for (I row=0; row<Cpts_size; row++) {
 
@@ -1053,7 +1057,6 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         // C-point, that is A0^T = A[Nf, Nf]. System stored in column major
         // for ease of iteation - each column of A0 corresponds to a row in
         // A and A is stored in CSR. 
-        I is_col_major = true;
         I size_N = ind - rowptr[row];
         std::vector<T> A0(size_N*size_N);
         I temp_A = 0;

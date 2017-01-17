@@ -12,11 +12,11 @@ from pyamg.util.utils import type_prep, get_diagonal, get_block_diag
 from pyamg import amg_core
 from scipy.linalg import lapack as la
 
-__all__ = ['sor', 'gauss_seidel', 'jacobi', 'polynomial']
-__all__ += ['schwarz', 'schwarz_parameters']
-__all__ += ['jacobi_ne', 'gauss_seidel_ne', 'gauss_seidel_nr']
-__all__ += ['gauss_seidel_indexed', 'block_jacobi', 'block_gauss_seidel']
-__all__ += ['boundary_relaxation']
+__all__ = ['sor', 'gauss_seidel', 'jacobi', 'polynomial', 'schwarz',
+           'schwarz_parameters', 'jacobi_ne', 'gauss_seidel_ne',
+           'gauss_seidel_nr', 'gauss_seidel_indexed', 'block_jacobi',
+           'block_gauss_seidel', 'boundary_relaxation', 'CF_jacobi',
+           'FC_jacobi', 'CF_block_jacobi', 'FC_block_jacobi']
 
 
 def make_system(A, x, b, formats=None):
@@ -1175,3 +1175,221 @@ def schwarz_parameters(A, subdomain=None, subdomain_ptr=None,
     A.schwarz_parameters = (subdomain, subdomain_ptr, inv_subblock,
                             inv_subblock_ptr)
     return A.schwarz_parameters
+
+
+def CF_jacobi(A, x, b, Cpts, Fpts, iterations=1, omega=1.0):
+    """Perform CF Jacobi iteration on the linear system Ax=b, that is
+
+        x_c = (1-omega)x_c + omega*Dff^{-1}(b_c - Acf*xf - Acc*xc)
+        x_f = (1-omega)x_f + omega*Dff^{-1}(b_f - Aff*xf - Afc*xc)
+
+    where xf is x restricted to F-points, and likewise for c subscripts.
+
+    Parameters
+    ----------
+    A : csr_matrix
+        Sparse NxN matrix
+    x : ndarray
+        Approximate solution (length N)
+    b : ndarray
+        Right-hand side (length N)
+    Cpts : array ints
+        List of C-points
+    Fpts : array ints
+        List of F-points
+    iterations : int
+        Number of iterations to perform
+    omega : scalar
+        Damping parameter
+
+    Returns
+    -------
+    Nothing, x will be modified in place.
+    """
+    A, x, b = make_system(A, x, b, formats=['csr', 'bsr'])
+
+    # Create uniform type, convert possibly complex scalars to length 1 arrays
+    [omega] = type_prep(A.dtype, [omega])
+
+    if sparse.isspmatrix_csr(A):
+        for iter in range(iterations):
+            amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Cpts, omega)
+            amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Fpts, omega)
+    else:
+        R, C = A.blocksize
+        if R != C:
+            raise ValueError('BSR blocks must be square')
+
+        for iter in range(iterations):
+            amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                        x, b, Cpts, R, omega)
+            amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                        x, b, Fpts, R, omega)
+
+
+def FC_jacobi(A, x, b, Cpts, Fpts, iterations=1, omega=1.0):
+    """Perform FC Jacobi iteration on the linear system Ax=b, that is
+
+        x_f = (1-omega)x_f + omega*Dff^{-1}(b_f - Aff*xf - Afc*xc)
+        x_c = (1-omega)x_c + omega*Dff^{-1}(b_c - Acf*xf - Acc*xc)
+
+    where xf is x restricted to F-points, and likewise for c subscripts.
+
+    Parameters
+    ----------
+    A : csr_matrix
+        Sparse NxN matrix
+    x : ndarray
+        Approximate solution (length N)
+    b : ndarray
+        Right-hand side (length N)
+    Cpts : array ints
+        List of C-points
+    Fpts : array ints
+        List of F-points
+    iterations : int
+        Number of iterations to perform
+    omega : scalar
+        Damping parameter
+
+    Returns
+    -------
+    Nothing, x will be modified in place.
+    """
+    A, x, b = make_system(A, x, b, formats=['csr', 'bsr'])
+
+    # Create uniform type, convert possibly complex scalars to length 1 arrays
+    [omega] = type_prep(A.dtype, [omega])
+
+    if sparse.isspmatrix_csr(A):
+        for iter in range(iterations):
+            amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Fpts, omega)
+            amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Cpts, omega)
+    else:
+        R, C = A.blocksize
+        if R != C:
+            raise ValueError('BSR blocks must be square')
+
+        for iter in range(iterations):
+            amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                        x, b, Fpts, R, omega)
+            amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                        x, b, Cpts, R, omega)
+
+
+def CF_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1, omega=1.0):
+    """Perform CF block Jacobi iteration on the linear system Ax=b, that is
+
+        x_c = (1-omega)x_c + omega*Dff^{-1}(b_c - Acf*xf - Acc*xc)
+        x_f = (1-omega)x_f + omega*Dff^{-1}(b_f - Aff*xf - Afc*xc)
+
+    where xf is x restricted to F-blocks, and Dff^{-1} the block inverse
+    of the block diagonal Dff, and likewise for c subscripts.
+
+    Parameters
+    ----------
+    A : csr_matrix or bsr_matrix
+        Sparse NxN matrix
+    x : ndarray
+        Approximate solution (length N)
+    b : ndarray
+        Right-hand side (length N)
+    Cpts : array ints
+        List of C-blocks in A
+    Fpts : array ints
+        List of F-blocks in A
+    Dinv : array
+        Array holding block diagonal inverses of A
+        size (N/blocksize, blocksize, blocksize)
+    blocksize : int
+        Desired dimension of blocks
+    iterations : int
+        Number of iterations to perform
+    omega : scalar
+        Damping parameter
+
+    Returns
+    -------
+    Nothing, x will be modified in place.
+
+    """
+    A, x, b = make_system(A, x, b, formats=['csr', 'bsr'])
+    A = A.tobsr(blocksize=(blocksize, blocksize))
+
+    if Dinv is None:
+        Dinv = get_block_diag(A, blocksize=blocksize, inv_flag=True)
+    elif Dinv.shape[0] != int(A.shape[0]/blocksize):
+        raise ValueError('Dinv and A have incompatible dimensions')
+    elif (Dinv.shape[1] != blocksize) or (Dinv.shape[2] != blocksize):
+        raise ValueError('Dinv and blocksize are incompatible')
+
+    # Create uniform type, convert possibly complex scalars to length 1 arrays
+    [omega] = type_prep(A.dtype, [omega])
+
+    # Perform block C-relaxation then block F-relaxation
+    for iter in range(iterations):
+        amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                      x, b, np.ravel(Dinv), Cpts, omega,
+                                      blocksize)
+        amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                      x, b, np.ravel(Dinv), Fpts, omega,
+                                      blocksize)
+
+
+def FC_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1, omega=1.0):
+    """Perform FC block Jacobi iteration on the linear system Ax=b, that is
+
+        x_f = (1-omega)x_f + omega*Dff^{-1}(b_f - Aff*xf - Afc*xc)
+        x_c = (1-omega)x_c + omega*Dff^{-1}(b_c - Acf*xf - Acc*xc)
+
+    where xf is x restricted to F-blocks, and Dff^{-1} the block inverse
+    of the block diagonal Dff, and likewise for c subscripts.
+
+    Parameters
+    ----------
+    A : csr_matrix or bsr_matrix
+        Sparse NxN matrix
+    x : ndarray
+        Approximate solution (length N)
+    b : ndarray
+        Right-hand side (length N)
+    Cpts : array ints
+        List of C-blocks in A
+    Fpts : array ints
+        List of F-blocks in A
+    Dinv : array
+        Array holding block diagonal inverses of A
+        size (N/blocksize, blocksize, blocksize)
+    blocksize : int
+        Desired dimension of blocks
+    iterations : int
+        Number of iterations to perform
+    omega : scalar
+        Damping parameter
+
+    Returns
+    -------
+    Nothing, x will be modified in place.
+
+    """
+    A, x, b = make_system(A, x, b, formats=['csr', 'bsr'])
+    A = A.tobsr(blocksize=(blocksize, blocksize))
+
+    if Dinv is None:
+        Dinv = get_block_diag(A, blocksize=blocksize, inv_flag=True)
+    elif Dinv.shape[0] != int(A.shape[0]/blocksize):
+        raise ValueError('Dinv and A have incompatible dimensions')
+    elif (Dinv.shape[1] != blocksize) or (Dinv.shape[2] != blocksize):
+        raise ValueError('Dinv and blocksize are incompatible')
+
+    # Create uniform type, convert possibly complex scalars to length 1 arrays
+    [omega] = type_prep(A.dtype, [omega])
+
+    # Perform block C-relaxation then block F-relaxation
+    for iter in range(iterations):
+        amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                      x, b, np.ravel(Dinv), Fpts, omega,
+                                      blocksize)
+        amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                      x, b, np.ravel(Dinv), Cpts, omega,
+                                      blocksize)

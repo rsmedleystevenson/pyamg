@@ -277,10 +277,10 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
     if keep:
         C = block_diag(C_diag)
         levels[-1].C = C                  # strength of connection matrix
-        levels[-1].splitting = splitting  # C/F splitting
 
     levels[-1].P = P                  # prolongation operator
     levels[-1].R = R                  # restriction operator
+    levels[-1].splitting = splitting  # C/F splitting
 
     # Form coarse grid operator, get complexity
     levels[-1].complexity['RAP'] = mat_mat_complexity(R,A) / float(A.nnz)
