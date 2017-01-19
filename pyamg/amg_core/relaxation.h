@@ -305,9 +305,6 @@ void jacobi(const I Ap[], const int Ap_size,
  *  stored in CSR format and x and b are column vectors.
  *  Damping is controlled by the omega parameter.
  *
- *  Refer to gauss_seidel for additional information regarding
- *  row_start, row_stop, and row_step.
- *
  *  Parameters
  *      Ap[]       - CSR row pointer
  *      Aj[]       - CSR index array
@@ -566,11 +563,8 @@ void bsr_jacobi(const I Ap[], const int Ap_size,
  *  system Ax = b for a given set of row indices, where A is
  *  stored in Block CSR format and x and b are column vectors.
  *  This method applies point-wise relaxation to the BSR matrix
- *  for a given set of block indices, as opposed to "block
+ *  for a given set of row block indices, as opposed to "block
  *  relaxation".
- *
- *  Refer to jacobi for additional information regarding
- *  row_start, row_stop, and row_step.
  *
  *  Parameters
  *      Ap[]       - BSR row pointer
@@ -1044,12 +1038,9 @@ void block_jacobi(const I Ap[], const int Ap_size,
 
 /*
  *  Perform one iteration of block Jacobi relaxation on the linear
- *  system Ax = b, where A is stored in BSR format and x and b
- *  are column vectors.  Damping is controlled by the omega
- *  parameter.
- *
- *  Refer to gauss_seidel for additional information regarding
- *  row_start, row_stop, and row_step.
+ *  system Ax = b for a given set of (block) row indices. A is
+ *  stored in BSR format and x and b are column vectors. Damping
+ *  is controlled by the parameter omega.
  *
  *  Parameters
  *      Ap[]       - BSR row pointer
