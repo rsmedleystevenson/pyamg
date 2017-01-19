@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import scipy as sp
+import numpy as np
 from . import relaxation
 from .chebyshev import chebyshev_polynomial_coefficients
 from pyamg.util.utils import scale_rows, get_block_diag, get_diagonal, unpack_arg
@@ -694,6 +695,12 @@ def setup_CF_block_jacobi(lvl, iterations=DEFAULT_NITER, omega=1.0, Dinv=None,
     elif blocksize is None:
         blocksize = Dinv.shape[1]
 
+    # Check for compatible dimensions
+    if (lvl.A.shape[0] % blocksize) != 0:
+        raise ValueError("Blocksize does not divide size of matrix.")
+    elif (len(lvl.splitting)*blocksize != A.shape[0]):
+        raise ValueError("Blocksize not compatible with CF-splitting and matrix size.")
+
     if blocksize == 1:
         # Block Jacobi is equivalent to normal Jacobi
         return setup_CF_jacobi(lvl, iterations=iterations, omega=omega,
@@ -729,6 +736,12 @@ def setup_FC_block_jacobi(lvl, iterations=DEFAULT_NITER, omega=1.0, Dinv=None,
             blocksize = lvl.A.blocksize[0]
     elif blocksize is None:
         blocksize = Dinv.shape[1]
+
+    # Check for compatible dimensions
+    if (lvl.A.shape[0] % blocksize) != 0:
+        raise ValueError("Blocksize does not divide size of matrix.")
+    elif (len(lvl.splitting)*blocksize != A.shape[0]):
+        raise ValueError("Blocksize not compatible with CF-splitting and matrix size.")
 
     if blocksize == 1:
         # Block Jacobi is equivalent to normal Jacobi

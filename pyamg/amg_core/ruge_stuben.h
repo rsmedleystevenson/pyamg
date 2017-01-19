@@ -573,7 +573,8 @@ void rs_direct_interpolation_pass1(const I n_nodes,
     for(I i = 0; i < n_nodes; i++){
         if( splitting[i] == C_NODE ){
             nnz++;
-        } else {
+        }
+        else {
             for(I jj = Sp[i]; jj < Sp[i+1]; jj++){
                 if ( (splitting[Sj[jj]] == C_NODE) && (Sj[jj] != i) )
                     nnz++;
@@ -602,7 +603,8 @@ void rs_direct_interpolation_pass2(const I n_nodes,
         if(splitting[i] == C_NODE){
             Bj[Bp[i]] = i;
             Bx[Bp[i]] = 1;
-        } else {
+        }
+        else {
             T sum_strong_pos = 0, sum_strong_neg = 0;
             for(I jj = Sp[i]; jj < Sp[i+1]; jj++){
                 if ( (splitting[Sj[jj]] == C_NODE) && (Sj[jj] != i) ){
@@ -967,9 +969,31 @@ void cr_helper(const I A_rowptr[], const int A_rowptr_size,
 }
 
 
-
-
-
+/* Build row_pointer for approximate ideal restriction in CSR form.
+ * 
+ * Parameters
+ * ----------
+ *      rowptr : array<int> 
+ *          Empty row-pointer for R
+ *      C_rowptr : const array<int>
+ *          Row pointer for SOC matrix, C
+ *      C_colinds : const array<int>
+ *          Column indices for SOC matrix, C
+ *      C_data : array<float>
+ *          Data array for SOC matrix, C
+ *      Cpts : array<int>
+ *          List of global C-point indices
+ *      splitting : const array<int>
+ *          Boolean array with 1 denoting C-points and 0 F-points
+ *      max_row : int
+ *          Maximum size of sparsity pattern for one row of R
+ *
+ * Returns
+ * -------
+ * Nothing, rowptr[] modified in place. If a given C-point has more strong
+ * F-connections than max_row, the smallest are set to zero in C_data.
+ *
+ */
 template<class I, class T>
 void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
                                     const I C_rowptr[], const int C_rowptr_size,
@@ -1019,6 +1043,41 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
     }
 }
 
+
+/* Build column indices and data array for approximate ideal restriction
+ * in CSR format.
+ * 
+ * Parameters
+ * ----------
+ *      rowptr : const array<int> 
+ *          Pre-determined row-pointer for R in CSR format
+ *      colinds : array<int>
+ *          Empty array for column indices for R in CSR format
+ *      data : array<float>
+ *          Empty array for data for R in CSR format
+ *      A_rowptr : const array<int>
+ *          Row pointer for matrix A
+ *      A_colinds : const array<int>
+ *          Column indices for matrix A
+ *      A_data : const array<float>
+ *          Data array for matrix A
+ *      C_rowptr : const array<int>
+ *          Row pointer for SOC matrix, C
+ *      C_colinds : const array<int>
+ *          Column indices for SOC matrix, C
+ *      C_data : const array<float>
+ *          Data array for SOC matrix, C
+*      Cpts : array<int>
+ *          List of global C-point indices
+ *      splitting : const array<int>
+ *          Boolean array with 1 denoting C-points and 0 F-points
+ *
+ * Returns
+ * -------
+ * Nothing, colinds[] and data[] modified in place.
+ *
+ */
+// Note, pass in A, C as CSR matrices (not A^T or C^T)
 template<class I, class T>
 void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
                                           I colinds[], const int colinds_size,
@@ -1081,7 +1140,7 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
             }
         }
 
-        // Build local right hand side given by b_j = A_{cpt,N_j}, where N_j
+        // Build local right hand side given by b_j = -A_{cpt,N_j}, where N_j
         // is the jth indice in the neighborhood of strongly connected F-points
         // to the current C-point. 
         I temp_b = 0;
@@ -1091,7 +1150,7 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
             I found_ind = 0;
             for (I k=A_rowptr[cpoint]; k<A_rowptr[cpoint+1]; k++) {
                 if (colinds[i] == A_colinds[k]) {
-                    b0[temp_b] = A_data[k];
+                    b0[temp_b] = -A_data[k];
                     found_ind = 1;
                     temp_b += 1;
                     break;
@@ -1112,6 +1171,82 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         // Add identity for C-point in this row
         colinds[ind] = cpoint;
         data[ind] = 1.0;
+    }
+}
+
+
+/* Interpolate C-points by injection, and each F-point by injection from
+ * its strongest connected C-point. 
+ * 
+ * Parameters
+ * ----------
+ *      rowptr : const array<int> 
+ *          Pre-determined row-pointer for P in CSR format
+ *      colinds : array<int>
+ *          Empty array for column indices for P in CSR format
+ *      data : array<float>
+ *          Empty array for data for P in CSR format
+ *      C_rowptr : const array<int>
+ *          Row pointer for SOC matrix, C
+ *      C_colinds : const array<int>
+ *          Column indices for SOC matrix, C
+ *      C_data : const array<float>
+ *          Data array for SOC matrix, C
+ *      splitting : const array<int>
+ *          Boolean array with 1 denoting C-points and 0 F-points
+ *
+ * Returns
+ * -------
+ * Nothing, colinds[] and data[] modified in place.
+ *
+ */
+template<class I, class T>
+void injection_interpolation(const I rowptr[], const int rowptr_size,
+                                   I colinds[], const int colinds_size,
+                                   T data[], const int data_size,
+                             const I C_rowptr[], const int C_rowptr_size,
+                             const I C_colinds[], const int C_colinds_size,
+                             const T C_data[], const int C_data_size,
+                             const I splitting[], const int splitting_size )
+{
+    I n = rowptr_size-1;
+
+    // Get enumeration of C-points, where if i is the jth C-point,
+    // then pointInd[i] = j.
+    std::vector<I> pointInd(n);
+    pointInd[0] = 0;
+    for (I i=1; i<n; i++) {
+        pointInd[i] = pointInd[i-1] + splitting[i-1];
+    }
+
+    // Build interpolation operator as CSR matrix
+    I next = 0;
+    for (I row=0; row<n; row++) {
+
+        // Set C-point as identity
+        if (splitting[row] == C_NODE) {
+            colinds[next] = pointInd[row];
+            data[next] = 1.0;
+            next += 1;
+        }
+        // For F-points, find strongest connection to C-point
+        // and interpolate directly from C-point. 
+        else {
+
+            T max = 0.0;
+            I ind = 0;
+            for (I i=C_rowptr[row]; i<C_rowptr[row+1]; i++) {
+                if (splitting[C_colinds[i]] == C_NODE) {
+                    if (std::abs(C_data[i]) > max) {
+                        max = C_data[i];
+                        ind = C_colinds[i];
+                    }
+                }
+            }
+            colinds[next] = pointInd[ind];
+            data[next] = 1.0;
+            next += 1;
+        }
     }
 }
 

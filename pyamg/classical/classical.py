@@ -15,7 +15,7 @@ from pyamg.strength import classical_strength_of_connection, \
     algebraic_distance, affinity_distance
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks
 from .interpolate import direct_interpolation, standard_interpolation,\
-     trivial_interpolation, approximate_ideal_restriction
+     trivial_interpolation, injection_interpolation, approximate_ideal_restriction
 from .split import *
 from .cr import CR
 
@@ -50,9 +50,10 @@ def ruge_stuben_solver(A,
         If set, this adds influence to the lambda values of points for RS coarsening
         This makes points with high influence values more likely to become C points
     interp : {string} : default 'standard'
-        Use direct or standard interpolation.
+        Options include 'direct', 'standard', 'inject' and 'trivial'.
     restrict : {string} : default None
-        Optional flag to use R != P^T. only option is 'air'.
+        Optional flag to use R != P^T. Only option is 'air' for approximate ideal
+        restriction.
     presmoother : {string or dict}
         Method used for presmoothing at each level.  Method-specific parameters
         may be passed in using a tuple, e.g.
@@ -241,6 +242,8 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
             P_diag.append( standard_interpolation(mat, C_diag[-1], splitting[-1], **kwargs) )
         elif fn == 'direct':
             P_diag.append( direct_interpolation(mat, C_diag[-1], splitting[-1], **kwargs) )
+        elif fn == 'inject':
+            P_diag.append( injection_interpolation(mat, C_diag[-1], splitting[-1], **kwargs) )
         elif fn == 'trivial':
             P_diag.append( trivial_interpolation(mat, splitting[-1], **kwargs) )
         else:
@@ -259,24 +262,15 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
         else:
             raise ValueError('unknown restriction method (%s)' % restrict)
 
-
     # Build P to be block diagonal and R = P^T.
     P = block_diag(P_diag, format='csr')
     R = block_diag(R_diag, format='csr')
-
-
-
-    Fpts = np.array(np.where(splitting[0] == 0)[0], dtype='int32')
-    Aff =  A[Fpts,:][:,Fpts]
-    import pdb
-    pdb.set_trace()
-
 
     # Store relevant information for this level
     splitting = np.concatenate(splitting)
     if keep:
         C = block_diag(C_diag)
-        levels[-1].C = C                  # strength of connection matrix
+        levels[-1].C = C              # strength of connection matrix
 
     levels[-1].P = P                  # prolongation operator
     levels[-1].R = R                  # restriction operator
@@ -286,7 +280,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
     levels[-1].complexity['RAP'] = mat_mat_complexity(R,A) / float(A.nnz)
     RA = R * A
     levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P) / float(A.nnz)
-    A = RA * P      # Galerkin operator, Ac = RAP
+    A = RA * P
 
     levels.append(multilevel_solver.level())
     levels[-1].A = A

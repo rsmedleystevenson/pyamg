@@ -331,6 +331,7 @@ void jacobi_indexed(const I Ap[], const int Ap_size,
                     const I indices[], const int indices_size,
                     const T omega[], const int omega_size)
 {
+    T one = 1.0;
     T omega2 = omega[0];
     std::vector<T> temp(x_size);
 
@@ -360,7 +361,7 @@ void jacobi_indexed(const I Ap[], const int Ap_size,
 
         // Check for nonzero diagonal and update ith index
         if (diag != (F) 0.0){
-            x[row] = (1.0 - omega2) * temp[row] + omega2 * ((b[row] - rsum)/diag);
+            x[row] = (one - omega2) * temp[row] + omega2 * ((b[row] - rsum)/diag);
         }
         else {
             std::cout << "Warning : zero diagonal encountered in Jacobi; ignored.\n";
@@ -600,16 +601,17 @@ void bsr_jacobi_indexed(const I Ap[], const int Ap_size,
     T *rsum = new T[blocksize];
     T *Axloc = new T[blocksize];
     T omega2 = omega[0];
+    T one = 1.0;
 
     // copy x to temp
     std::vector<T> temp(x_size);
-    for(I i = 0; i < abs(row_stop-row_start)*blocksize; i += step) {
+    for(I i=0; i<x_size; i++) {
         temp[i] = x[i];
     }
 
     for(I i=0; i<indices_size; i++) {
 
-        I row = indices[i]
+        I row = indices[i];
         I start = Ap[row];
         I end   = Ap[row+1];
         I diag_ptr = -1;
@@ -659,7 +661,7 @@ void bsr_jacobi_indexed(const I Ap[], const int Ap_size,
 
                 // Check for nonzero diagonal and update ith index
                 if (diag != (F) 0.0){
-                    x[row*blocksize + k] = (1.0 - omega2) * temp[row*blocksize + k] + omega2 * rsum[k]/diag;
+                    x[row*blocksize + k] = (one - omega2) * temp[row*blocksize + k] + omega2 * rsum[k]/diag;
                 }
                 else {
                     std::cout << "Warning : zero diagonal encountered in relaxation; ignored.\n";
@@ -1072,13 +1074,14 @@ void block_jacobi_indexed(const I Ap[], const int Ap_size,
                                 T  x[], const int  x_size,
                           const T  b[], const int  b_size,
                           const T Tx[], const int Tx_size,
-                          const I indices, const int indices_size,
+                          const I indices[], const int indices_size,
                           const T omega[], const int omega_size,
                           const I blocksize)
 {
     // Rename
     const T * Dinv = Tx;
-
+    T zero = 0.0;
+    T one = 1.0;
     T omega2 = omega[0];
     T *rsum = new T[blocksize];
     T *v = new T[blocksize];
@@ -1095,7 +1098,7 @@ void block_jacobi_indexed(const I Ap[], const int Ap_size,
         I row = indices[i];
         I start = Ap[row];
         I end   = Ap[row+1];
-        std::fill(&(rsum[0]), &(rsum[blocksize]), 0.0);
+        std::fill(&(rsum[0]), &(rsum[blocksize]), zero);
 
         // Carry out a block dot product between block row i and x
         for(I jj = start; jj < end; jj++) {
@@ -1128,7 +1131,7 @@ void block_jacobi_indexed(const I Ap[], const int Ap_size,
 
         // Update each element in ith block
         for(I k = 0; k < blocksize; k++) {
-            x[row*blocksize + k] = (1.0 - omega2)*temp[row*blocksize + k] + omega2*v[k];
+            x[row*blocksize + k] = (one - omega2)*temp[row*blocksize + k] + omega2*v[k];
         }
     }
 

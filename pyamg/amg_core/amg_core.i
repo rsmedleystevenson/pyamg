@@ -242,6 +242,7 @@ INSTANTIATE_INDEXDATA(rs_standard_interpolation_pass2)
 INSTANTIATE_INDEXDATA(cr_helper)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass1)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass2)
+INSTANTIATE_INDEXDATA(injection_interpolation)
 
 /*----------------------------------------------------------------------------
   pairwise.h
