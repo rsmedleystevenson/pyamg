@@ -1095,8 +1095,7 @@ void injection_interpolation(const I rowptr[], const int rowptr_size,
  * F-connections than max_row, the smallest are set to zero in C_data.
  *
  */
-template<class I, class T>
-bool sort_2nd(const std::pair<I,T> &left,const std::pair<I,T> &right)
+bool sort_2nd(const std::pair<int,double> &left,const std::pair<int,double> &right)
 {
        return left.second < right.second;
 }
