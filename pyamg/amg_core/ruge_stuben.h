@@ -1141,7 +1141,7 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
         I size = neighborhood.size();
         if (size > max_row) {
             // std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd());
-            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd;
+            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd);
             for (I i=max_row; i<size; i++) {
                 C_data[neighborhood[i].first] = 0;
             }
