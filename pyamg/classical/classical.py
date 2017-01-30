@@ -15,7 +15,7 @@ from pyamg.strength import classical_strength_of_connection, \
     algebraic_distance, affinity_distance
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks
 from .interpolate import direct_interpolation, standard_interpolation, \
-     trivial_interpolation, injection_interpolation, approximate_ideal_restriction,
+     trivial_interpolation, injection_interpolation, approximate_ideal_restriction
 from .split import *
 from .cr import CR
 
