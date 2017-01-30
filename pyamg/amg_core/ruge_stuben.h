@@ -1095,6 +1095,11 @@ void injection_interpolation(const I rowptr[], const int rowptr_size,
  * F-connections than max_row, the smallest are set to zero in C_data.
  *
  */
+bool sort_2nd(const std::pair<int,double> &left,const std::pair<int,double> &right)
+{
+       return left.second < right.second;
+}
+
 template<class I, class T>
 void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
                                     const I C_rowptr[], const int C_rowptr_size,
@@ -1105,15 +1110,13 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
                                     const I max_row = std::numeric_limits<I>::max() )
 {
     // Function to sort two pairs by the second argument
-    //      - Doesn't like being templated for types I and T for some reason. 
-    struct sort_2nd {
-        bool operator()(const std::pair<int,double> &left, const std::pair<int,double> &right) {
-            return left.second < right.second;
-        }
-        bool operator()(const std::pair<int,float> &left, const std::pair<int,float> &right) {
-            return left.second < right.second;
-        }
-    };
+    //      --> TODO : May need to move this outside to its own function
+    //      
+    // struct sort_2nd {
+    //     bool operator()(const std::pair<I,T> &left, const std::pair<I,T> &right) {
+    //         return left.second < right.second;
+    //     }
+    // };
 
     I nnz = 0;
     rowptr[0] = 0;
@@ -1136,7 +1139,8 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
         // smallest elements (i.e. no longer strongly connected).
         I size = neighborhood.size();
         if (size > max_row) {
-            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd());
+            // std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd());
+            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd);
             for (I i=max_row; i<size; i++) {
                 C_data[neighborhood[i].first] = 0;
             }
