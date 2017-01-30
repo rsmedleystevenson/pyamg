@@ -560,7 +560,9 @@ inline void gemm(const T Ax[], const I Arows, const I Acols, const char Atrans,
             }
         }
     }
-
+    else { 
+        std::cout << "Unsupported combination of row/column major for dense multiplication.\n";
+    }
 }
 
 
@@ -1225,7 +1227,7 @@ void upper_tri_solve(const T R[],
                      const I &n,
                      const I is_col_major)
 {
-    // Funciton poIer for row or column major matrices
+    // Funciton pointer for row or column major matrices
     I (*get_ind)(const I&, const I&, const I&);
     const I *C;
     if (is_col_major) {

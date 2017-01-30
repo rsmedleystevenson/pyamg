@@ -52,6 +52,7 @@
     (const ctype indices [], const int indices_size),
     (const ctype rowptr [], const int rowptr_size),
     (      ctype rowptr [], const int rowptr_size),
+    (const ctype colinds [], const int colinds_size),
     (      ctype colinds [], const int colinds_size),
     (const ctype A_rowptr [], const int A_rowptr_size),
     (const ctype A_colinds [], const int A_colinds_size),
@@ -154,6 +155,7 @@ DECLARE_DATA_TYPE( std::complex<double> )
   ---------------------------------------------------------------------------*/
 %include "linalg.h"
 INSTANTIATE_INDEXDATA_COMPLEX(pinv_array)
+// INSTANTIATE_INDEXDATA(pinv_array)
 
 /*----------------------------------------------------------------------------
   graph.h
@@ -229,7 +231,8 @@ INSTANTIATE_INDEXDATA_COMPLEX(truncate_rows_csr)
   ---------------------------------------------------------------------------*/
 %include "ruge_stuben.h"
 
-INSTANTIATE_INDEXDATA_COMPLEX(classical_strength_of_connection)
+INSTANTIATE_INDEXDATA_COMPLEX(classical_strength_of_connection_abs)
+INSTANTIATE_INDEXDATA(classical_strength_of_connection_min)
 
 INSTANTIATE_INDEXDATA_COMPLEX(maximum_row_value)
 
@@ -243,6 +246,8 @@ INSTANTIATE_INDEXDATA(cr_helper)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass1)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass2)
 INSTANTIATE_INDEXDATA(injection_interpolation)
+INSTANTIATE_INDEXDATA(block_approx_ideal_restriction_pass2)
+// INSTANTIATE_INDEXDATA(block_approx_ideal_restriction_pass3)
 
 /*----------------------------------------------------------------------------
   pairwise.h

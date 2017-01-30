@@ -18,7 +18,8 @@
  *  matrices are stored in CSR format.  An off-diagonal nonzero entry
  *  A[i,j] is considered strong if:
  *
- *      -A[i,j] >= theta * max( -A[i,k] )   where k != i
+ *     | A[i,j] | >= theta * max( -A[i,k] )   where k != i      (_abs)
+ *      -A[i,j]   >= theta * max( -A[i,k] )   where k != i      (_min)
  *
  * Otherwise, the connection is weak.
  *
@@ -43,19 +44,19 @@
  *
  */
 template<class I, class T, class F>
-void classical_strength_of_connection(const I n_row,
-                                      const F theta,
-                                      const I Ap[], const int Ap_size,
-                                      const I Aj[], const int Aj_size,
-                                      const T Ax[], const int Ax_size,
-                                            I Sp[], const int Sp_size,
-                                            I Sj[], const int Sj_size,
-                                            T Sx[], const int Sx_size)
+void classical_strength_of_connection_abs(const I n_row,
+                                          const F theta,
+                                          const I Ap[], const int Ap_size,
+                                          const I Aj[], const int Aj_size,
+                                          const T Ax[], const int Ax_size,
+                                                I Sp[], const int Sp_size,
+                                                I Sj[], const int Sj_size,
+                                                T Sx[], const int Sx_size)
 {
     I nnz = 0;
     Sp[0] = 0;
 
-    for(I i = 0; i < n_row; i++){
+    for(I i = 0; i < n_row; i++) {
         F max_offdiagonal = std::numeric_limits<F>::min();
 
         const I row_start = Ap[i];
@@ -91,6 +92,57 @@ void classical_strength_of_connection(const I n_row,
         Sp[i+1] = nnz;
     }
 }
+
+template<class I, class T>
+void classical_strength_of_connection_min(const I n_row,
+                                          const T theta,
+                                          const I Ap[], const int Ap_size,
+                                          const I Aj[], const int Aj_size,
+                                          const T Ax[], const int Ax_size,
+                                                I Sp[], const int Sp_size,
+                                                I Sj[], const int Sj_size,
+                                                T Sx[], const int Sx_size)
+{
+    I nnz = 0;
+    Sp[0] = 0;
+
+    for(I i = 0; i < n_row; i++){
+        T max_offdiagonal = std::numeric_limits<T>::min();
+
+        const I row_start = Ap[i];
+        const I row_end   = Ap[i+1];
+
+        for(I jj = row_start; jj < row_end; jj++){
+            if(Aj[jj] != i){
+                max_offdiagonal = std::max(max_offdiagonal,mynorm(Ax[jj]));
+            }
+        }
+
+        T threshold = theta*max_offdiagonal;
+        for(I jj = row_start; jj < row_end; jj++){
+            T norm_jj = -Ax[jj];
+
+            // Add entry if -A_ij exceeds the threshold
+            if(norm_jj >= threshold){
+                if(Aj[jj] != i){
+                    Sj[nnz] = Aj[jj];
+                    Sx[nnz] = Ax[jj];
+                    nnz++;
+                }
+            }
+
+            // Always add the diagonal
+            if(Aj[jj] == i){
+                Sj[nnz] = Aj[jj];
+                Sx[nnz] = Ax[jj];
+                nnz++;
+            }
+        }
+
+        Sp[i+1] = nnz;
+    }
+}
+
 
 /*
  *  Compute the maximum in magnitude row value for a CSR matrix
@@ -130,11 +182,11 @@ void maximum_row_value(const I n_row,
 }
 
 
-
 #define F_NODE 0
 #define C_NODE 1
 #define U_NODE 2
 #define PRE_F_NODE 3
+
 
 /*
  * Compute a C/F (coarse-fine( splitting using the classical coarse grid
@@ -165,85 +217,67 @@ void rs_cf_splitting(const I n_nodes,
                      const I influence[], const int influence_size,
                            I splitting[], const int splitting_size)
 {
-  // printf("Entered CF splitting\n");
     std::vector<I> lambda(n_nodes,0);
 
-    //compute lambdas
-    // printf("   Compute lambdas\n");
+    // Compute initial lambda
     I lambda_max = 0;
-    for(I i = 0; i < n_nodes; i++){
+    for(I i = 0; i < n_nodes; i++) {
         lambda[i] = Tp[i+1] - Tp[i] + influence[i];
-        if (lambda[i] > lambda_max) lambda_max = lambda[i];
-        // if (lambda[i] > n_nodes)
-        // {
-        //   printf("Lamda was set too large\n");
-        //   lambda[i] = n_nodes;
-        // }
+        if (lambda[i] > lambda_max) {
+            lambda_max = lambda[i];
+        }
     }
 
-    //for each value of lambda, create an interval of nodes with that value
-    // ptr - is the first index of the interval
-    // count - is the number of indices in that interval
-    // index to node - the node located at a given index
-    // node to index - the index of a given node
+    // For each value of lambda, create an interval of nodes with that value
+    //      interval_ptr - the first index of the interval
+    //      interval_count - the number of indices in that interval
+    //      index_to_node - the node located at a given index
+    //      node_to_index - the index of a given node
     lambda_max = lambda_max*2;
-    if (n_nodes+1 > lambda_max) lambda_max = n_nodes+1;
-    // printf("lambda_max = %d\n", lambda_max);
+    if (n_nodes+1 > lambda_max) {
+        lambda_max = n_nodes+1;
+    }
+
     std::vector<I> interval_ptr(lambda_max,0);
     std::vector<I> interval_count(lambda_max,0);
     std::vector<I> index_to_node(n_nodes);
     std::vector<I> node_to_index(n_nodes);
 
-    for(I i = 0; i < n_nodes; i++){
+    for(I i = 0; i < n_nodes; i++) {
         interval_count[lambda[i]]++;
     }
-    for(I i = 0, cumsum = 0; i < lambda_max; i++){
+    for(I i = 0, cumsum = 0; i < lambda_max; i++) {
         interval_ptr[i] = cumsum;
         cumsum += interval_count[i];
         interval_count[i] = 0;
     }
-    for(I i = 0; i < n_nodes; i++){
+    for(I i = 0; i < n_nodes; i++) {
         I lambda_i = lambda[i];
-        // printf("lambda_i = %d, lambda_max = %d\n", lambda_i, lambda_max);
+
         I index    = interval_ptr[lambda_i] + interval_count[lambda_i];
         index_to_node[index] = i;
         node_to_index[i]     = index;
         interval_count[lambda_i]++;
     }
 
-
     std::fill(splitting, splitting + n_nodes, U_NODE);
-    // printf("Did the fill\n");
 
-    // all nodes with no neighbors become F nodes
+
+    // All nodes with no neighbors become F nodes
     for(I i = 0; i < n_nodes; i++){
         if (lambda[i] == 0 || (lambda[i] == 1 && Tj[Tp[i]] == i))
             splitting[i] = F_NODE;
     }
 
-    //Now add elements to C and F, in descending order of lambda
-    // printf("   Add elements to C and F in descending order of lambda\n");
-    for(I top_index = n_nodes - 1; top_index != -1; top_index--){
+    // Add elements to C and F, in descending order of lambda
+    for(I top_index=(n_nodes - 1); top_index>-1; top_index--){
         I i        = index_to_node[top_index];
         I lambda_i = lambda[i];
-        // printf("lambda_i = %d, lambda_max = %d\n", lambda_i, lambda_max);
 
-        // if (i == 73)
-        // {
-        //   std::cout << "LOOK HERE: i = 73, top_index = " << top_index << std::endl;
-        //   for (I j = n_nodes - 1; j > -1; j--)
-        //   {
-        //     std::cout << "             index: " << j << ", node: " << index_to_node[j] << ", lamda: " << lambda[index_to_node[j]] << std::endl;
-        //   }
-        // }
-
-        //remove i from its interval
+        // Remove i from its interval
         interval_count[lambda_i]--;
 
-        if(splitting[i] == F_NODE)
-        {        
-          // if (n_nodes == 121)
-            // std::cout << "Fine node #" << i << " with lambda " << lambda[i] << std::endl;
+        if(splitting[i] == F_NODE) {        
             continue;
         }
         else
@@ -321,9 +355,6 @@ void rs_cf_splitting(const I n_nodes,
                             //   printf("Lamda was set too large\n");
                             //   lambda[i] = n_nodes;
                             // }
-                            // if (n_nodes == 121)
-                              // std::cout << "    increment node #" << k << " to lambda " << lambda[k] << std::endl;
-
                         }
                     }
                 }
@@ -360,7 +391,6 @@ void rs_cf_splitting(const I n_nodes,
             }
         }
     }
-  // printf("Leaving CF splitting\n");
 }
 
 
@@ -969,6 +999,77 @@ void cr_helper(const I A_rowptr[], const int A_rowptr_size,
 }
 
 
+/* Interpolate C-points by injection, and each F-point by injection from
+ * its strongest connected C-point. 
+ * 
+ * Parameters
+ * ----------
+ *      rowptr : const array<int> 
+ *          Pre-determined row-pointer for P in CSR format
+ *      colinds : array<int>
+ *          Empty array for column indices for P in CSR format
+ *      C_rowptr : const array<int>
+ *          Row pointer for SOC matrix, C
+ *      C_colinds : const array<int>
+ *          Column indices for SOC matrix, C
+ *      C_data : const array<float>
+ *          Data array for SOC matrix, C
+ *      splitting : const array<int>
+ *          Boolean array with 1 denoting C-points and 0 F-points
+ *
+ * Returns
+ * -------
+ * Nothing, colinds[] modified in place.
+ *
+ */
+template<class I, class T>
+void injection_interpolation(const I rowptr[], const int rowptr_size,
+                                   I colinds[], const int colinds_size,
+                             const I C_rowptr[], const int C_rowptr_size,
+                             const I C_colinds[], const int C_colinds_size,
+                             const T C_data[], const int C_data_size,
+                             const I splitting[], const int splitting_size )
+{
+    I n = rowptr_size-1;
+
+    // Get enumeration of C-points, where if i is the jth C-point,
+    // then pointInd[i] = j.
+    std::vector<I> pointInd(n);
+    pointInd[0] = 0;
+    for (I i=1; i<n; i++) {
+        pointInd[i] = pointInd[i-1] + splitting[i-1];
+    }
+
+    // Build interpolation operator as CSR matrix
+    I next = 0;
+    for (I row=0; row<n; row++) {
+
+        // Set C-point as identity
+        if (splitting[row] == C_NODE) {
+            colinds[next] = pointInd[row];
+            next += 1;
+        }
+        // For F-points, find strongest connection to C-point
+        // and interpolate directly from C-point. 
+        else {
+
+            T max = 0.0;
+            I ind = 0;
+            for (I i=C_rowptr[row]; i<C_rowptr[row+1]; i++) {
+                if (splitting[C_colinds[i]] == C_NODE) {
+                    if (std::abs(C_data[i]) > max) {
+                        max = C_data[i];
+                        ind = C_colinds[i];
+                    }
+                }
+            }
+            colinds[next] = pointInd[ind];
+            next += 1;
+        }
+    }
+}
+
+
 /* Build row_pointer for approximate ideal restriction in CSR form.
  * 
  * Parameters
@@ -995,6 +1096,12 @@ void cr_helper(const I A_rowptr[], const int A_rowptr_size,
  *
  */
 template<class I, class T>
+bool sort_2nd(const std::pair<I,T> &left,const std::pair<I,T> &right)
+{
+       return left.second < right.second;
+}
+
+template<class I, class T>
 void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
                                     const I C_rowptr[], const int C_rowptr_size,
                                     const I C_colinds[], const int C_colinds_size,
@@ -1004,11 +1111,13 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
                                     const I max_row = std::numeric_limits<I>::max() )
 {
     // Function to sort two pairs by the second argument
-    struct sort_2nd {
-        bool operator()(const std::pair<I,T> &left, const std::pair<I,T> &right) {
-            return left.second < right.second;
-        }
-    };
+    //      --> TODO : May need to move this outside to its own function
+    //      
+    // struct sort_2nd {
+    //     bool operator()(const std::pair<I,T> &left, const std::pair<I,T> &right) {
+    //         return left.second < right.second;
+    //     }
+    // };
 
     I nnz = 0;
     rowptr[0] = 0;
@@ -1031,7 +1140,8 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
         // smallest elements (i.e. no longer strongly connected).
         I size = neighborhood.size();
         if (size > max_row) {
-            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd());
+            // std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd());
+            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd;
             for (I i=max_row; i<size; i++) {
                 C_data[neighborhood[i].first] = 0;
             }
@@ -1108,14 +1218,16 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         }
 
         if (ind != (rowptr[row+1]-1)) {
-            std::cout << "Error: Row pointer does not agree with neighborhood size.\n";
+            std::cout << "Error: Row pointer does not agree with neighborhood size.\n\t"
+                         "ind = " << ind << ", rowptr[row] = " << rowptr[row] <<
+                         ", rowptr[row+1] = " << rowptr[row+1] << "\n";
+
         }
 
-        // Build local linear system as the submatrix A restricted to the
-        // neighborhood, Nf, of strongly connected F-points to the current
-        // C-point, that is A0^T = A[Nf, Nf]. System stored in column major
-        // for ease of iteation - each column of A0 corresponds to a row in
-        // A and A is stored in CSR. 
+        // Build local linear system as the submatrix A restricted to the neighborhood,
+        // Nf, of strongly connected F-points to the current C-point, that is A0 =
+        // A[Nf, Nf]^T, stored in column major form. Since A in row-major = A^T in
+        // column-major, A (CSR) is iterated through and A[Nf,Nf] stored in row-major.
         I size_N = ind - rowptr[row];
         std::vector<T> A0(size_N*size_N);
         I temp_A = 0;
@@ -1144,23 +1256,17 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         // is the jth indice in the neighborhood of strongly connected F-points
         // to the current C-point. 
         I temp_b = 0;
-        std::vector<T> b0(size_N);
+        std::vector<T> b0(size_N, 0);
         for (I i=rowptr[row]; i<ind; i++) {
-            // Search for indice in row of A
-            I found_ind = 0;
+            // Search for indice in row of A. If indice not found, b0 has been
+            // intitialized to zero.
             for (I k=A_rowptr[cpoint]; k<A_rowptr[cpoint+1]; k++) {
                 if (colinds[i] == A_colinds[k]) {
                     b0[temp_b] = -A_data[k];
-                    found_ind = 1;
-                    temp_b += 1;
                     break;
                 }
             }
-            // If indice not found, set element to zero
-            if (found_ind == 0) {
-                b0[temp_b] = 0.0;
-                temp_b += 1;
-            }
+            temp_b += 1;
         }
 
         // Solve linear system (least squares solves exactly when full rank)
@@ -1175,80 +1281,208 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
 }
 
 
-/* Interpolate C-points by injection, and each F-point by injection from
- * its strongest connected C-point. 
- * 
- * Parameters
- * ----------
- *      rowptr : const array<int> 
- *          Pre-determined row-pointer for P in CSR format
- *      colinds : array<int>
- *          Empty array for column indices for P in CSR format
- *      data : array<float>
- *          Empty array for data for P in CSR format
- *      C_rowptr : const array<int>
- *          Row pointer for SOC matrix, C
- *      C_colinds : const array<int>
- *          Column indices for SOC matrix, C
- *      C_data : const array<float>
- *          Data array for SOC matrix, C
- *      splitting : const array<int>
- *          Boolean array with 1 denoting C-points and 0 F-points
- *
- * Returns
- * -------
- * Nothing, colinds[] and data[] modified in place.
- *
- */
+
+
+// Make sure data[] is passed in initialized to zero
+
 template<class I, class T>
-void injection_interpolation(const I rowptr[], const int rowptr_size,
-                                   I colinds[], const int colinds_size,
-                                   T data[], const int data_size,
-                             const I C_rowptr[], const int C_rowptr_size,
-                             const I C_colinds[], const int C_colinds_size,
-                             const T C_data[], const int C_data_size,
-                             const I splitting[], const int splitting_size )
+void block_approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
+                                                I colinds[], const int colinds_size,
+                                                T data[], const int data_size,
+                                          const I A_rowptr[], const int A_rowptr_size,
+                                          const I A_colinds[], const int A_colinds_size,
+                                          const T A_data[], const int A_data_size,
+                                          const I C_rowptr[], const int C_rowptr_size,
+                                          const I C_colinds[], const int C_colinds_size,
+                                          const T C_data[], const int C_data_size,
+                                          const I Cpts[], const int Cpts_size,
+                                          const I splitting[], const int splitting_size,
+                                          const I blocksize )
 {
-    I n = rowptr_size-1;
+    I is_col_major = true;
 
-    // Get enumeration of C-points, where if i is the jth C-point,
-    // then pointInd[i] = j.
-    std::vector<I> pointInd(n);
-    pointInd[0] = 0;
-    for (I i=1; i<n; i++) {
-        pointInd[i] = pointInd[i-1] + splitting[i-1];
-    }
+    // Build column indices and data for each row of R.
+    for (I row=0; row<Cpts_size; row++) {
 
-    // Build interpolation operator as CSR matrix
-    I next = 0;
-    for (I row=0; row<n; row++) {
+        I cpoint = Cpts[row];
+        I ind = rowptr[row];
 
-        // Set C-point as identity
-        if (splitting[row] == C_NODE) {
-            colinds[next] = pointInd[row];
-            data[next] = 1.0;
-            next += 1;
+        // Set column indices for R as strongly connected F-points.
+        for (I i=C_rowptr[cpoint]; i<C_rowptr[cpoint+1]; i++) {
+            if ( (splitting[C_colinds[i]] == F_NODE) && (std::abs(C_data[i]) > 1e-16) ) {
+                colinds[ind] = C_colinds[i];
+                ind += 1 ;
+            }
         }
-        // For F-points, find strongest connection to C-point
-        // and interpolate directly from C-point. 
-        else {
 
-            T max = 0.0;
-            I ind = 0;
-            for (I i=C_rowptr[row]; i<C_rowptr[row+1]; i++) {
-                if (splitting[C_colinds[i]] == C_NODE) {
-                    if (std::abs(C_data[i]) > max) {
-                        max = C_data[i];
-                        ind = C_colinds[i];
+        if (ind != (rowptr[row+1]-1)) {
+            std::cout << "Error: Row pointer does not agree with neighborhood size.\n";
+        }
+
+        // Build local linear system as the submatrix A^T restricted to the neighborhood,
+        // Nf, of strongly connected F-points to the current C-point, that is A0 =
+        // A[Nf, Nf]^T, stored in column major form. Since A in row-major = A^T in
+        // column-major, A (CSR) is iterated through and A[Nf,Nf] stored in row-major.
+        //      - Initialize A0 to zero
+        I size_N = ind - rowptr[row];
+        I num_DOFs = size_N * blocksize;
+        std::vector<T> A0(num_DOFs*num_DOFs, 0.0);
+        I this_block_row = 0;
+
+        // Add each block in strongly connected neighborhood to dense linear system.
+        // For each column indice in sparsity pattern for this row of R:
+        for (I j=rowptr[row]; j<ind; j++) { 
+            I this_ind = colinds[j];
+            I this_block_col = 0;
+
+            // For this row of A, add blocks to A0 for each entry in sparsity pattern
+            for (I i=rowptr[row]; i<ind; i++) {
+
+                // Block row/column indices to normal row/column indices
+                I this_row = this_block_row*blocksize;
+                I this_col = this_block_col*blocksize;
+
+                // Search for indice in row of A
+                for (I k=A_rowptr[this_ind]; k<A_rowptr[this_ind+1]; k++) {
+
+                    // Add block of A to dense array. If indice not found, elements
+                    // in A0 have already been initialized to zero.
+                    if (colinds[i] == A_colinds[k]) {
+                        I block_data_ind = k * blocksize * blocksize;
+
+                        // For each row in block:
+                        for (I block_row=0; block_row<blocksize; block_row++) {
+                            I row_maj_ind = (this_row + block_row) * num_DOFs + this_col;
+
+                            // For each column in block:
+                            for (I block_col=0; block_col<blocksize; block_col++) {
+
+                                // Blocks of A stored in row-major in A_data
+                                I A_data_ind = block_data_ind + block_row * blocksize + block_col;
+                                A0[row_maj_ind + block_col] = A_data[A_data_ind];
+                                if ((row_maj_ind + block_col) > num_DOFs*num_DOFs) {
+                                    std::cout << "Warning: Accessing out of bounds index building A0.\n";
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+                // Increase block column count
+                this_block_col += 1;
+            }
+            // Incresae block row count
+            this_block_row += 1;
+        }
+
+        // Take QR of local matrix for linear solves, R stored in A0
+        std::vector<T> Q = QR(&A0[0],num_DOFs,num_DOFs,is_col_major);
+
+        // Build local right hand side given by blocks b_j = -A_{cpt,N_j}, where N_j
+        // is the jth indice in the neighborhood of strongly connected F-points
+        // to the current C-point, and c-point the global C-point index corresponding
+        // to the current row of R. RHS for each row in block, stored in b0 at indices
+        //      b0[0], b0[1*num_DOFs], ..., b0[ (blocksize-1)*num_DOFs ]
+        // Mapping between this ordering, say row_ind, and bsr ordering given by
+        //      for each block_ind:
+        //          for each row in block:    
+        //              for each col in block:
+        //                  row_ind = num_DOFs*row + block_ind*blocksize + col
+        //                  bsr_ind = block_ind*blocksize^2 + row*blocksize + col
+        std::vector<T> b0(num_DOFs * blocksize, 0);
+        for (I block_ind=0; block_ind<size_N; block_ind++) {
+            I temp_ind = rowptr[row] + block_ind;
+
+            // Search for indice in row of A, store data in b0. If not found,
+            // b0 has been initialized to zero.
+            for (I k=A_rowptr[cpoint]; k<A_rowptr[cpoint+1]; k++) {
+                if (colinds[temp_ind] == A_colinds[k]) {
+                    for (I this_row=0; this_row<blocksize; this_row++) {
+                        for (I this_col=0; this_col<blocksize; this_col++) {
+                            I row_ind = num_DOFs*this_row + block_ind*blocksize + this_col;
+                            I bsr_ind = k*blocksize*blocksize + this_row*blocksize + this_col;
+                            b0[row_ind] = -A_data[bsr_ind];
+                        }
+                    }
+                    break;
+                }
+            }
+        }
+
+        // Solve local linear system for each row in block
+        std::vector<T> rhs(num_DOFs);
+        for (I this_row=0; this_row<blocksize; this_row++) {
+            I b_ind0 = num_DOFs * this_row;
+
+            // Multiply right hand side, rhs := Q^T*b
+            for (I i=0; i<num_DOFs; i++) {
+                rhs[i] = 0.0;
+                for (I k=0; k<num_DOFs; k++) {
+                    rhs[i] += b0[b_ind0 + k] * Q[col_major(k,i,num_DOFs)];
+                }
+            }
+
+            // Solve upper triangular system from QR, store solution in b0
+            upper_tri_solve(&A0[0], &rhs[0], &b0[b_ind0], num_DOFs, num_DOFs, is_col_major);
+        }
+            
+        // Add solution for each block row to data array. See section on RHS for
+        // mapping between bsr data array and row-major array solution stored in
+        for (I block_ind=0; block_ind<size_N; block_ind++) {
+            for (I this_row=0; this_row<blocksize; this_row++) {
+                for (I this_col=0; this_col<blocksize; this_col++) {
+                    I bsr_ind = rowptr[row]*blocksize*blocksize + block_ind*blocksize*blocksize + 
+                                this_row*blocksize + this_col;
+                    I row_ind = num_DOFs*this_row + block_ind*blocksize + this_col;
+                    if (std::abs(b0[row_ind]) > 1e-16) {
+                        data[bsr_ind] = b0[row_ind];                    
+                    }
+                    else {
+                        data[bsr_ind] = 0.0;                   
                     }
                 }
             }
-            colinds[next] = pointInd[ind];
-            data[next] = 1.0;
-            next += 1;
+        }
+
+        // Add identity for C-point in this block row (assume data[] initialized to 0)
+        colinds[ind] = cpoint;
+        I identity_ind = ind*blocksize*blocksize;
+        for (I this_row=0; this_row<blocksize; this_row++) {
+            data[identity_ind + (blocksize+1)*this_row] = 1.0;
         }
     }
 }
+
+
+
+
+
+// template<class I>
+// void rs_cf_splitting(const I C_rowptr[], const int C_rowptr_size,
+//                      const I C_colinds[], const int C_colinds_size,
+//                      const I Ct_rowptr[], const int Ct_rowptr_size,
+//                      const I Ct_colinds[], const int Ct_colinds_size,
+//                            I splitting[], const int splitting_size)
+// {
+//     I n_nodes = splitting_size;
+//     std::vector<I> lambda(n_nodes,0);
+
+//     // Compute initial lambda
+//     I lambda_max = 0;
+//     for(I i = 0; i < n_nodes; i++) {
+//         lambda[i] = Tp[i+1] - Tp[i] + influence[i];
+//         if (lambda[i] > lambda_max) {
+//             lambda_max = lambda[i];
+//         }
+//     }
+
+
+
+
+
+
+
+
 
 
 #endif

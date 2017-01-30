@@ -23,7 +23,7 @@ __all__ = ['unpack_arg', 'blocksize', 'diag_sparse', 'profile_solver',
            'levelize_strength_or_aggregation',
            'levelize_smooth_or_improve_candidates', 'filter_matrix_columns',
            'filter_matrix_rows', 'truncate_rows', 'mat_mat_complexity',
-           'extract_diagonal_blocks']
+           'extract_diagonal_blocks', 'scale_block_inverse']
 
 try:
     from scipy.sparse._sparsetools import csr_scale_rows, bsr_scale_rows
@@ -698,7 +698,48 @@ def get_block_diag(A, blocksize, inv_flag=True):
     return block_diag
 
 
-def amalgamate(A, blocksize):
+def scale_block_inverse(A, blocksize):
+    """
+    Get inverse of block diagonal of A and scale A, A = D^{-1}A.
+
+    Parameters
+    ----------
+    A : csr or bsr_matrix
+        Matrix to scale by block inverse. 
+    blocksize : int
+        Blocksize of matrix.
+
+    Returns
+    -------
+    A = D^{-1}*A, D^{-1} as bsr matrix
+
+    Notes
+    -----
+    This is not a symmetric scaling. 
+    """
+
+    if not isspmatrix(A):
+        raise TypeError('Expected sparse matrix')
+    if A.shape[0] != A.shape[1]:
+        raise ValueError("Expected square matrix")
+    if sp.mod(A.shape[0], blocksize) != 0:
+        raise ValueError("blocksize and A.shape must be compatible")
+
+    # Convert to BSR
+    if not isspmatrix_bsr(A):
+        A = bsr_matrix(A, blocksize=(blocksize, blocksize))
+    if A.blocksize != (blocksize, blocksize):
+        A = A.tobsr(blocksize=(blocksize, blocksize))
+
+    # Get block diagonal inverse
+    N_block = A.shape[0] / blocksize
+    Dinv = get_block_diag(A=A, blocksize=blocksize, inv_flag=True)
+    scale = bsr_matrix((Dinv, np.arange(0,N_block), np.arange(0,N_block+1)),
+                        blocksize=[blocksize,blocksize], shape=A.shape)
+    return scale * A, scale
+
+
+def amalgamate(A, blocksize, norm='abs', cost=[0]):
     """
     Amalgamate matrix A
 
@@ -715,6 +756,11 @@ def amalgamate(A, blocksize):
         Amalgamated  matrix A, first, convert A to BSR with square blocksize
         and then return a CSR matrix of ones using the resulting BSR indptr and
         indices
+    norm : string
+        Norm to amalgamate entries by. 
+            'abs'  : C_ij = k, where k is the maximum absolute value in block C_ij
+            'min'  : C_ij = k, where k is the hard minimum value in block C_ij
+            'fro'  : C_ij = k, where k is the Frobenius norm of block C_ij
 
     Notes
     -----
@@ -748,10 +794,25 @@ def amalgamate(A, blocksize):
 
     A = A.tobsr(blocksize=(blocksize, blocksize))
     A.sort_indices()
-    subI = (np.ones(A.indices.shape), A.indices, A.indptr)
+
+    # Frobenius norm of each block
+    if norm == 'fro':
+        data = (np.conjugate(A.data) * A.data).reshape(-1, blocksize**2).sum(axis=1)
+        cost[0] += 2.0
+    # Maximum of each block
+    elif norm == 'abs':
+        data = np.max(np.max(np.abs(A.data),axis=1),axis=1)
+        cost[0] += 1.0
+    # Set any connected blocks to SOC 1
+    elif norm == 'min':
+        data = np.min(np.min(A.data,axis=1),axis=1)
+        cost[0] += 1.0
+    else:
+        raise ValueError("Not a valid norm for amalgamation.")
+
     shape = (int(A.shape[0]/A.blocksize[0]),
              int(A.shape[1]/A.blocksize[1]))
-    return csr_matrix(subI, shape=shape)
+    return csr_matrix((data, A.indices, A.indptr),shape=shape)
 
 
 def UnAmal(A, RowsPerBlock, ColsPerBlock):

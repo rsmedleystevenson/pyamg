@@ -3,10 +3,13 @@
 
 __docformat__ = "restructuredtext en"
 
+from warnings import warn
 import numpy as np
-from scipy.sparse import csr_matrix, isspmatrix_csr
+from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr, \
+        isspmatrix_bsr, SparseEfficiencyWarning
 from pyamg import amg_core
 from pyamg.relaxation.relaxation import boundary_relaxation
+from pyamg.strength import classical_strength_of_connection
 
 __all__ = ['direct_interpolation', 'standard_interpolation',
            'trivial_interpolation', 'injection_interpolation',
@@ -153,7 +156,7 @@ def trivial_interpolation(A, splitting, cost=[0]):
     Parameters
     ----------
     A : {csr_matrix}
-        NxN matrix in CSR format
+        NxN matrix in CSR format or BSR format
     splitting : array
         C/F splitting stored in an array of length N
 
@@ -161,11 +164,31 @@ def trivial_interpolation(A, splitting, cost=[0]):
     -------
     NxNc interpolation operator, P
     """
-    n = splitting.shape[0]
+    if isspmatrix_bsr(A):
+        blocksize = A.blocksize[0]
+        n = A.shape[0] / blocksize
+    elif isspmatrix_csr(A):
+        n = A.shape[0]
+        blocksize = 1
+    else:
+        try:
+            A = A.tocsr()
+            warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+            n = A.shape[0]
+            blocksize = 1
+        except:
+            raise TypeError("Invalid matrix type, must be CSR or BSR.")
+
     P_rowptr = np.append(np.array([0],dtype='int32'), np.cumsum(splitting,dtype='int32') )
     nc = P_rowptr[-1]
     P_colinds = np.arange(start=0, stop=nc, step=1, dtype='int32')
-    return csr_matrix((np.ones((nc,), dtype=A.dtype), P_colinds, P_rowptr), shape=[n,nc])
+
+    if blocksize == 1:
+        return csr_matrix((np.ones((nc,), dtype=A.dtype), P_colinds, P_rowptr), shape=[n,nc])
+    else:
+        P_data = np.array(nc*[np.identity(blocksize, dtype=A.dtype)], dtype=A.dtype)
+        return bsr_matrix((P_data, P_colinds, P_rowptr), blocksize=[blocksize,blocksize],
+                          shape=[n*blocksize,nc*blocksize])
 
 
 def injection_interpolation(A, C, splitting, cost=[0]):
@@ -187,19 +210,36 @@ def injection_interpolation(A, C, splitting, cost=[0]):
     -------
     NxNc interpolation operator, P
     """
-    n = A.shape[0]
+    if isspmatrix_bsr(A):
+        blocksize = A.blocksize[0]
+        n = A.shape[0] / blocksize
+    elif isspmatrix_csr(A):
+        n = A.shape[0]
+        blocksize = 1
+    else:
+        try:
+            A = A.tocsr()
+            warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+            n = A.shape[0]
+            blocksize = 1
+        except:
+            raise TypeError("Invalid matrix type, must be CSR or BSR.")
+
     nc = np.sum(splitting)
     P_rowptr = np.arange(start=0, stop=(n+1), step=1, dtype='int32')
     P_colinds = np.empty((n,),dtype='int32')
-    P_data = np.empty((n,), dtype=A.dtype)
-    amg_core.injection_interpolation(P_rowptr, P_colinds, P_data, C.indptr,
+    amg_core.injection_interpolation(P_rowptr, P_colinds, C.indptr,
                                      C.indices, C.data, splitting)
-    P = csr_matrix((P_data,P_colinds,P_rowptr), shape=[n,nc])
-    P.eliminate_zeros()
-    return P
+    if blocksize == 1:
+        P_data = np.ones((n,), dtype=A.dtype)
+        return csr_matrix((P_data,P_colinds,P_rowptr), shape=[n,nc])
+    else:
+        P_data = np.array(n*[np.identity(blocksize, dtype=A.dtype)], dtype=A.dtype)
+        return bsr_matrix((P_data,P_colinds,P_rowptr), blocksize=[blocksize,blocksize],
+                          shape=[blocksize*n,blocksize*nc])
 
 
-def approximate_ideal_restriction(A, C, splitting, max_row=None, cost=[0]):
+def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=1, cost=[0]):
     """ Compute approximate ideal restriction by setting RA = 0, within the
     sparsity pattern of R. Sparsity pattern of R for the ith row (i.e. ith
     C-point) is the set of all strongly connected F-points, or the max_row
@@ -208,9 +248,13 @@ def approximate_ideal_restriction(A, C, splitting, max_row=None, cost=[0]):
     Parameters
     ----------
     A : {csr_matrix}
-        NxN matrix in CSR format
-    C : {csr_matrix}
-        Strength-of-Connection matrix (does not need zero diagonal)
+        NxN matrix in CSR or BSR format
+    theta : float, default 0.1
+        Solve local system for each row of R for all values
+            |A_ij| >= 0.1 * max_{i!=k} |A_ik|
+    degree : int, default 1
+        Expand sparsity pattern for R by considering strongly connected
+        neighbors within 'degree' of a given node 
     splitting : array
         C/F splitting stored in an array of length N
     max_row : int
@@ -218,19 +262,42 @@ def approximate_ideal_restriction(A, C, splitting, max_row=None, cost=[0]):
 
     Returns
     -------
-    Approximate ideal restriction, R, in CSR format.
+    Approximate ideal restriction, R, in same sparse format as A.
 
     """
 
-    if not isspmatrix_csr(A):
-        raise TypeError('expected csr_matrix for A')
-
-    if not isspmatrix_csr(C):
-        raise TypeError('expected csr_matrix for C')
+    # Get SOC matrix containing neighborhood to be included in local solve
+    if isspmatrix_bsr(A):
+        C = classical_strength_of_connection(A=A, theta=theta, block='amalgamate', norm='abs')
+        blocksize = A.blocksize[0]
+    elif isspmatrix_csr(A):
+        blocksize = 1
+        C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
+    else:
+        try:
+            A = A.tocsr()
+            warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+            C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
+            blocksize = 1
+        except:
+            raise TypeError("Invalid matrix type, must be CSR or BSR.")
 
     Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
     nc = Cpts.shape[0]
-    n = A.shape[0]
+    n = C.shape[0]
+
+    # Expand sparsity pattern for R
+    if degree == 1:
+        pass
+    elif degree == 2:
+        C = csr_matrix(C*C)
+    elif degree == 3:
+        C = csr_matrix(C*C*C)
+    elif degree == 4:
+        C = csr_matrix(C*C)
+        C = csr_matrix(C*C)
+    else:
+        raise ValueError("Only sparsity degree 1-4 supported.")
 
     # Form row pointer for R
     R_rowptr = np.empty(nc+1, dtype='int32')
@@ -244,11 +311,24 @@ def approximate_ideal_restriction(A, C, splitting, max_row=None, cost=[0]):
     # Build restriction operator
     nnz = R_rowptr[-1]
     R_colinds = np.zeros(nnz, dtype='int32')
-    R_data = np.zeros(nnz, dtype=A.dtype)
-    amg_core.approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
-                                            A.indices, A.data, C.indptr, C.indices,
-                                            C.data, Cpts, splitting)
-    R = csr_matrix((R_data, R_colinds, R_rowptr), shape=[nc,n])
+
+    # Block matrix
+    if isspmatrix_bsr(A):
+        R_data = np.zeros(nnz*blocksize*blocksize, dtype=A.dtype)
+        amg_core.block_approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
+                                                      A.indices, A.data.ravel(), C.indptr,
+                                                      C.indices, C.data, Cpts, splitting,
+                                                      blocksize)
+        R = bsr_matrix((R_data.reshape(nnz,blocksize,blocksize), R_colinds, R_rowptr),
+                        blocksize=[blocksize,blocksize], shape=[nc*blocksize,A.shape[0]])
+    # Not block matrix
+    else:
+        R_data = np.zeros(nnz, dtype=A.dtype)
+        amg_core.approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
+                                                A.indices, A.data, C.indptr, C.indices,
+                                                C.data, Cpts, splitting)
+        R = csr_matrix((R_data, R_colinds, R_rowptr), shape=[nc,A.shape[0]])
+
     R.eliminate_zeros()
     return R
 

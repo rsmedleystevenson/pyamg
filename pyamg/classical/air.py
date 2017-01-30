@@ -20,18 +20,17 @@ from .interpolate import direct_interpolation, standard_interpolation, \
 from .split import *
 from .cr import CR
 
-__all__ = ['ruge_stuben_solver']
+__all__ = ['airhead_solver']
 
-def ruge_stuben_solver(A,
-                       strength=('classical', {'theta': 0.25 ,'do_amalgamation': False}),
-                       CF='RS',
-                       influence=None,
-                       interp='standard',
-                       restrict=None,
-                       presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
-                       postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
-                       max_levels=20, max_coarse=20, keep=False,
-                       block_starts=None, **kwargs):
+def airhead_solver(A,
+                   strength=('classical', {'theta': 0.25 ,'do_amalgamation': False}),
+                   CF='RS',
+                   interp='standard',
+                   restrict=None,
+                   presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
+                   postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
+                   max_levels=20, max_coarse=20, keep=False,
+                   block_starts=None, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
@@ -148,8 +147,6 @@ def ruge_stuben_solver(A,
 
     levels = [multilevel_solver.level()]
     levels[-1].A = A
-    levels[-1].block_starts = block_starts
-    levels[-1].influence = influence
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
         extend_hierarchy(levels, strength, CF, interp, restrict, keep)
@@ -164,116 +161,89 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
     """ helper function for local methods """
 
     A = levels[-1].A
-    block_starts = levels[-1].block_starts
-    influence = levels[-1].influence
-
-    # If this is a system, apply the unknown approach by coarsening and
-    # generating interpolation based on each diagonal block of A
-    if (block_starts):
-        A_diag = extract_diagonal_blocks(A, block_starts)
-    else:
-        A_diag = [A]
 
     # Zero initial complexities for strength, splitting and interpolation
     levels[-1].complexity['CF'] = 0.0
     levels[-1].complexity['strength'] = 0.0
     levels[-1].complexity['interpolate'] = 0.0
 
-    # Empty arrays to store operators for each diagonal block of A
-    C_diag = []
-    P_diag = []
-    R_diag = []
-    splitting = []
-    next_lvl_block_starts = [0]
-    block_cnt = 0
+    # Compute the strength-of-connection matrix C, where larger
+    # C[i,j] denote stronger couplings between i and j.
+    fn, kwargs = unpack_arg(strength)
+    if fn == 'symmetric':
+        C = symmetric_strength_of_connection(A, **kwargs)
+    elif fn == 'classical':
+        C = classical_strength_of_connection(A, **kwargs)
+    elif fn == 'distance':
+        C = distance_strength_of_connection(A, **kwargs)
+    elif (fn == 'ode') or (fn == 'evolution'):
+        C = evolution_strength_of_connection(A, **kwargs)
+    elif fn == 'energy_based':
+        C = energy_based_strength_of_connection(A, **kwargs)
+    elif fn == 'algebraic_distance':
+        C = algebraic_distance(A, **kwargs)
+    elif fn == 'affinity':
+        C = affinity_distance(A, **kwargs)
+    elif fn is None:
+        C = A
+    else:
+        raise ValueError('unrecognized strength of connection method: %s' %
+                         str(fn))
+    levels[-1].complexity['strength'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
 
-    # Form interpolation for each diagonal block in A (nodal AMG interpolation)
-    for mat in A_diag:
+    # Generate the C/F splitting
+    fn, kwargs = unpack_arg(CF)
+    if fn == 'RS':
+        splitting = RS(C, influence, **kwargs)
+    elif fn == 'PMIS':
+        splitting = PMIS(C, **kwargs)
+    elif fn == 'PMISc':
+        splitting = PMISc(C, **kwargs)
+    elif fn == 'CLJP':
+        splitting = CLJP(C, **kwargs)
+    elif fn == 'CLJPc':
+        splitting = CLJPc(C, **kwargs)
+    elif fn == 'CR':
+        splitting = CR(C, **kwargs)
+    elif fn == 'weighted_matching':
+        splitting, soc = weighted_matching(C, **kwargs)
+        if soc is not None:
+            C = soc
+    else:
+        raise ValueError('unknown C/F splitting method (%s)' % CF)
+    levels[-1].complexity['CF'] += kwargs['cost'][0] * C.nnz / float(A.nnz)
 
-        # Compute the strength-of-connection matrix C, where larger
-        # C[i,j] denote stronger couplings between i and j.
-        fn, kwargs = unpack_arg(strength)
-        if fn == 'symmetric':
-            C_diag.append( symmetric_strength_of_connection(mat, **kwargs) )
-        elif fn == 'classical':
-            C_diag.append( classical_strength_of_connection(mat, **kwargs) )
-        elif fn == 'distance':
-            C_diag.append( distance_strength_of_connection(mat, **kwargs) )
-        elif (fn == 'ode') or (fn == 'evolution'):
-            C_diag.append( evolution_strength_of_connection(mat, **kwargs) )
-        elif fn == 'energy_based':
-            C_diag.append( energy_based_strength_of_connection(mat, **kwargs) )
-        elif fn == 'algebraic_distance':
-            C_diag.append( algebraic_distance(mat, **kwargs) )
-        elif fn == 'affinity':
-            C_diag.append( affinity_distance(mat, **kwargs) )
-        elif fn is None:
-            C_diag.append( mat )
-        else:
-            raise ValueError('unrecognized strength of connection method: %s' %
-                             str(fn))
-        levels[-1].complexity['strength'] += kwargs['cost'][0] * mat.nnz / float(A.nnz)
+    # Generate the interpolation matrix that maps from the coarse-grid to the
+    # fine-grid
+    fn, kwargs = unpack_arg(interp)
+    if fn == 'standard':
+        P = standard_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'direct':
+        P = direct_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'inject':
+        P = injection_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'trivial':
+        P = trivial_interpolation(A, splitting, **kwargs)
+    else:
+        raise ValueError('unknown interpolation method (%s)' % interp)
+    levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
 
-        # Generate the C/F splitting
-        fn, kwargs = unpack_arg(CF)
-        if fn == 'RS':
-            splitting.append( RS(C_diag[-1], influence, **kwargs) )
-        elif fn == 'PMIS':
-            splitting.append( PMIS(C_diag[-1], **kwargs) )
-        elif fn == 'PMISc':
-            splitting.append( PMISc(C_diag[-1], **kwargs) )
-        elif fn == 'CLJP':
-            splitting.append( CLJP(C_diag[-1], **kwargs) )
-        elif fn == 'CLJPc':
-            splitting.append( CLJPc(C_diag[-1], **kwargs) )
-        elif fn == 'CR':
-            splitting.append( CR(C_diag[-1], **kwargs) )
-        elif fn == 'weighted_matching':
-            sp, soc = weighted_matching(C_diag[-1], **kwargs)
-            splitting.append(sp)
-            if soc is not None:
-                C_diag[-1] = soc
-        else:
-            raise ValueError('unknown C/F splitting method (%s)' % CF)
-        levels[-1].complexity['CF'] += kwargs['cost'][0] * C_diag[-1].nnz / float(A.nnz)
+    # Build restriction operator
+    fn, kwargs = unpack_arg(restrict)
+    if fn is None:
+        R = P.T
+    elif fn == 'air':
+        R = approximate_ideal_restriction(A, splitting, **kwargs)
+    elif fn == 'block_air':
+        R = block_approximate_ideal_restriction(A, splitting, **kwargs)
+    else:
+        raise ValueError('unknown restriction method (%s)' % restrict)
 
-        # Generate the interpolation matrix that maps from the coarse-grid to the
-        # fine-grid
-        fn, kwargs = unpack_arg(interp)
-        if fn == 'standard':
-            P_diag.append( standard_interpolation(mat, C_diag[-1], splitting[-1], **kwargs) )
-        elif fn == 'direct':
-            P_diag.append( direct_interpolation(mat, C_diag[-1], splitting[-1], **kwargs) )
-        elif fn == 'inject':
-            P_diag.append( injection_interpolation(mat, C_diag[-1], splitting[-1], **kwargs) )
-        elif fn == 'trivial':
-            P_diag.append( trivial_interpolation(mat, splitting[-1], **kwargs) )
-        else:
-            raise ValueError('unknown interpolation method (%s)' % interp)
-        levels[-1].complexity['interpolate'] += kwargs['cost'][0] * mat.nnz / float(A.nnz)
-
-        next_lvl_block_starts.append( next_lvl_block_starts[-1] + P_diag[-1].shape[1])
-        block_cnt = block_cnt + 1
-
-        # Build restriction operator
-        fn, kwargs = unpack_arg(restrict)
-        if fn is None:
-            R_diag.append(P_diag[-1].T.tocsr())
-        elif fn == 'air':
-            R_diag.append( approximate_ideal_restriction(mat, splitting[-1], **kwargs) )
-        elif fn == 'block_air':
-            R_diag.append( block_approximate_ideal_restriction(mat, splitting[-1], **kwargs) )
-        else:
-            raise ValueError('unknown restriction method (%s)' % restrict)
-
-    # Build P to be block diagonal and R = P^T.
-    P = block_diag(P_diag, format='csr')
-    R = block_diag(R_diag, format='csr')
+    # import pdb
+    # pdb.set_trace()
 
     # Store relevant information for this level
-    splitting = np.concatenate(splitting)
     if keep:
-        C = block_diag(C_diag)
         levels[-1].C = C              # strength of connection matrix
 
     levels[-1].P = P                  # prolongation operator
@@ -289,14 +259,5 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
     levels.append(multilevel_solver.level())
     levels[-1].A = A
 
-    # Store influence and block starts on next level
-    if (influence != None):
-        I = (R==1).astype('intc')
-        levels[-1].influence = I*influence
-    else:
-        levels[-1].influence = None
-    if (block_starts):
-        levels[-1].block_starts = next_lvl_block_starts
-    else:
-        levels[-1].block_starts = None
+
 

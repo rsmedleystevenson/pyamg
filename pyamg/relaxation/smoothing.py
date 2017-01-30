@@ -693,12 +693,15 @@ def setup_CF_block_jacobi(lvl, iterations=DEFAULT_NITER, omega=1.0, Dinv=None,
         elif sp.sparse.isspmatrix_bsr(lvl.A):
             blocksize = lvl.A.blocksize[0]
     elif blocksize is None:
-        blocksize = Dinv.shape[1]
+        if sp.sparse.isspmatrix_bsr(Dinv):
+            blocksize = Dinv.blocksize[1]
+        else:
+            blocksize = 1
 
     # Check for compatible dimensions
     if (lvl.A.shape[0] % blocksize) != 0:
         raise ValueError("Blocksize does not divide size of matrix.")
-    elif (len(lvl.splitting)*blocksize != A.shape[0]):
+    elif (len(lvl.splitting)*blocksize != lvl.A.shape[0]):
         raise ValueError("Blocksize not compatible with CF-splitting and matrix size.")
 
     if blocksize == 1:
@@ -735,12 +738,15 @@ def setup_FC_block_jacobi(lvl, iterations=DEFAULT_NITER, omega=1.0, Dinv=None,
         elif sp.sparse.isspmatrix_bsr(lvl.A):
             blocksize = lvl.A.blocksize[0]
     elif blocksize is None:
-        blocksize = Dinv.shape[1]
+        if sp.sparse.isspmatrix_bsr(Dinv):
+            blocksize = Dinv.blocksize[1]
+        else:
+            blocksize = 1
 
     # Check for compatible dimensions
     if (lvl.A.shape[0] % blocksize) != 0:
         raise ValueError("Blocksize does not divide size of matrix.")
-    elif (len(lvl.splitting)*blocksize != A.shape[0]):
+    elif (len(lvl.splitting)*blocksize != lvl.A.shape[0]):
         raise ValueError("Blocksize not compatible with CF-splitting and matrix size.")
 
     if blocksize == 1:

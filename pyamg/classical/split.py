@@ -104,7 +104,7 @@ from pyamg import amg_core
 from pyamg.util.utils import remove_diagonal
 from pyamg.strength import classical_strength_of_connection
 
-__all__ = ['RS', 'PMIS', 'PMISc', 'MIS', 'weighted_matching']
+__all__ = ['RS', 'PMIS', 'PMISc', 'CLJP', 'CLJPc', 'MIS', 'weighted_matching']
 __docformat__ = "restructuredtext en"
 
 
@@ -562,5 +562,8 @@ def weighted_matching(A, B=None, theta=0.5, use_weights=True, get_SOC=False, cos
         return splitting, C
     else:
         return splitting, None
+
+
+
 
 

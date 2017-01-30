@@ -470,14 +470,21 @@ C_NODE = _amg_core.C_NODE
 U_NODE = _amg_core.U_NODE
 PRE_F_NODE = _amg_core.PRE_F_NODE
 
-def classical_strength_of_connection(*args):
+def classical_strength_of_connection_abs(*args):
     """
-    classical_strength_of_connection(int const n_row, float const theta, int const [] Ap, int const [] Aj, float const [] Ax, int [] Sp, int [] Sj, float [] Sx)
-    classical_strength_of_connection(int const n_row, double const theta, int const [] Ap, int const [] Aj, double const [] Ax, int [] Sp, int [] Sj, double [] Sx)
-    classical_strength_of_connection(int const n_row, float const theta, int const [] Ap, int const [] Aj, std::complex< float > const [] Ax, int [] Sp, int [] Sj, std::complex< float > [] Sx)
-    classical_strength_of_connection(int const n_row, double const theta, int const [] Ap, int const [] Aj, std::complex< double > const [] Ax, int [] Sp, int [] Sj, std::complex< double > [] Sx)
+    classical_strength_of_connection_abs(int const n_row, float const theta, int const [] Ap, int const [] Aj, float const [] Ax, int [] Sp, int [] Sj, float [] Sx)
+    classical_strength_of_connection_abs(int const n_row, double const theta, int const [] Ap, int const [] Aj, double const [] Ax, int [] Sp, int [] Sj, double [] Sx)
+    classical_strength_of_connection_abs(int const n_row, float const theta, int const [] Ap, int const [] Aj, std::complex< float > const [] Ax, int [] Sp, int [] Sj, std::complex< float > [] Sx)
+    classical_strength_of_connection_abs(int const n_row, double const theta, int const [] Ap, int const [] Aj, std::complex< double > const [] Ax, int [] Sp, int [] Sj, std::complex< double > [] Sx)
     """
-    return _amg_core.classical_strength_of_connection(*args)
+    return _amg_core.classical_strength_of_connection_abs(*args)
+
+def classical_strength_of_connection_min(*args):
+    """
+    classical_strength_of_connection_min(int const n_row, float const theta, int const [] Ap, int const [] Aj, float const [] Ax, int [] Sp, int [] Sj, float [] Sx)
+    classical_strength_of_connection_min(int const n_row, double const theta, int const [] Ap, int const [] Aj, double const [] Ax, int [] Sp, int [] Sj, double [] Sx)
+    """
+    return _amg_core.classical_strength_of_connection_min(*args)
 
 def maximum_row_value(*args):
     """
@@ -543,10 +550,17 @@ def approx_ideal_restriction_pass2(*args):
 
 def injection_interpolation(*args):
     """
-    injection_interpolation(int const [] rowptr, int [] colinds, float [] data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting)
-    injection_interpolation(int const [] rowptr, int [] colinds, double [] data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting)
+    injection_interpolation(int const [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting)
+    injection_interpolation(int const [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting)
     """
     return _amg_core.injection_interpolation(*args)
+
+def block_approx_ideal_restriction_pass2(*args):
+    """
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize)
+    """
+    return _amg_core.block_approx_ideal_restriction_pass2(*args)
 
 def drake_CF_matching(*args):
     """
