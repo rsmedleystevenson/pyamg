@@ -283,21 +283,20 @@ void rs_cf_splitting(const I n_nodes,
         // Remove i from its interval
         interval_count[lambda_i]--;
 
+        // ----------------- Sorting every iteration = O(n^2) complexity ----------------- //
         // Search over this interval to make sure we process nodes in descending node order
-        I max_node = i;
-        I max_index = top_index;
-        for (I j = interval_ptr[lambda_i]; j < interval_ptr[lambda_i] + interval_count[lambda_i]; j++) {
-            if (index_to_node[j] > max_node) {
-                max_node = index_to_node[j];
-                max_index = j;
-            }
-        }
-
-        node_to_index[index_to_node[top_index]] = max_index;
-        node_to_index[index_to_node[max_index]] = top_index;
-
-        std::swap(index_to_node[top_index], index_to_node[max_index]);
-        i = index_to_node[top_index];
+        // I max_node = i;
+        // I max_index = top_index;
+        // for (I j = interval_ptr[lambda_i]; j < interval_ptr[lambda_i] + interval_count[lambda_i]; j++) {
+        //     if (index_to_node[j] > max_node) {
+        //         max_node = index_to_node[j];
+        //         max_index = j;
+        //     }
+        // }
+        // node_to_index[index_to_node[top_index]] = max_index;
+        // node_to_index[index_to_node[max_index]] = top_index;
+        // std::swap(index_to_node[top_index], index_to_node[max_index]);
+        // i = index_to_node[top_index];
 
         // If maximum lambda = 0, break out of loop
         if (lambda[i] <= 0) {
