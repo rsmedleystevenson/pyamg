@@ -16,9 +16,6 @@ __all__ = ['direct_interpolation', 'standard_interpolation',
            'approximate_ideal_restriction']
 
 
-# TODO : Figure out why other classical interpolate routines want zero diagonal
-#        in SOC matrix, and if SOC matrix actually has zero diagonal???
-
 
 def direct_interpolation(A, C, splitting, cost=[0]):
     """Create prolongator using direct interpolation
@@ -287,6 +284,8 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
     n = C.shape[0]
 
     # Expand sparsity pattern for R
+    C.data[np.abs(C.data)<1e-16] = 0
+    C.eliminate_zeros()
     if degree == 1:
         pass
     elif degree == 2:

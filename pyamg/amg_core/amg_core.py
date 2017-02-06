@@ -470,6 +470,10 @@ C_NODE = _amg_core.C_NODE
 U_NODE = _amg_core.U_NODE
 PRE_F_NODE = _amg_core.PRE_F_NODE
 
+def sort_2nd(left, right):
+    """sort_2nd(std::pair< int,double > const & left, std::pair< int,double > const & right) -> bool"""
+    return _amg_core.sort_2nd(left, right)
+
 def classical_strength_of_connection_abs(*args):
     """
     classical_strength_of_connection_abs(int const n_row, float const theta, int const [] Ap, int const [] Aj, float const [] Ax, int [] Sp, int [] Sj, float [] Sx)
@@ -498,6 +502,10 @@ def maximum_row_value(*args):
 def rs_cf_splitting(n_nodes, Sp, Sj, Tp, Tj, influence, splitting):
     """rs_cf_splitting(int const n_nodes, int const [] Sp, int const [] Sj, int const [] Tp, int const [] Tj, int const [] influence, int [] splitting)"""
     return _amg_core.rs_cf_splitting(n_nodes, Sp, Sj, Tp, Tj, influence, splitting)
+
+def rs_cf_splitting_pass2(n_nodes, Sp, Sj, splitting):
+    """rs_cf_splitting_pass2(int const n_nodes, int const [] Sp, int const [] Sj, int [] splitting)"""
+    return _amg_core.rs_cf_splitting_pass2(n_nodes, Sp, Sj, splitting)
 
 def cljp_naive_splitting(n, Sp, Sj, Tp, Tj, splitting, colorflag):
     """cljp_naive_splitting(int const n, int const [] Sp, int const [] Sj, int const [] Tp, int const [] Tj, int [] splitting, int const colorflag)"""

@@ -29,7 +29,7 @@ def airhead_solver(A,
                    presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                    postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                    max_levels=20, max_coarse=20, keep=False,
-                   block_starts=None, **kwargs):
+                   **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
@@ -67,9 +67,6 @@ def airhead_solver(A,
         Flag to indicate keeping extra operators in the hierarchy for
         diagnostics.  For example, if True, then strength of connection (C) and
         tentative prolongation (T) are kept.
-    block_starts: list of integers
-        If non-trivial, list of starting row indices of blocks of A if A represents a system
-        (used for unknown-based approach for systems).
 
     Returns
     -------
@@ -193,7 +190,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
     # Generate the C/F splitting
     fn, kwargs = unpack_arg(CF)
     if fn == 'RS':
-        splitting = RS(C, influence, **kwargs)
+        splitting = RS(C, **kwargs)
     elif fn == 'PMIS':
         splitting = PMIS(C, **kwargs)
     elif fn == 'PMISc':
@@ -223,6 +220,9 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
         P = injection_interpolation(A, C, splitting, **kwargs)
     elif fn == 'trivial':
         P = trivial_interpolation(A, splitting, **kwargs)
+    elif fn == 'air':
+        P = approximate_ideal_restriction(A.T.tocsr(), splitting, **kwargs)
+        P = csr_matrix(P.T)
     else:
         raise ValueError('unknown interpolation method (%s)' % interp)
     levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
@@ -237,9 +237,6 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
         R = block_approximate_ideal_restriction(A, splitting, **kwargs)
     else:
         raise ValueError('unknown restriction method (%s)' % restrict)
-
-    # import pdb
-    # pdb.set_trace()
 
     # Store relevant information for this level
     if keep:

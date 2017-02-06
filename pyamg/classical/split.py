@@ -164,6 +164,8 @@ def RS(S, influence=None, cost=[0]):
                              T.indptr, T.indices,
                              influence,
                              splitting)
+    amg_core.rs_cf_splitting_pass2(S.shape[0], S.indptr,
+                                   S.indices, splitting)
 
     return splitting
 

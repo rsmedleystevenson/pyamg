@@ -1923,13 +1923,9 @@ def remove_diagonal(S):
     if S.shape[0] != S.shape[1]:
         raise ValueError('expected square matrix, shape=%s' % (S.shape,))
 
-    S = coo_matrix(S)
-    mask = S.row != S.col
-    S.row = S.row[mask]
-    S.col = S.col[mask]
-    S.data = S.data[mask]
-
-    return S.tocsr()
+    S.setdiag(0.0)
+    S.eliminate_zeros()
+    return S
 
 
 def scale_rows_by_largest_entry(S):

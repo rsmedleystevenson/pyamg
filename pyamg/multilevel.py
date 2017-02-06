@@ -320,7 +320,18 @@ class multilevel_solver:
                 if 'maxiter' in presmoother[1]:
                     pre_factor *= presmoother[1]['maxiter']
                 if 'degree' in presmoother[1]:
-                    pre_factor *= presmoother[1]['degree']
+                    pre_factor *= presmoother[1]['degree']                    
+                if presmoother[0].startswith(('CF','FC')):
+                    temp = 0
+                    if 'F_iterations' in presmoother[1]:
+                        temp += presmoother[1]['F_iterations'] * lvl.nf / float(lvl.A.shape[0])
+                    else:
+                        temp += lvl.nf / float(lvl.A.shape[0])
+                    if 'C_iterations' in presmoother[1]:
+                        temp += presmoother[1]['C_iterations'] * lvl.nc / float(lvl.A.shape[0])
+                    else:
+                        temp += lvl.nc / float(lvl.A.shape[0])
+                    pre_factor *= temp                  
             else:
                 pre_factor = 0
 
@@ -338,6 +349,17 @@ class multilevel_solver:
                     post_factor *= postsmoother[1]['maxiter']
                 if 'degree' in postsmoother[1]:
                     post_factor *= postsmoother[1]['degree']
+                if postsmoother[0].startswith(('CF','FC')):
+                    temp = 0
+                    if 'F_iterations' in postsmoother[1]:
+                        temp += postsmoother[1]['F_iterations'] * lvl.nf / float(lvl.A.shape[0])
+                    else:
+                        temp += lvl.nf / float(lvl.A.shape[0])
+                    if 'C_iterations' in postsmoother[1]:
+                        temp += postsmoother[1]['C_iterations'] * lvl.nc / float(lvl.A.shape[0])
+                    else:
+                        temp += lvl.nc / float(lvl.A.shape[0])
+                    post_factor *= temp 
             else:
                 post_factor = 0
 

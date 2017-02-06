@@ -237,6 +237,7 @@ INSTANTIATE_INDEXDATA(classical_strength_of_connection_min)
 INSTANTIATE_INDEXDATA_COMPLEX(maximum_row_value)
 
 INSTANTIATE_INDEX_ONLY(rs_cf_splitting)
+INSTANTIATE_INDEX_ONLY(rs_cf_splitting_pass2)
 INSTANTIATE_INDEX_ONLY(cljp_naive_splitting)
 INSTANTIATE_INDEX_ONLY(rs_direct_interpolation_pass1)
 INSTANTIATE_INDEXDATA(rs_direct_interpolation_pass2)

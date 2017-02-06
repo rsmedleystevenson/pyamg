@@ -1177,7 +1177,8 @@ def schwarz_parameters(A, subdomain=None, subdomain_ptr=None,
     return A.schwarz_parameters
 
 
-def CF_jacobi(A, x, b, Cpts, Fpts, iterations=1, omega=1.0):
+def CF_jacobi(A, x, b, Cpts, Fpts, iterations=1, F_iterations=1,
+              C_iterations=1, omega=1.0):
     """Perform CF Jacobi iteration on the linear system Ax=b, that is
 
         x_c = (1-omega)x_c + omega*Dff^{-1}(b_c - Acf*xf - Acc*xc)
@@ -1198,7 +1199,11 @@ def CF_jacobi(A, x, b, Cpts, Fpts, iterations=1, omega=1.0):
     Fpts : array ints
         List of F-points
     iterations : int
-        Number of iterations to perform
+        Number of iterations to perform of total CF-cycle
+    F_iterations : int
+        Number of sweeps of F-relaxation to perform
+    C_iterations : int
+        Number of sweeps of C-relaxation to perform
     omega : scalar
         Damping parameter
 
@@ -1213,21 +1218,26 @@ def CF_jacobi(A, x, b, Cpts, Fpts, iterations=1, omega=1.0):
 
     if sparse.isspmatrix_csr(A):
         for iter in range(iterations):
-            amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Cpts, omega)
-            amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Fpts, omega)
+            for Citer in range(C_iterations):
+                amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Cpts, omega)
+            for Fiter in range(F_iterations):
+                amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Fpts, omega)
     else:
         R, C = A.blocksize
         if R != C:
             raise ValueError('BSR blocks must be square')
 
         for iter in range(iterations):
-            amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
-                                        x, b, Cpts, R, omega)
-            amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
-                                        x, b, Fpts, R, omega)
+            for Citer in range(C_iterations):
+                amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                            x, b, Cpts, R, omega)
+            for Fiter in range(F_iterations):
+                amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                            x, b, Fpts, R, omega)
 
 
-def FC_jacobi(A, x, b, Cpts, Fpts, iterations=1, omega=1.0):
+def FC_jacobi(A, x, b, Cpts, Fpts, iterations=1, F_iterations=1,
+              C_iterations=1, omega=1.0):
     """Perform FC Jacobi iteration on the linear system Ax=b, that is
 
         x_f = (1-omega)x_f + omega*Dff^{-1}(b_f - Aff*xf - Afc*xc)
@@ -1248,7 +1258,11 @@ def FC_jacobi(A, x, b, Cpts, Fpts, iterations=1, omega=1.0):
     Fpts : array ints
         List of F-points
     iterations : int
-        Number of iterations to perform
+        Number of iterations to perform of total FC-cycle
+    F_iterations : int
+        Number of sweeps of F-relaxation to perform
+    C_iterations : int
+        Number of sweeps of C-relaxation to perform
     omega : scalar
         Damping parameter
 
@@ -1263,21 +1277,26 @@ def FC_jacobi(A, x, b, Cpts, Fpts, iterations=1, omega=1.0):
 
     if sparse.isspmatrix_csr(A):
         for iter in range(iterations):
-            amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Fpts, omega)
-            amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Cpts, omega)
+            for Fiter in range(F_iterations):
+                amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Fpts, omega)
+            for Citer in range(C_iterations):
+                amg_core.jacobi_indexed(A.indptr, A.indices, A.data, x, b, Cpts, omega)
     else:
         R, C = A.blocksize
         if R != C:
             raise ValueError('BSR blocks must be square')
 
         for iter in range(iterations):
-            amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
-                                        x, b, Fpts, R, omega)
-            amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
-                                        x, b, Cpts, R, omega)
+            for Fiter in range(F_iterations):
+                amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                            x, b, Fpts, R, omega)
+            for Citer in range(C_iterations):
+                amg_core.bsr_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                            x, b, Cpts, R, omega)
 
 
-def CF_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1, omega=1.0):
+def CF_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1,
+                    F_iterations=1, C_iterations=1, omega=1.0):
     """Perform CF block Jacobi iteration on the linear system Ax=b, that is
 
         x_c = (1-omega)x_c + omega*Dff^{-1}(b_c - Acf*xf - Acc*xc)
@@ -1304,7 +1323,11 @@ def CF_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1, o
     blocksize : int
         Desired dimension of blocks
     iterations : int
-        Number of iterations to perform
+        Number of iterations to perform of total CF-cycle
+    F_iterations : int
+        Number of sweeps of F-relaxation to perform
+    C_iterations : int
+        Number of sweeps of C-relaxation to perform
     omega : scalar
         Damping parameter
 
@@ -1328,15 +1351,18 @@ def CF_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1, o
 
     # Perform block C-relaxation then block F-relaxation
     for iter in range(iterations):
-        amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
-                                      x, b, np.ravel(Dinv), Cpts, omega,
-                                      blocksize)
-        amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
-                                      x, b, np.ravel(Dinv), Fpts, omega,
-                                      blocksize)
+        for Citer in range(C_iterations):
+            amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                          x, b, np.ravel(Dinv), Cpts, omega,
+                                          blocksize)
+        for Fiter in range(F_iterations):
+            amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                          x, b, np.ravel(Dinv), Fpts, omega,
+                                          blocksize)
 
 
-def FC_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1, omega=1.0):
+def FC_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1,
+                    F_iterations=1, C_iterations=1, omega=1.0):
     """Perform FC block Jacobi iteration on the linear system Ax=b, that is
 
         x_f = (1-omega)x_f + omega*Dff^{-1}(b_f - Aff*xf - Afc*xc)
@@ -1363,7 +1389,11 @@ def FC_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1, o
     blocksize : int
         Desired dimension of blocks
     iterations : int
-        Number of iterations to perform
+        Number of iterations to perform of total FC-cycle
+    F_iterations : int
+        Number of sweeps of F-relaxation to perform
+    C_iterations : int
+        Number of sweeps of C-relaxation to perform
     omega : scalar
         Damping parameter
 
@@ -1387,9 +1417,11 @@ def FC_block_jacobi(A, x, b, Cpts, Fpts, Dinv=None, blocksize=1, iterations=1, o
 
     # Perform block C-relaxation then block F-relaxation
     for iter in range(iterations):
-        amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
-                                      x, b, np.ravel(Dinv), Fpts, omega,
-                                      blocksize)
-        amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
-                                      x, b, np.ravel(Dinv), Cpts, omega,
-                                      blocksize)
+        for Fiter in range(F_iterations):
+            amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                          x, b, np.ravel(Dinv), Fpts, omega,
+                                          blocksize)
+        for Citer in range(C_iterations):
+            amg_core.block_jacobi_indexed(A.indptr, A.indices, np.ravel(A.data),
+                                          x, b, np.ravel(Dinv), Cpts, omega,
+                                          blocksize)
