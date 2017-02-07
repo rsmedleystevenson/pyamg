@@ -155,6 +155,7 @@ DECLARE_DATA_TYPE( std::complex<double> )
   ---------------------------------------------------------------------------*/
 %include "linalg.h"
 INSTANTIATE_INDEXDATA_COMPLEX(pinv_array)
+INSTANTIATE_INDEXDATA_COMPLEX(filter_matrix_rows)
 // INSTANTIATE_INDEXDATA(pinv_array)
 
 /*----------------------------------------------------------------------------

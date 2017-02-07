@@ -1515,4 +1515,55 @@ std::vector<T> constrained_least_squares(std::vector<T> &A,
     return x;
 }
 
+
+/*
+ *  Filter matrix rows by diagonal entry, that is set A_ij = 0 if
+ *
+ *     |A_ij| < theta * |A_ii|
+ *
+ *  Parameters
+ *      num_rows   - number of rows in A
+ *      theta      - stength of connection tolerance
+ *      Ap[]       - CSR row pointer
+ *      Aj[]       - CSR index array
+ *      Ax[]       - CSR data array
+ *
+ *  Returns:
+ *      Nothing, Ax is modified in place
+ */
+template<class I, class T, class F>
+void filter_matrix_rows(const I n_row,
+                        const F theta,
+                        const I Ap[], const int Ap_size,
+                        const I Aj[], const int Aj_size,
+                              T Ax[], const int Ax_size)
+{
+    // Filter each row by setting explicit zeros when |A_ij| < theta*|A_ii|
+    for(I i = 0; i < n_row; i++) {
+        F diagonal = 0.0;
+
+        const I row_start = Ap[i];
+        const I row_end   = Ap[i+1];
+
+        // Find diagonal of this row
+        for(I jj = row_start; jj < row_end; jj++){
+            if(Aj[jj] == i){
+                diagonal = mynorm(Ax[jj]);
+            }
+        }
+
+        // Set threshold for strong connections
+        F threshold = theta*diagonal;
+        for(I jj = row_start; jj < row_end; jj++){
+            F norm_jj = mynorm(Ax[jj]);
+
+            // Remove entry if below threshold
+            if(norm_jj < threshold){
+                Ax[jj] = 0.0;
+            }
+        }
+    }
+}
+
+
 #endif

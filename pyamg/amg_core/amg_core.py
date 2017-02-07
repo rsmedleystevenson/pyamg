@@ -176,6 +176,15 @@ def pinv_array(*args):
     """
     return _amg_core.pinv_array(*args)
 
+def filter_matrix_rows(*args):
+    """
+    filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, float [] Ax)
+    filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, double [] Ax)
+    filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, std::complex< float > [] Ax)
+    filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, std::complex< double > [] Ax)
+    """
+    return _amg_core.filter_matrix_rows(*args)
+
 def maximal_independent_set_serial(num_rows, Ap, Aj, active, C, F, x):
     """maximal_independent_set_serial(int const num_rows, int const [] Ap, int const [] Aj, int const active, int const C, int const F, int [] x) -> int"""
     return _amg_core.maximal_independent_set_serial(num_rows, Ap, Aj, active, C, F, x)

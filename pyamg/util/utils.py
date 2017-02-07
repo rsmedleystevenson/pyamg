@@ -2181,7 +2181,7 @@ def filter_matrix_columns(A, theta):
     return A_filter
 
 
-def filter_matrix_rows(A, theta, cost=[0.0]):
+def filter_matrix_rows(A, theta, diagonal=False, cost=[0.0]):
     """
     Filter each row of A with tol, i.e., drop all entries in row k where
         abs(A[i,k]) < tol max( abs(A[:,k]) )
@@ -2192,7 +2192,12 @@ def filter_matrix_rows(A, theta, cost=[0.0]):
 
     theta : float
         In range [0,1) and defines drop-tolerance used to filter the row of A
-    
+    diagonal : bool
+        If True, filter by diagonal entry. Otherwise, filter by maximum absolute
+        value in row.
+        ----------------------------------------------------------
+        ** diagonal = True filters in place, i.e. A is modified **
+        ----------------------------------------------------------
     cost : {list containing one scalar}
         cost[0] is incremented to reflect a FLOP estimate for this function
 
@@ -2224,36 +2229,44 @@ def filter_matrix_rows(A, theta, cost=[0.0]):
     Aformat = A.format
     A = A.tocsr()
 
+    cost[0] += 2.0 * A.nnz
+
     if (theta < 0) or (theta >= 1.0):
         raise ValueError("theta must be in [0,1)")
 
-    # Apply drop-tolerance to each row of A.  We apply the drop-tolerance with
-    # amg_core.classical_strength_of_connection(), which ignores diagonal
-    # entries, thus necessitating the trick where we add A.shape[0] to each of
-    # the row indices
-    A_filter = A.copy()
-    A.indices += A.shape[0]
-    A_filter.indices += A.shape[0]
-    # classical_strength_of_connection takes an absolute value internally
-    pyamg.amg_core.classical_strength_of_connection(A.shape[0], theta,
-                                                    A.indptr, A.indices,
-                                                    A.data, A_filter.indptr,
-                                                    A_filter.indices,
-                                                    A_filter.data)
-    A_filter.indices[:A_filter.indptr[-1]] -= A_filter.shape[0]
-    A_filter = csr_matrix((A_filter.data[:A_filter.indptr[-1]],
-                           A_filter.indices[:A_filter.indptr[-1]],
-                           A_filter.indptr), shape=A_filter.shape)
-
-    if Aformat == 'bsr':
-        A_filter = A_filter.tobsr(blocksize)
+    # Filter by diagonal entry, A_ij = 0 if |A_ij| < theta*|A_ii|
+    if diagonal:
+        pyamg.amg_core.filter_matrix_rows(A.shape[0], theta, A.indptr,
+                                          A.indices, A.data)
+        A.eliminate_zeros()
+    # Filter by maximum absolute value in row, A_ij = 0 if
+    # |A_ij| < theta * max_{j!=i} |A_{ij}|
     else:
-        A_filter = A_filter.asformat(Aformat)
+        # Apply drop-tolerance to each row of A.  We apply the drop-tolerance with
+        # amg_core.classical_strength_of_connection(), which ignores diagonal
+        # entries, thus necessitating the trick where we add A.shape[0] to each of
+        # the row indices
+        A_filter = A.copy()
+        A.indices += A.shape[0]
+        A_filter.indices += A.shape[0]
+        # classical_strength_of_connection takes an absolute value internally
+        pyamg.amg_core.classical_strength_of_connection(A.shape[0], theta,
+                                                        A.indptr, A.indices,
+                                                        A.data, A_filter.indptr,
+                                                        A_filter.indices,
+                                                        A_filter.data)
+        A_filter.indices[:A_filter.indptr[-1]] -= A_filter.shape[0]
+        A_filter = csr_matrix((A_filter.data[:A_filter.indptr[-1]],
+                               A_filter.indices[:A_filter.indptr[-1]],
+                               A_filter.indptr), shape=A_filter.shape)
 
-    A.indices -= A.shape[0]
-    
-    cost[0] += 2.0 * A.nnz
-    return A_filter
+        if Aformat == 'bsr':
+            A_filter = A_filter.tobsr(blocksize)
+        else:
+            A_filter = A_filter.asformat(Aformat)
+
+        A.indices -= A.shape[0]
+        return A_filter
 
 
 def truncate_rows(A, nz_per_row, cost=[0.0]):

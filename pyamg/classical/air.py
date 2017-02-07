@@ -13,11 +13,12 @@ from pyamg.strength import classical_strength_of_connection, \
     symmetric_strength_of_connection, evolution_strength_of_connection, \
     distance_strength_of_connection, energy_based_strength_of_connection, \
     algebraic_distance, affinity_distance
-from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks
-from .interpolate import direct_interpolation, standard_interpolation, \
+from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks, \
+    filter_matrix_rows
+from pyamg.classical.interpolate import direct_interpolation, standard_interpolation, \
      trivial_interpolation, injection_interpolation, approximate_ideal_restriction
-from .split import *
-from .cr import CR
+from pyamg.classical.split import *
+from pyamg.classical.cr import CR
 
 __all__ = ['airhead_solver']
 
@@ -29,7 +30,7 @@ def airhead_solver(A,
                    presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                    postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                    max_levels=20, max_coarse=20, keep=False,
-                   **kwargs):
+                   coarse_grid_P=None, filter_operator=0.0, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
@@ -145,7 +146,8 @@ def airhead_solver(A,
     levels[-1].A = A
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
-        extend_hierarchy(levels, strength, CF, interp, restrict, keep)
+        extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
+                         coarse_grid_P, keep)
 
     ml = multilevel_solver(levels, **kwargs)
     change_smoothers(ml, presmoother, postsmoother)
@@ -153,7 +155,8 @@ def airhead_solver(A,
 
 
 # internal function
-def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
+def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
+                     coarse_grid_P, keep):
     """ helper function for local methods """
 
     A = levels[-1].A
@@ -227,6 +230,14 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
         raise ValueError('unknown interpolation method (%s)' % interp)
     levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
 
+    # Optional different interpolation for RAP
+    if coarse_grid_P == 'inject':
+        P_temp = injection_interpolation(A, C, splitting, **kwargs)
+    elif coarse_grid_P == 'trivial':
+        P_temp = trivial_interpolation(A, splitting, **kwargs)
+    else:
+        P_temp = P
+
     # Build restriction operator
     fn, kwargs = unpack_arg(restrict)
     if fn is None:
@@ -250,7 +261,10 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
     levels[-1].complexity['RAP'] = mat_mat_complexity(R,A) / float(A.nnz)
     RA = R * A
     levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P) / float(A.nnz)
-    A = RA * P
+    A = RA * P_temp
+
+    if filter_operator != 0:
+        filter_matrix_rows(A, filter_operator, diagonal=True)
 
     levels.append(multilevel_solver.level())
     levels[-1].A = A
