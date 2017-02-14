@@ -410,7 +410,7 @@ class multilevel_solver:
                     schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + cycles * V(level + 1)
+                    schwarz_work[level] + cycles * V(level + 1, cycles=cycles)
 
         def W(level):
             if len(self.levels) == 1:
