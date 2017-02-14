@@ -253,7 +253,7 @@ class multilevel_solver:
 
         return self.SC
 
-    def cycle_complexity(self, cycle='V', init_level=0, recompute=False):
+    def cycle_complexity(self, cycle='V', cyclesPerLevel=1, init_level=0, recompute=False):
         """Cycle complexity of this multigrid hierarchy.
 
         Cycle complexity is an approximate measure of the number of
