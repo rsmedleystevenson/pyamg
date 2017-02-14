@@ -402,7 +402,7 @@ class multilevel_solver:
 
         # Recursive functions to sum cost of given cycle type over all levels.
         # Note, ignores coarse grid direct solve.
-        def V(level):
+        def V(level, cycles=cyclesPerLevel):
             if len(self.levels) == 1:
                 return rel_nnz_A[0]
             elif level == len(self.levels) - 2:
@@ -410,7 +410,7 @@ class multilevel_solver:
                     schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + cyclesPerLevel * V(level + 1)
+                    schwarz_work[level] + cycles * V(level + 1)
 
         def W(level):
             if len(self.levels) == 1:
@@ -430,7 +430,7 @@ class multilevel_solver:
                     schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + F(level + 1) + cyclesPerLevel * V(level + 1)
+                    schwarz_work[level] + F(level + 1) + cyclesPerLevel * V(level + 1, cycles=1)
 
         if cycle == 'V':
             flops = V(init_level)
