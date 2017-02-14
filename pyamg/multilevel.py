@@ -253,7 +253,7 @@ class multilevel_solver:
 
         return self.SC
 
-    def cycle_complexity(self, cycle='V', cyclesPerLevel=1, init_level=0, recompute=False):
+    def cycle_complexity(self, cycle='V', init_level=0, recompute=False):
         """Cycle complexity of this multigrid hierarchy.
 
         Cycle complexity is an approximate measure of the number of
@@ -402,7 +402,7 @@ class multilevel_solver:
 
         # Recursive functions to sum cost of given cycle type over all levels.
         # Note, ignores coarse grid direct solve.
-        def V(level, cycles=cyclesPerLevel):
+        def V(level):
             if len(self.levels) == 1:
                 return rel_nnz_A[0]
             elif level == len(self.levels) - 2:
@@ -410,7 +410,7 @@ class multilevel_solver:
                     schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + cycles * V(level + 1, cycles=cycles)
+                    schwarz_work[level] + V(level + 1)
 
         def W(level):
             if len(self.levels) == 1:
@@ -420,7 +420,7 @@ class multilevel_solver:
                     schwarz_work[level] 
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + 2 * cyclesPerLevel * W(level + 1)
+                    schwarz_work[level] + 2*W(level + 1)
 
         def F(level):
             if len(self.levels) == 1:
@@ -430,7 +430,7 @@ class multilevel_solver:
                     schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + F(level + 1) + cyclesPerLevel * V(level + 1, cycles=1)
+                    schwarz_work[level] + F(level + 1) + V(level + 1)
 
         if cycle == 'V':
             flops = V(init_level)
