@@ -410,7 +410,7 @@ class multilevel_solver:
                     schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + V(level + 1)
+                    schwarz_work[level] + cyclesPerLevel * V(level + 1)
 
         def W(level):
             if len(self.levels) == 1:
@@ -420,7 +420,7 @@ class multilevel_solver:
                     schwarz_work[level] 
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + 2*W(level + 1)
+                    schwarz_work[level] + 2 * cyclesPerLevel * W(level + 1)
 
         def F(level):
             if len(self.levels) == 1:
@@ -430,7 +430,7 @@ class multilevel_solver:
                     schwarz_work[level]
             else:
                 return smoother_cost[level] + correction_cost[level] + \
-                    schwarz_work[level] + F(level + 1) + V(level + 1)
+                    schwarz_work[level] + F(level + 1) + cyclesPerLevel * V(level + 1)
 
         if cycle == 'V':
             flops = V(init_level)
