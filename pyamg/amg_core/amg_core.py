@@ -178,10 +178,10 @@ def pinv_array(*args):
 
 def filter_matrix_rows(*args):
     """
-    filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, float [] Ax)
-    filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, double [] Ax)
-    filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, std::complex< float > [] Ax)
-    filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, std::complex< double > [] Ax)
+    filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, float [] Ax, int const lump)
+    filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, double [] Ax, int const lump)
+    filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, std::complex< float > [] Ax, int const lump)
+    filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, std::complex< double > [] Ax, int const lump)
     """
     return _amg_core.filter_matrix_rows(*args)
 

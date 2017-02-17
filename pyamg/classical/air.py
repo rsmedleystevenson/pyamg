@@ -246,6 +246,12 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         R = approximate_ideal_restriction(A, splitting, **kwargs)
     elif fn == 'block_air':
         R = block_approximate_ideal_restriction(A, splitting, **kwargs)
+    elif fn == 'inject':
+        R = injection_interpolation(A.T.tocsr(), C.T.tocsr(), splitting, **kwargs)
+        R = csr_matrix(R.T)
+    elif fn == 'trivial':
+        R = trivial_interpolation(A.T.tocsr(), splitting, **kwargs)
+        R = csr_matrix(R.T)
     else:
         raise ValueError('unknown restriction method (%s)' % restrict)
 
@@ -264,7 +270,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     A = RA * P_temp
 
     if filter_operator != 0:
-        filter_matrix_rows(A, filter_operator, diagonal=True)
+        filter_matrix_rows(A, filter_operator, diagonal=True, lump=False)
 
     levels.append(multilevel_solver.level())
     levels[-1].A = A

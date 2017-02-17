@@ -1536,8 +1536,40 @@ void filter_matrix_rows(const I n_row,
                         const F theta,
                         const I Ap[], const int Ap_size,
                         const I Aj[], const int Aj_size,
-                              T Ax[], const int Ax_size)
+                              T Ax[], const int Ax_size,
+                        const I lump)
 {
+    // Lump each row by setting A_ii += A_ij for all j s.t. |A_ij| < theta*|A_ii|,
+    // and set A_ij = 0
+    for(I i = 0; i < n_row; i++) {
+        F diagonal = 0.0;
+
+        const I row_start = Ap[i];
+        const I row_end   = Ap[i+1];
+
+        // Find diagonal of this row
+        I diag_ind = -1;
+        for(I jj = row_start; jj < row_end; jj++){
+            if(Aj[jj] == i){
+                diag_ind = jj;
+                diagonal = mynorm(Ax[jj]);
+                break;
+            }
+        }
+
+        // Set threshold for strong connections
+        F threshold = theta*diagonal;
+        for(I jj = row_start; jj < row_end; jj++){
+            F norm_jj = mynorm(Ax[jj]);
+
+            // Remove entry if below threshold
+            if(norm_jj < threshold){
+                Ax[diag_ind] += Ax[jj];
+                Ax[jj] = 0.0;
+            }
+        }
+    }
+
     // Filter each row by setting explicit zeros when |A_ij| < theta*|A_ii|
     for(I i = 0; i < n_row; i++) {
         F diagonal = 0.0;
@@ -1549,6 +1581,7 @@ void filter_matrix_rows(const I n_row,
         for(I jj = row_start; jj < row_end; jj++){
             if(Aj[jj] == i){
                 diagonal = mynorm(Ax[jj]);
+                break;
             }
         }
 

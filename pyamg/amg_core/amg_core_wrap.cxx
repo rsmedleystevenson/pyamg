@@ -5663,6 +5663,7 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_1(PyObject *SWIGUNUSEDPARM(s
   int arg6 ;
   float *arg7 ;
   int arg8 ;
+  int arg9 ;
   int val1 ;
   int ecode1 = 0 ;
   float val2 ;
@@ -5673,13 +5674,16 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_1(PyObject *SWIGUNUSEDPARM(s
   int i5 = 1 ;
   PyArrayObject *array7 = NULL ;
   int i7 = 1 ;
+  int val9 ;
+  int ecode9 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OOOOO:filter_matrix_rows",&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOO:filter_matrix_rows",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
   ecode1 = SWIG_AsVal_int(obj0, &val1);
   if (!SWIG_IsOK(ecode1)) {
     SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "filter_matrix_rows" "', argument " "1"" of type '" "int""'");
@@ -5714,7 +5718,12 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_1(PyObject *SWIGUNUSEDPARM(s
     arg8 = 1;
     for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
   }
-  filter_matrix_rows< int,float,float >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8);
+  ecode9 = SWIG_AsVal_int(obj5, &val9);
+  if (!SWIG_IsOK(ecode9)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode9), "in method '" "filter_matrix_rows" "', argument " "9"" of type '" "int""'");
+  } 
+  arg9 = static_cast< int >(val9);
+  filter_matrix_rows< int,float,float >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8,arg9);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -5732,6 +5741,7 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_2(PyObject *SWIGUNUSEDPARM(s
   int arg6 ;
   double *arg7 ;
   int arg8 ;
+  int arg9 ;
   int val1 ;
   int ecode1 = 0 ;
   double val2 ;
@@ -5742,13 +5752,16 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_2(PyObject *SWIGUNUSEDPARM(s
   int i5 = 1 ;
   PyArrayObject *array7 = NULL ;
   int i7 = 1 ;
+  int val9 ;
+  int ecode9 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OOOOO:filter_matrix_rows",&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOO:filter_matrix_rows",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
   ecode1 = SWIG_AsVal_int(obj0, &val1);
   if (!SWIG_IsOK(ecode1)) {
     SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "filter_matrix_rows" "', argument " "1"" of type '" "int""'");
@@ -5783,7 +5796,12 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_2(PyObject *SWIGUNUSEDPARM(s
     arg8 = 1;
     for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
   }
-  filter_matrix_rows< int,double,double >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8);
+  ecode9 = SWIG_AsVal_int(obj5, &val9);
+  if (!SWIG_IsOK(ecode9)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode9), "in method '" "filter_matrix_rows" "', argument " "9"" of type '" "int""'");
+  } 
+  arg9 = static_cast< int >(val9);
+  filter_matrix_rows< int,double,double >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8,arg9);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -5801,6 +5819,7 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_3(PyObject *SWIGUNUSEDPARM(s
   int arg6 ;
   std::complex< float > *arg7 ;
   int arg8 ;
+  int arg9 ;
   int val1 ;
   int ecode1 = 0 ;
   float val2 ;
@@ -5811,13 +5830,16 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_3(PyObject *SWIGUNUSEDPARM(s
   int i5 = 1 ;
   PyArrayObject *array7 = NULL ;
   int i7 = 1 ;
+  int val9 ;
+  int ecode9 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OOOOO:filter_matrix_rows",&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOO:filter_matrix_rows",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
   ecode1 = SWIG_AsVal_int(obj0, &val1);
   if (!SWIG_IsOK(ecode1)) {
     SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "filter_matrix_rows" "', argument " "1"" of type '" "int""'");
@@ -5852,7 +5874,12 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_3(PyObject *SWIGUNUSEDPARM(s
     arg8 = 1;
     for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
   }
-  filter_matrix_rows< int,std::complex< float >,float >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8);
+  ecode9 = SWIG_AsVal_int(obj5, &val9);
+  if (!SWIG_IsOK(ecode9)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode9), "in method '" "filter_matrix_rows" "', argument " "9"" of type '" "int""'");
+  } 
+  arg9 = static_cast< int >(val9);
+  filter_matrix_rows< int,std::complex< float >,float >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8,arg9);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -5870,6 +5897,7 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_4(PyObject *SWIGUNUSEDPARM(s
   int arg6 ;
   std::complex< double > *arg7 ;
   int arg8 ;
+  int arg9 ;
   int val1 ;
   int ecode1 = 0 ;
   double val2 ;
@@ -5880,13 +5908,16 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_4(PyObject *SWIGUNUSEDPARM(s
   int i5 = 1 ;
   PyArrayObject *array7 = NULL ;
   int i7 = 1 ;
+  int val9 ;
+  int ecode9 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
   PyObject * obj3 = 0 ;
   PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OOOOO:filter_matrix_rows",&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOO:filter_matrix_rows",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
   ecode1 = SWIG_AsVal_int(obj0, &val1);
   if (!SWIG_IsOK(ecode1)) {
     SWIG_exception_fail(SWIG_ArgError(ecode1), "in method '" "filter_matrix_rows" "', argument " "1"" of type '" "int""'");
@@ -5921,7 +5952,12 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows__SWIG_4(PyObject *SWIGUNUSEDPARM(s
     arg8 = 1;
     for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
   }
-  filter_matrix_rows< int,std::complex< double >,double >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8);
+  ecode9 = SWIG_AsVal_int(obj5, &val9);
+  if (!SWIG_IsOK(ecode9)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode9), "in method '" "filter_matrix_rows" "', argument " "9"" of type '" "int""'");
+  } 
+  arg9 = static_cast< int >(val9);
+  filter_matrix_rows< int,std::complex< double >,double >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8,arg9);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -5931,17 +5967,17 @@ fail:
 
 SWIGINTERN PyObject *_wrap_filter_matrix_rows(PyObject *self, PyObject *args) {
   Py_ssize_t argc;
-  PyObject *argv[6] = {
+  PyObject *argv[7] = {
     0
   };
   Py_ssize_t ii;
   
   if (!PyTuple_Check(args)) SWIG_fail;
   argc = args ? PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 5) && (ii < argc); ii++) {
+  for (ii = 0; (ii < 6) && (ii < argc); ii++) {
     argv[ii] = PyTuple_GET_ITEM(args,ii);
   }
-  if (argc == 5) {
+  if (argc == 6) {
     int _v;
     {
       int res = SWIG_AsVal_int(argv[0], NULL);
@@ -5968,17 +6004,20 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows(PyObject *self, PyObject *args) {
                 NPY_FLOAT);
             }
             if (_v) {
-              if (argc <= 5) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
                 return _wrap_filter_matrix_rows__SWIG_1(self, args);
               }
-              return _wrap_filter_matrix_rows__SWIG_1(self, args);
             }
           }
         }
       }
     }
   }
-  if (argc == 5) {
+  if (argc == 6) {
     int _v;
     {
       int res = SWIG_AsVal_int(argv[0], NULL);
@@ -6005,17 +6044,20 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows(PyObject *self, PyObject *args) {
                 NPY_CFLOAT);
             }
             if (_v) {
-              if (argc <= 5) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
                 return _wrap_filter_matrix_rows__SWIG_3(self, args);
               }
-              return _wrap_filter_matrix_rows__SWIG_3(self, args);
             }
           }
         }
       }
     }
   }
-  if (argc == 5) {
+  if (argc == 6) {
     int _v;
     {
       int res = SWIG_AsVal_int(argv[0], NULL);
@@ -6042,17 +6084,20 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows(PyObject *self, PyObject *args) {
                 NPY_DOUBLE);
             }
             if (_v) {
-              if (argc <= 5) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
                 return _wrap_filter_matrix_rows__SWIG_2(self, args);
               }
-              return _wrap_filter_matrix_rows__SWIG_2(self, args);
             }
           }
         }
       }
     }
   }
-  if (argc == 5) {
+  if (argc == 6) {
     int _v;
     {
       int res = SWIG_AsVal_int(argv[0], NULL);
@@ -6079,10 +6124,13 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows(PyObject *self, PyObject *args) {
                 NPY_CDOUBLE);
             }
             if (_v) {
-              if (argc <= 5) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
                 return _wrap_filter_matrix_rows__SWIG_4(self, args);
               }
-              return _wrap_filter_matrix_rows__SWIG_4(self, args);
             }
           }
         }
@@ -6093,10 +6141,10 @@ SWIGINTERN PyObject *_wrap_filter_matrix_rows(PyObject *self, PyObject *args) {
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'filter_matrix_rows'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    filter_matrix_rows< int,float,float >(int const,float const,int const [],int const,int const [],int const,float [],int const)\n"
-    "    filter_matrix_rows< int,double,double >(int const,double const,int const [],int const,int const [],int const,double [],int const)\n"
-    "    filter_matrix_rows< int,std::complex< float >,float >(int const,float const,int const [],int const,int const [],int const,std::complex< float > [],int const)\n"
-    "    filter_matrix_rows< int,std::complex< double >,double >(int const,double const,int const [],int const,int const [],int const,std::complex< double > [],int const)\n");
+    "    filter_matrix_rows< int,float,float >(int const,float const,int const [],int const,int const [],int const,float [],int const,int const)\n"
+    "    filter_matrix_rows< int,double,double >(int const,double const,int const [],int const,int const [],int const,double [],int const,int const)\n"
+    "    filter_matrix_rows< int,std::complex< float >,float >(int const,float const,int const [],int const,int const [],int const,std::complex< float > [],int const,int const)\n"
+    "    filter_matrix_rows< int,std::complex< double >,double >(int const,double const,int const [],int const,int const [],int const,std::complex< double > [],int const,int const)\n");
   return 0;
 }
 
@@ -35048,10 +35096,10 @@ static PyMethodDef SwigMethods[] = {
 		"pinv_array(std::complex< double > [] AA, int const m, int const n, char const TransA)\n"
 		""},
 	 { (char *)"filter_matrix_rows", _wrap_filter_matrix_rows, METH_VARARGS, (char *)"\n"
-		"filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, float [] Ax)\n"
-		"filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, double [] Ax)\n"
-		"filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, std::complex< float > [] Ax)\n"
-		"filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, std::complex< double > [] Ax)\n"
+		"filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, float [] Ax, int const lump)\n"
+		"filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, double [] Ax, int const lump)\n"
+		"filter_matrix_rows(int const n_row, float const theta, int const [] Ap, int const [] Aj, std::complex< float > [] Ax, int const lump)\n"
+		"filter_matrix_rows(int const n_row, double const theta, int const [] Ap, int const [] Aj, std::complex< double > [] Ax, int const lump)\n"
 		""},
 	 { (char *)"maximal_independent_set_serial", _wrap_maximal_independent_set_serial, METH_VARARGS, (char *)"maximal_independent_set_serial(int const num_rows, int const [] Ap, int const [] Aj, int const active, int const C, int const F, int [] x) -> int"},
 	 { (char *)"maximal_independent_set_parallel", _wrap_maximal_independent_set_parallel, METH_VARARGS, (char *)"maximal_independent_set_parallel(int const num_rows, int const [] Ap, int const [] Aj, int const active, int const C, int const F, int [] x, double const [] y, int const max_iters) -> int"},

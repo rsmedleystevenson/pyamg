@@ -2181,7 +2181,7 @@ def filter_matrix_columns(A, theta):
     return A_filter
 
 
-def filter_matrix_rows(A, theta, diagonal=False, cost=[0.0]):
+def filter_matrix_rows(A, theta, diagonal=False, lump=False, cost=[0.0]):
     """
     Filter each row of A with tol, i.e., drop all entries in row k where
         abs(A[i,k]) < tol max( abs(A[:,k]) )
@@ -2237,7 +2237,7 @@ def filter_matrix_rows(A, theta, diagonal=False, cost=[0.0]):
     # Filter by diagonal entry, A_ij = 0 if |A_ij| < theta*|A_ii|
     if diagonal:
         pyamg.amg_core.filter_matrix_rows(A.shape[0], theta, A.indptr,
-                                          A.indices, A.data)
+                                          A.indices, A.data, lump)
         A.eliminate_zeros()
     # Filter by maximum absolute value in row, A_ij = 0 if
     # |A_ij| < theta * max_{j!=i} |A_{ij}|
