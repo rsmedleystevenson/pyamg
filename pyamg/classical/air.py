@@ -224,8 +224,8 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     elif fn == 'trivial':
         P = trivial_interpolation(A, splitting, **kwargs)
     elif fn == 'air':
-        P = approximate_ideal_restriction(A.T.tocsr(), splitting, **kwargs)
-        # P = approximate_ideal_restriction(A, splitting, **kwargs)
+        # P = approximate_ideal_restriction(A.T.tocsr(), splitting, **kwargs)
+        P = approximate_ideal_restriction(A, splitting, **kwargs)
         P = csr_matrix(P.T)
     else:
         raise ValueError('unknown interpolation method (%s)' % interp)
