@@ -225,6 +225,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         P = trivial_interpolation(A, splitting, **kwargs)
     elif fn == 'air':
         P = approximate_ideal_restriction(A.T.tocsr(), splitting, **kwargs)
+        # P = approximate_ideal_restriction(A, splitting, **kwargs)
         P = csr_matrix(P.T)
     else:
         raise ValueError('unknown interpolation method (%s)' % interp)
@@ -244,13 +245,11 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         R = P.T
     elif fn == 'air':
         R = approximate_ideal_restriction(A, splitting, **kwargs)
-    elif fn == 'block_air':
-        R = block_approximate_ideal_restriction(A, splitting, **kwargs)
     elif fn == 'inject':
-        R = injection_interpolation(A.T.tocsr(), C.T.tocsr(), splitting, **kwargs)
+        R = injection_interpolation(A, C, splitting, **kwargs)
         R = csr_matrix(R.T)
     elif fn == 'trivial':
-        R = trivial_interpolation(A.T.tocsr(), splitting, **kwargs)
+        R = trivial_interpolation(A, splitting, **kwargs)
         R = csr_matrix(R.T)
     else:
         raise ValueError('unknown restriction method (%s)' % restrict)
