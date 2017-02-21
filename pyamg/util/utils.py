@@ -2154,7 +2154,7 @@ def filter_matrix_columns(A, theta):
 
     # Apply drop-tolerance to each column of A, which is most easily
     # accessed by converting to CSC.  We apply the drop-tolerance with
-    # amg_core.classical_strength_of_connection(), which ignores
+    # amg_core.classical_strength_of_connection_abs(), which ignores
     # diagonal entries, thus necessitating the trick where we add
     # A.shape[1] to each of the column indices
     A = A.copy().tocsc()
@@ -2162,11 +2162,11 @@ def filter_matrix_columns(A, theta):
     A.indices += A.shape[1]
     A_filter.indices += A.shape[1]
     # classical_strength_of_connection takes an absolute value internally
-    pyamg.amg_core.classical_strength_of_connection(A.shape[1], theta,
-                                                    A.indptr, A.indices,
-                                                    A.data, A_filter.indptr,
-                                                    A_filter.indices,
-                                                    A_filter.data)
+    pyamg.amg_core.classical_strength_of_connection_abs(A.shape[1], theta,
+                                                        A.indptr, A.indices,
+                                                        A.data, A_filter.indptr,
+                                                        A_filter.indices,
+                                                        A_filter.data)
     A_filter.indices[:A_filter.indptr[-1]] -= A_filter.shape[1]
     A_filter = csc_matrix((A_filter.data[:A_filter.indptr[-1]],
                            A_filter.indices[:A_filter.indptr[-1]],
@@ -2243,18 +2243,18 @@ def filter_matrix_rows(A, theta, diagonal=False, lump=False, cost=[0.0]):
     # |A_ij| < theta * max_{j!=i} |A_{ij}|
     else:
         # Apply drop-tolerance to each row of A.  We apply the drop-tolerance with
-        # amg_core.classical_strength_of_connection(), which ignores diagonal
+        # amg_core.classical_strength_of_connection_abs(), which ignores diagonal
         # entries, thus necessitating the trick where we add A.shape[0] to each of
         # the row indices
         A_filter = A.copy()
         A.indices += A.shape[0]
         A_filter.indices += A.shape[0]
         # classical_strength_of_connection takes an absolute value internally
-        pyamg.amg_core.classical_strength_of_connection(A.shape[0], theta,
-                                                        A.indptr, A.indices,
-                                                        A.data, A_filter.indptr,
-                                                        A_filter.indices,
-                                                        A_filter.data)
+        pyamg.amg_core.classical_strength_of_connection_abs(A.shape[0], theta,
+                                                            A.indptr, A.indices,
+                                                            A.data, A_filter.indptr,
+                                                            A_filter.indices,
+                                                            A_filter.data)
         A_filter.indices[:A_filter.indptr[-1]] -= A_filter.shape[0]
         A_filter = csr_matrix((A_filter.data[:A_filter.indptr[-1]],
                                A_filter.indices[:A_filter.indptr[-1]],
