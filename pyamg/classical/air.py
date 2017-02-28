@@ -16,7 +16,8 @@ from pyamg.strength import classical_strength_of_connection, \
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks, \
     filter_matrix_rows
 from pyamg.classical.interpolate import direct_interpolation, standard_interpolation, \
-     trivial_interpolation, injection_interpolation, approximate_ideal_restriction
+     trivial_interpolation, injection_interpolation, approximate_ideal_restriction,
+     algebraic_restriction, algebraic_interpolation
 from pyamg.classical.split import *
 from pyamg.classical.cr import CR
 
@@ -226,6 +227,8 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     elif fn == 'air':
         P = approximate_ideal_restriction(A.T.tocsr(), splitting, **kwargs)
         P = csr_matrix(P.T)
+    elif fn == 'algebraic':
+        P = algebraic_interpolation(A, splitting, **kwargs)
     else:
         raise ValueError('unknown interpolation method (%s)' % interp)
     levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
@@ -244,6 +247,8 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         R = P.T
     elif fn == 'air':
         R = approximate_ideal_restriction(A, splitting, **kwargs)
+    elif fn == 'algebraic':
+        R = algebraic_restriction(A, splitting, **kwargs)
     elif fn == 'inject':
         R = injection_interpolation(A, C, splitting, **kwargs)
         R = csr_matrix(R.T)
