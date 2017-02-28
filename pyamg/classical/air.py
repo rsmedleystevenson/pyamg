@@ -278,7 +278,3 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     levels.append(multilevel_solver.level())
     levels[-1].A = A
 
-    import pdb
-    pdb.set_trace()
-
-
