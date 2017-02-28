@@ -16,7 +16,7 @@ from pyamg.strength import classical_strength_of_connection, \
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks, \
     filter_matrix_rows
 from pyamg.classical.interpolate import direct_interpolation, standard_interpolation, \
-     trivial_interpolation, injection_interpolation, approximate_ideal_restriction,
+     trivial_interpolation, injection_interpolation, approximate_ideal_restriction, \
      algebraic_restriction, algebraic_interpolation
 from pyamg.classical.split import *
 from pyamg.classical.cr import CR
@@ -278,5 +278,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     levels.append(multilevel_solver.level())
     levels[-1].A = A
 
+    import pdb
+    pdb.set_trace()
 
 

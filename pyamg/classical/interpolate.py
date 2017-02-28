@@ -6,7 +6,7 @@ __docformat__ = "restructuredtext en"
 from warnings import warn
 import numpy as np
 from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr, \
-        isspmatrix_bsr, SparseEfficiencyWarning, eye, hstack
+        isspmatrix_bsr, SparseEfficiencyWarning, eye, hstack, vstack
 from pyamg import amg_core
 from pyamg.relaxation.relaxation import boundary_relaxation
 from pyamg.strength import classical_strength_of_connection
@@ -171,7 +171,7 @@ def trivial_interpolation(A, splitting, cost=[0]):
     else:
         try:
             A = A.tocsr()
-            warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+            warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
             n = A.shape[0]
             blocksize = 1
         except:
@@ -217,7 +217,7 @@ def injection_interpolation(A, C, splitting, cost=[0]):
     else:
         try:
             A = A.tocsr()
-            warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+            warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
             n = A.shape[0]
             blocksize = 1
         except:
@@ -274,7 +274,7 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
     else:
         try:
             A = A.tocsr()
-            warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+            warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
             C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
             blocksize = 1
         except:
@@ -337,7 +337,7 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
 def algebraic_restriction(A, splitting, theta=0.0, max_row=None, degree=1, cost=[0]):
 
     A = A.tocsr()
-    warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+    warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
     C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
     blocksize = 1
 
@@ -378,19 +378,19 @@ def algebraic_restriction(A, splitting, theta=0.0, max_row=None, degree=1, cost=
 
     # Get sizes and permutation matrix from [F, C] block
     # ordering to natural matrix ordering.
-    permute = sparse.eye(n,format='csr')
+    permute = eye(n,format='csr')
     permute.indices = np.concatenate((Fpts,Cpts))
-    # permute = permute.T
 
     # Form R = [Z, I], reorder and return
-    R = hstack(Z, sparse.eye(nc, format='csr'))
-    R = sparse.csr_matrix(permute * R)
+    R = hstack([Z, eye(nc, format='csr')])
+    R = csr_matrix(R * permute)
+    return R
 
 
 def algebraic_interpolation(A, splitting, theta=0.0, max_row=None, degree=1, cost=[0]):
 
     A = A.tocsr()
-    warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+    warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
     C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
     blocksize = 1
 
@@ -403,17 +403,17 @@ def algebraic_interpolation(A, splitting, theta=0.0, max_row=None, degree=1, cos
     # Expand sparsity pattern for R
     C.data[np.abs(C.data)<1e-16] = 0
     C.eliminate_zeros()
-    if degree == 1:
-        pass
-    elif degree == 2:
-        C = csr_matrix(C*C)
-    elif degree == 3:
-        C = csr_matrix(C*C*C)
-    elif degree == 4:
-        C = csr_matrix(C*C)
-        C = csr_matrix(C*C)
-    else:
-        raise ValueError("Only sparsity degree 1-4 supported.")
+    # if degree == 1:
+    #     pass
+    # elif degree == 2:
+    #     C = csr_matrix(C*C)
+    # elif degree == 3:
+    #     C = csr_matrix(C*C*C)
+    # elif degree == 4:
+    #     C = csr_matrix(C*C)
+    #     C = csr_matrix(C*C)
+    # else:
+    #     raise ValueError("Only sparsity degree 1-4 supported.")
 
     Lff = C[Fpts,:][:,Fpts]
     pts = np.arange(0,nf)
@@ -431,10 +431,11 @@ def algebraic_interpolation(A, splitting, theta=0.0, max_row=None, degree=1, cos
 
     # Get sizes and permutation matrix from [F, C] block
     # ordering to natural matrix ordering.
-    permute = sparse.eye(n,format='csr')
+    permute = eye(n,format='csr')
     permute.indices = np.concatenate((Fpts,Cpts))
     permute = permute.T
 
     # Form R = [P, I], reorder and return
-    P = hstack(W, sparse.eye(nc, format='csr'))
-    P = sparse.csr_matrix(permute * P)
+    P = vstack([W, eye(nc, format='csr')])
+    P = csr_matrix(permute * P)
+    return P
