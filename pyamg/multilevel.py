@@ -173,10 +173,6 @@ class multilevel_solver:
         self.coarse_solver = coarse_grid_solver(coarse_solver)
         self.CC = {}
         self.SC = None
-        if init_nnz is not None:
-            self.scale_complexity = levels[0].A.nnz / float(init_nnz)
-        else:
-            self.scale_complexity = 1
 
         for level in levels[:-1]:
             if not hasattr(level, 'R'):
@@ -255,7 +251,6 @@ class multilevel_solver:
                     else:
                         print "\t",method,"\t= ","%.3f"%temp,"WUs"
 
-        self.SC *= self.scale_complexity
         return self.SC
 
     def cycle_complexity(self, cycle='V', cyclesPerLevel=1, init_level=0, recompute=False):
@@ -449,9 +444,9 @@ class multilevel_solver:
 
         # Only save CC if computed for all levels to avoid confusion
         if init_level == 0:
-            self.CC[cycle] = self.scale_complexity * float(flops)
+            self.CC[cycle] = float(flops)
 
-        return self.scale_complexity * float(flops)
+        return float(flops)
 
 
     def operator_complexity(self):
@@ -461,7 +456,7 @@ class multilevel_solver:
             Number of nonzeros in the matrix on all levels /
             Number of nonzeros in the matrix on the finest level
         """
-        return self.scale_complexity * sum([level.A.nnz for level in self.levels]) /\
+        return sum([level.A.nnz for level in self.levels]) /\
             float(self.levels[0].A.nnz)
 
 

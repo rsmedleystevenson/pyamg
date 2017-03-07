@@ -135,13 +135,12 @@ def airhead_solver(A,
 
     levels = [multilevel_solver.level()]
     levels[-1].A = A
-    temp = A.nnz
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
         extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
                          coarse_grid_P, keep)
 
-    ml = multilevel_solver(levels, init_nnz=temp, **kwargs)
+    ml = multilevel_solver(levels, **kwargs)
     change_smoothers(ml, presmoother, postsmoother)
     return ml
 
@@ -151,7 +150,11 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
                      coarse_grid_P, keep):
     """ helper function for local methods """
 
-    A = levels[-1].A
+    # Need to keep original matrix on fine level for computing residuals
+    if len(levels) == 1:
+        A = csr_matrix(levels[-1].A, copy=True)
+    else:
+        A = levels[-1].A
 
     # Filter operator 
     if (filter_operator is not None) and (filter_operator[1] != 0):   
