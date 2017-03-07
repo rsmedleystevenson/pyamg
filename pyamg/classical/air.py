@@ -31,7 +31,7 @@ def airhead_solver(A,
                    presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                    postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                    max_levels=20, max_coarse=20, keep=False,
-                   coarse_grid_P=None, filter_operator=0.0, **kwargs):
+                   coarse_grid_P=None, filter_operator=None, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
@@ -128,16 +128,6 @@ def airhead_solver(A,
             mat_mat_complexity.__detailed__ = True
         del kwargs['setup_complexity']
 
-    # # convert A to csr
-    # if not ( isspmatrix_csr(A) ):
-    #     try:
-    #         A = csr_matrix(A)
-    #         warn("Implicit conversion of A to CSR",
-    #              SparseEfficiencyWarning)
-    #     except:
-    #         raise TypeError('Argument A must have type csr_matrix, \
-    #                          or be convertible to csr_matrix')
-
     # preprocess A
     A = A.asfptype()
     if A.shape[0] != A.shape[1]:
@@ -145,12 +135,13 @@ def airhead_solver(A,
 
     levels = [multilevel_solver.level()]
     levels[-1].A = A
+    temp = A.nnz
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
         extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
                          coarse_grid_P, keep)
 
-    ml = multilevel_solver(levels, **kwargs)
+    ml = multilevel_solver(levels, init_nnz=temp, **kwargs)
     change_smoothers(ml, presmoother, postsmoother)
     return ml
 
@@ -161,6 +152,10 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     """ helper function for local methods """
 
     A = levels[-1].A
+
+    # Filter operator 
+    if (filter_operator is not None) and (filter_operator[1] != 0):   
+            filter_matrix_rows(A, filter_operator[1], diagonal=True, lump=filter_operator[0])
 
     # Zero initial complexities for strength, splitting and interpolation
     levels[-1].complexity['CF'] = 0.0
@@ -234,9 +229,10 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
 
     # Optional different interpolation for RAP
-    if coarse_grid_P == 'inject':
+    fn, kwargs = unpack_arg(coarse_grid_P)
+    if fn == 'inject':
         P_temp = injection_interpolation(A, C, splitting, **kwargs)
-    elif coarse_grid_P == 'trivial':
+    elif fn == 'trivial':
         P_temp = trivial_interpolation(A, splitting, **kwargs)
     else:
         P_temp = P
@@ -271,9 +267,6 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     RA = R * A
     levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P) / float(A.nnz)
     A = RA * P_temp
-
-    if filter_operator != 0:
-        filter_matrix_rows(A, filter_operator, diagonal=True, lump=False)
 
     levels.append(multilevel_solver.level())
     levels[-1].A = A

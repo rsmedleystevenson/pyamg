@@ -350,23 +350,12 @@ def algebraic_restriction(A, splitting, theta=0.0, max_row=None, degree=1, cost=
     # Expand sparsity pattern for R
     C.data[np.abs(C.data)<1e-16] = 0
     C.eliminate_zeros()
-    if degree == 1:
-        pass
-    elif degree == 2:
-        C = csr_matrix(C*C)
-    elif degree == 3:
-        C = csr_matrix(C*C*C)
-    elif degree == 4:
-        C = csr_matrix(C*C)
-        C = csr_matrix(C*C)
-    else:
-        raise ValueError("Only sparsity degree 1-4 supported.")
 
-    Lff = C[Fpts,:][:,Fpts]
+    Lff = -A[Fpts,:][:,Fpts]
     pts = np.arange(0,nf)
     Lff[pts,pts] = 0.0
     Lff.eliminate_zeros()
-    Acf = C[Cpts,:][:,Fpts]
+    Acf = A[Cpts,:][:,Fpts]
 
     # Form Neuman approximation to Aff^{-1}
     Z = eye(nf,format='csr')
@@ -375,6 +364,8 @@ def algebraic_restriction(A, splitting, theta=0.0, max_row=None, degree=1, cost=
 
     # Multiply Acf by approximation to Aff^{-1}
     Z = -Acf*Z
+    # Z.data[np.abs(Z.data) <= 1e-16] = 0.0
+    # Z.eliminate_zeros()
 
     # Get sizes and permutation matrix from [F, C] block
     # ordering to natural matrix ordering.
@@ -403,23 +394,12 @@ def algebraic_interpolation(A, splitting, theta=0.0, max_row=None, degree=1, cos
     # Expand sparsity pattern for R
     C.data[np.abs(C.data)<1e-16] = 0
     C.eliminate_zeros()
-    # if degree == 1:
-    #     pass
-    # elif degree == 2:
-    #     C = csr_matrix(C*C)
-    # elif degree == 3:
-    #     C = csr_matrix(C*C*C)
-    # elif degree == 4:
-    #     C = csr_matrix(C*C)
-    #     C = csr_matrix(C*C)
-    # else:
-    #     raise ValueError("Only sparsity degree 1-4 supported.")
 
-    Lff = C[Fpts,:][:,Fpts]
+    Lff = -A[Fpts,:][:,Fpts]
     pts = np.arange(0,nf)
     Lff[pts,pts] = 0.0
     Lff.eliminate_zeros()
-    Afc = C[Fpts,:][:,Cpts]
+    Afc = A[Fpts,:][:,Cpts]
 
     # Form Neuman approximation to Aff^{-1}
     W = eye(nf,format='csr')
