@@ -10,6 +10,7 @@ from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr, \
 from pyamg import amg_core
 from pyamg.relaxation.relaxation import boundary_relaxation
 from pyamg.strength import classical_strength_of_connection
+from pyamg.util.utils import filter_matrix_rows
 
 __all__ = ['direct_interpolation', 'standard_interpolation',
            'trivial_interpolation', 'injection_interpolation',
@@ -338,8 +339,12 @@ def algebraic_restriction(A, splitting, theta=0.0, max_row=None, degree=1, cost=
 
     A = A.tocsr()
     warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
-    C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
-    blocksize = 1
+    
+    if theta > 0.0:
+        C = csr_matrix(A, copy=True)
+        filter_matrix_rows(C, theta, diagonal=True, lump=False)
+    else:
+        C = A
 
     Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
     Fpts = np.array(np.where(splitting == 0)[0], dtype='int32')
@@ -351,16 +356,27 @@ def algebraic_restriction(A, splitting, theta=0.0, max_row=None, degree=1, cost=
     C.data[np.abs(C.data)<1e-16] = 0
     C.eliminate_zeros()
 
-    Lff = -A[Fpts,:][:,Fpts]
+    Lff = -C[Fpts,:][:,Fpts]
     pts = np.arange(0,nf)
     Lff[pts,pts] = 0.0
     Lff.eliminate_zeros()
-    Acf = A[Cpts,:][:,Fpts]
+    Acf = C[Cpts,:][:,Fpts]
 
     # Form Neuman approximation to Aff^{-1}
     Z = eye(nf,format='csr')
-    for i in range(1,degree+1):
-        Z += Lff**i
+    # for i in range(1,degree+1):
+    #     Z += Lff**i
+
+    if degree >= 1:
+        Z += Lff
+    if degree == 2:
+        Z += Lff*Lff
+    if degree == 3:
+        Z += Lff*Lff*Lff
+    if degree == 4:
+        Z += Lff*Lff*Lff*Lff
+    if degree > 4:
+        raise ValueError("Only sparsity degree 1-4 supported.")
 
     # Multiply Acf by approximation to Aff^{-1}
     Z = -Acf*Z
@@ -382,8 +398,12 @@ def algebraic_interpolation(A, splitting, theta=0.0, max_row=None, degree=1, cos
 
     A = A.tocsr()
     warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
-    C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
-    blocksize = 1
+
+    if theta > 0.0:
+        C = csr_matrix(A, copy=True)
+        filter_matrix_rows(C, theta, diagonal=True, lump=False)
+    else:
+        C = A
 
     Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
     Fpts = np.array(np.where(splitting == 0)[0], dtype='int32')
@@ -395,16 +415,27 @@ def algebraic_interpolation(A, splitting, theta=0.0, max_row=None, degree=1, cos
     C.data[np.abs(C.data)<1e-16] = 0
     C.eliminate_zeros()
 
-    Lff = -A[Fpts,:][:,Fpts]
+    Lff = -C[Fpts,:][:,Fpts]
     pts = np.arange(0,nf)
     Lff[pts,pts] = 0.0
     Lff.eliminate_zeros()
-    Afc = A[Fpts,:][:,Cpts]
+    Afc = C[Fpts,:][:,Cpts]
 
     # Form Neuman approximation to Aff^{-1}
     W = eye(nf,format='csr')
-    for i in range(1,degree+1):
-        W += Lff**i
+    # for i in range(1,degree+1):
+    #     Z += Lff**i
+
+    if degree >= 1:
+        W += Lff
+    if degree == 2:
+        W += Lff*Lff
+    if degree == 3:
+        W += Lff*Lff*Lff
+    if degree == 4:
+        W += Lff*Lff*Lff*Lff
+    if degree > 4:
+        raise ValueError("Only sparsity degree 1-4 supported.")
 
     # Multiply Acf by approximation to Aff^{-1}
     W = -W*Afc

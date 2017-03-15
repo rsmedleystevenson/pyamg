@@ -150,15 +150,16 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
                      coarse_grid_P, keep):
     """ helper function for local methods """
 
-    # Need to keep original matrix on fine level for computing residuals
-    if len(levels) == 1:
-        A = csr_matrix(levels[-1].A, copy=True)
+    # Filter operator. Need to keep original matrix on fineest level for
+    # computing residuals
+    if (filter_operator is not None) and (filter_operator[1] != 0): 
+        if len(levels) == 1:
+            A = csr_matrix(levels[-1].A, copy=True)
+        else:
+            A = levels[-1].A
+        filter_matrix_rows(A, filter_operator[1], diagonal=True, lump=filter_operator[0])
     else:
         A = levels[-1].A
-
-    # Filter operator 
-    if (filter_operator is not None) and (filter_operator[1] != 0):   
-            filter_matrix_rows(A, filter_operator[1], diagonal=True, lump=filter_operator[0])
 
     # Zero initial complexities for strength, splitting and interpolation
     levels[-1].complexity['CF'] = 0.0
