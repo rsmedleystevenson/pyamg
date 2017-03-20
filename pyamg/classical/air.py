@@ -137,8 +137,10 @@ def airhead_solver(A,
     levels[-1].A = A
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
-        extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
-                         coarse_grid_P, keep)
+        bottom = extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
+                                  coarse_grid_P, keep)
+        if bottom:
+            break
 
     ml = multilevel_solver(levels, **kwargs)
     change_smoothers(ml, presmoother, postsmoother)
@@ -160,6 +162,10 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         filter_matrix_rows(A, filter_operator[1], diagonal=True, lump=filter_operator[0])
     else:
         A = levels[-1].A
+
+    # Check if matrix was filtered to be diagonal --> coarsest grid
+    if A.nnz == A.shape[0]:
+        return 1
 
     # Zero initial complexities for strength, splitting and interpolation
     levels[-1].complexity['CF'] = 0.0
@@ -274,4 +280,5 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
 
     levels.append(multilevel_solver.level())
     levels[-1].A = A
+    return 0
 
