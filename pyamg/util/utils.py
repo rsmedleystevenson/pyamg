@@ -2198,6 +2198,9 @@ def filter_matrix_rows(A, theta, diagonal=False, lump=False, cost=[0.0]):
         ----------------------------------------------------------
         ** diagonal = True filters in place, i.e. A is modified **
         ----------------------------------------------------------
+    lump : bool
+        If True, instead of removing entries, lump them to diagonal. Preserves
+        row sum of matrix.
     cost : {list containing one scalar}
         cost[0] is incremented to reflect a FLOP estimate for this function
 

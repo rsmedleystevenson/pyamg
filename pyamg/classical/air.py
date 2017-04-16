@@ -1,4 +1,4 @@
-"""Classical AMG (Ruge-Stuben AMG)"""
+"""Ideal restriction AMG"""
 from __future__ import absolute_import
 
 __docformat__ = "restructuredtext en"
@@ -17,27 +17,31 @@ from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_bl
     filter_matrix_rows
 from pyamg.classical.interpolate import direct_interpolation, standard_interpolation, \
      trivial_interpolation, injection_interpolation, approximate_ideal_restriction, \
-     algebraic_restriction, algebraic_interpolation
+     neumann_ideal_restriction, neumann_ideal_interpolation
 from pyamg.classical.split import *
 from pyamg.classical.cr import CR
 
-__all__ = ['airhead_solver']
+__all__ = ['AMGir_solver']
 
-def airhead_solver(A,
-                   strength=('classical', {'theta': 0.25 ,'do_amalgamation': False}),
-                   CF='RS',
-                   interp='standard',
-                   restrict=None,
-                   presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
-                   postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
-                   max_levels=20, max_coarse=20, keep=False,
-                   coarse_grid_P=None, filter_operator=None, **kwargs):
+def AMGir_solver(A,
+                 strength=('classical', {'theta': 0.3 ,'norm': 'min'}),
+                 CF='RS',
+                 interp='inject',
+                 restrict='neumann',
+                 presmoother=None,
+                 postsmoother=('FC_jacobi', {'omega': 1.0, 'iterations': 1,
+                                'withrho': False,  'F_iterations': 2,
+                                'C_iterations': 0} ),
+                 filter_operator=None,
+                 coarse_grid_P=None, 
+                 max_levels=20, max_coarse=20,
+                 keep=False, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
     ----------
     A : csr_matrix
-        Square matrix in CSR format
+        Square nonsymmetric matrix in CSR format
     strength : ['symmetric', 'classical', 'evolution', 'distance',
                 'algebraic_distance','affinity', 'energy_based', None]
         Method used to determine the strength of connection between unknowns
@@ -47,23 +51,26 @@ def airhead_solver(A,
     CF : {string} : default 'RS'
         Method used for coarse grid selection (C/F splitting)
         Supported methods are RS, PMIS, PMISc, CLJP, CLJPc, and CR.
-    influence: {np array size of num dofs} : default is None
-        If set, this adds influence to the lambda values of points for RS coarsening
-        This makes points with high influence values more likely to become C points
-    interp : {string} : default 'standard'
+    interp : {string} : default 'inject'
         Options include 'direct', 'standard', 'inject' and 'trivial'.
-    restrict : {string} : default None
-        Optional flag to use R != P^T. Only option is 'air' for approximate ideal
+    restrict : {string} : default 'neumann'
+        Options include 'air' for approximate ideal
         restriction.
-    presmoother : {string or dict}
+    presmoother : {string or dict} : default None
         Method used for presmoothing at each level.  Method-specific parameters
         may be passed in using a tuple, e.g.
         presmoother=('gauss_seidel',{'sweep':'symmetric}), the default.
-    postsmoother : {string or dict}
+    postsmoother : {string or dict} : default F-Jacobi
         Postsmoothing method with the same usage as presmoother
-    max_levels: {integer} : default 10
+    filter_operator : (bool, tol) : default None
+        Remove small entries in operators on each level if True. Entries are
+        considered "small" if |a_ij| < tol |a_ii|.
+    coarse_grid_P : {string} : default None
+        Option to specify a different construction of P used in computing RAP
+        vs. for interpolation in an actual solve.
+    max_levels: {integer} : default 20
         Maximum number of levels to be used in the multilevel solver.
-    max_coarse: {integer} : default 500
+    max_coarse: {integer} : default 20
         Maximum number of variables permitted on the coarse grid.
     keep: {bool} : default False
         Flag to indicate keeping extra operators in the hierarchy for
@@ -77,8 +84,6 @@ def airhead_solver(A,
 
     Other Parameters
     ----------------
-    cycle_type : ['V','W','F']
-        Structrure of multigrid cycle
     coarse_solver : ['splu', 'lu', 'cholesky, 'pinv', 'gauss_seidel', ... ]
         Solver used at the coarsest level of the MG hierarchy.
             Optionally, may be a tuple (fn, args), where fn is a string such as
@@ -89,32 +94,15 @@ def airhead_solver(A,
         'setup_complexity' = True. This will slow down performance, but
         increase accuracy of complexity count. 
 
-    Examples
-    --------
-    >>> from pyamg.gallery import poisson
-    >>> from pyamg import ruge_stuben_solver
-    >>> A = poisson((10,),format='csr')
-    >>> ml = ruge_stuben_solver(A,max_coarse=3)
-
     Notes
     -----
 
-    Standard interpolation is generally considered more robust than
-    direct, but direct is the currently the default until our new 
-    implementation of standard has been more rigorously tested.
 
-    "coarse_solver" is an optional argument and is the solver used at the
-    coarsest grid.  The default is a pseudo-inverse.  Most simply,
-    coarse_solver can be one of ['splu', 'lu', 'cholesky, 'pinv',
-    'gauss_seidel', ... ].  Additionally, coarse_solver may be a tuple
-    (fn, args), where fn is a string such as ['splu', 'lu', ...] or a callable
-    function, and args is a dictionary of arguments to be passed to fn.
 
 
     References
     ----------
-    .. [1] Trottenberg, U., Oosterlee, C. W., and Schuller, A.,
-       "Multigrid" San Diego: Academic Press, 2001.  Appendix A
+    .. [1] 
 
     See Also
     --------
@@ -229,21 +217,24 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         P = injection_interpolation(A, C, splitting, **kwargs)
     elif fn == 'trivial':
         P = trivial_interpolation(A, splitting, **kwargs)
-    elif fn == 'air':
-        P = approximate_ideal_restriction(A.T.tocsr(), splitting, **kwargs)
-        P = csr_matrix(P.T)
-    elif fn == 'algebraic':
-        P = algebraic_interpolation(A, splitting, **kwargs)
+    elif fn == 'neumann':
+        P = neumann_ideal_interpolation(A, splitting, **kwargs)
     else:
         raise ValueError('unknown interpolation method (%s)' % interp)
     levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
 
     # Optional different interpolation for RAP
     fn, kwargs = unpack_arg(coarse_grid_P)
-    if fn == 'inject':
+    if fn == 'standard':
+        P_temp = standard_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'direct':
+        P_temp = direct_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'inject':
         P_temp = injection_interpolation(A, C, splitting, **kwargs)
     elif fn == 'trivial':
         P_temp = trivial_interpolation(A, splitting, **kwargs)
+    elif fn == 'neumann':
+        P_temp = neumann_ideal_interpolation(A, splitting, **kwargs)
     else:
         P_temp = P
 
@@ -253,8 +244,8 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         R = P.T
     elif fn == 'air':
         R = approximate_ideal_restriction(A, splitting, **kwargs)
-    elif fn == 'algebraic':
-        R = algebraic_restriction(A, splitting, **kwargs)
+    elif fn == 'neumann':
+        R = neumann_ideal_restriction(A, splitting, **kwargs)
     elif fn == 'inject':
         R = injection_interpolation(A, C, splitting, **kwargs)
         R = csr_matrix(R.T)
