@@ -1465,7 +1465,7 @@ def tracemin_cg(A, Bc, Bf, W, Cpts, Fpts, maxiter, tol, tau,
         cost[0] += sp_nnz / float(A.nnz)
 
         if debug:
-            print('Iter ',it,' - |Res| = %3.7f'%res )
+            print('Iter ',it,' - |Res| = %3.10f'%res )
 
     # Get sizes and permutation matrix from [F, C] block
     # ordering to natural matrix ordering.
@@ -1630,7 +1630,6 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None,
     """ 
     Trace-minimization of P. Fill this in.
 
-
     TODO - add norm scaling Xff option
 
 
@@ -1718,11 +1717,12 @@ def trace_minimization(A, B, SOC, Cpts, Fpts=None,
     #        Don't need to change sparsity, just need to 
     #        satisfy constraints. 
     # Set T to initially satisfy constraints
-    # temp_cost = [0.0]
-    # BctBcinv = compute_BtBinv(Bc, T, cost=temp_cost)
-    # T = filter_operator(T, T, B=Bc, Bf=Bf, BtBinv=BctBcinv, cost=temp_cost)
-    # cost[0] += temp_cost[0] / float(A.nnz)
-    T.data[:] = 0.0
+    if exact:
+        temp_cost = [0.0]
+        BctBcinv = compute_BtBinv(Bc, T, cost=temp_cost)
+        T = filter_operator(T, T, B=Bc, Bf=Bf, BtBinv=BctBcinv, cost=temp_cost)
+        cost[0] += temp_cost[0] / float(A.nnz)
+    # T.data[:] = 0.0
 
     # Form P through constrained trace-min or weighted trace-min
     if exact:
