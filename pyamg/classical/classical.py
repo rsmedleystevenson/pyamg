@@ -216,7 +216,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, keep):
         # Generate the C/F splitting
         fn, kwargs = unpack_arg(CF)
         if fn == 'RS':
-            splitting.append( RS(C_diag[-1], influence, **kwargs) )
+            splitting.append( RS(C_diag[-1], **kwargs) )
         elif fn == 'PMIS':
             splitting.append( PMIS(C_diag[-1], **kwargs) )
         elif fn == 'PMISc':

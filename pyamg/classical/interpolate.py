@@ -81,7 +81,7 @@ def direct_interpolation(A, C, splitting, cost=[0]):
     return csr_matrix((Px, Pj, Pp))
 
 
-def standard_interpolation(A, C, splitting, cost=[0]):
+def standard_interpolation(A, C, splitting, theta=None, norm=None, cost=[0]):
     """Create prolongator using standard interpolation
 
     Parameters
@@ -121,16 +121,23 @@ def standard_interpolation(A, C, splitting, cost=[0]):
     if not isspmatrix_csr(C):
         raise TypeError('expected csr_matrix for C')
 
+    if theta is not None:
+        if norm is None:
+            C0 = classical_strength_of_connection(A, theta=theta, block=None, norm='min', cost=cost)
+        else:
+            C0 = classical_strength_of_connection(A, theta=theta, block=None, norm=norm, cost=cost)
+    else:
+        C0 = C.copy()
+
     # Interpolation weights are computed based on entries in A, but subject to
     # the sparsity pattern of C.  So, copy the entries of A into the
     # sparsity pattern of C.
-    C = C.copy()
-    C.data[:] = 1.0
-    C = C.multiply(A)
+    C0.data[:] = 1.0
+    C0 = C0.multiply(A)
 
     Pp = np.empty_like(A.indptr)
-    amg_core.rs_standard_interpolation_pass1(A.shape[0], C.indptr,
-    										 C.indices, splitting, Pp)
+    amg_core.rs_standard_interpolation_pass1(A.shape[0], C0.indptr,
+    										 C0.indices, splitting, Pp)
 
     nnz = Pp[-1]
     Pj = np.empty(nnz, dtype=Pp.dtype)
@@ -138,7 +145,7 @@ def standard_interpolation(A, C, splitting, cost=[0]):
 
     amg_core.rs_standard_interpolation_pass2(A.shape[0],
                                              A.indptr, A.indices, A.data,
-                                             C.indptr, C.indices, C.data,
+                                             C0.indptr, C0.indices, C0.data,
                                              splitting,
                                              Pp, Pj, Px)
     return  csr_matrix((Px, Pj, Pp))
