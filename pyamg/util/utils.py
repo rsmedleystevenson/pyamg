@@ -2243,7 +2243,7 @@ def filter_matrix_rows(A, theta, diagonal=False, lump=False, cost=[0.0]):
                                           A.indices, A.data, lump)
         A.eliminate_zeros()
         if Aformat == 'bsr':
-            A = A.tobsr()
+            A = A.tobsr(blocksize=blocksize)
     # Filter by maximum absolute value in row, A_ij = 0 if
     # |A_ij| < theta * max_{j!=i} |A_{ij}|
     else:
