@@ -2242,6 +2242,8 @@ def filter_matrix_rows(A, theta, diagonal=False, lump=False, cost=[0.0]):
         pyamg.amg_core.filter_matrix_rows(A.shape[0], theta, A.indptr,
                                           A.indices, A.data, lump)
         A.eliminate_zeros()
+        if Aformat == 'bsr':
+            A = A.tobsr()
     # Filter by maximum absolute value in row, A_ij = 0 if
     # |A_ij| < theta * max_{j!=i} |A_{ij}|
     else:
