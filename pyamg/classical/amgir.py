@@ -6,6 +6,7 @@ __docformat__ = "restructuredtext en"
 from warnings import warn
 from scipy.sparse import csr_matrix, isspmatrix_csr, SparseEfficiencyWarning, block_diag
 import numpy as np
+from copy import deepcopy
 
 from pyamg.multilevel import multilevel_solver
 from pyamg.relaxation.smoothing import change_smoothers
@@ -144,7 +145,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     # computing residuals
     if (filter_operator is not None) and (filter_operator[1] != 0): 
         if len(levels) == 1:
-            A = csr_matrix(levels[-1].A, copy=True)
+            A = deepcopy(levels[-1].A)
         else:
             A = levels[-1].A
         filter_matrix_rows(A, filter_operator[1], diagonal=True, lump=filter_operator[0])
