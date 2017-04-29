@@ -207,6 +207,23 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         raise ValueError('unknown C/F splitting method (%s)' % CF)
     levels[-1].complexity['CF'] += kwargs['cost'][0] * C.nnz / float(A.nnz)
 
+    # Build restriction operator
+    fn, kwargs = unpack_arg(restrict)
+    if fn is None:
+        R = P.T
+    elif fn == 'air':
+        R = approximate_ideal_restriction(A, splitting, **kwargs)
+    elif fn == 'neumann':
+        R = neumann_ideal_restriction(A, splitting, **kwargs)
+    elif fn == 'inject':
+        R = injection_interpolation(A, C, splitting, **kwargs)
+        R = csr_matrix(R.T)
+    elif fn == 'trivial':
+        R = trivial_interpolation(A, splitting, **kwargs)
+        R = csr_matrix(R.T)
+    else:
+        raise ValueError('unknown restriction method (%s)' % restrict)
+
     # Generate the interpolation matrix that maps from the coarse-grid to the
     # fine-grid
     fn, kwargs = unpack_arg(interp)
@@ -220,6 +237,8 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         P = trivial_interpolation(A, splitting, **kwargs)
     elif fn == 'neumann':
         P = neumann_ideal_interpolation(A, splitting, **kwargs)
+    elif fn == 'restrict':
+        P = R.T
     else:
         raise ValueError('unknown interpolation method (%s)' % interp)
     levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
@@ -238,23 +257,6 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         P_temp = neumann_ideal_interpolation(A, splitting, **kwargs)
     else:
         P_temp = P
-
-    # Build restriction operator
-    fn, kwargs = unpack_arg(restrict)
-    if fn is None:
-        R = P.T
-    elif fn == 'air':
-        R = approximate_ideal_restriction(A, splitting, **kwargs)
-    elif fn == 'neumann':
-        R = neumann_ideal_restriction(A, splitting, **kwargs)
-    elif fn == 'inject':
-        R = injection_interpolation(A, C, splitting, **kwargs)
-        R = csr_matrix(R.T)
-    elif fn == 'trivial':
-        R = trivial_interpolation(A, splitting, **kwargs)
-        R = csr_matrix(R.T)
-    else:
-        raise ValueError('unknown restriction method (%s)' % restrict)
 
     # Store relevant information for this level
     if keep:
