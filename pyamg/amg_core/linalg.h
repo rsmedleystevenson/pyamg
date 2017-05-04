@@ -1,7 +1,7 @@
 #ifndef LINALG_H
 #define LINALG_H
 
-#include <math.h>
+#include <cmath>
 #include <limits>
 #include <complex>
 #include <iostream>
@@ -132,7 +132,7 @@ inline std::complex<double> zero_imag(std::complex<double>& x)
  * Return row-major index from 2d array index, A[row,col].
  */
 template<class I>
-inline I row_major(const I &row, const I &col, const I &num_cols) 
+inline I row_major(const I row, const I col, const I num_cols) 
 {
     return row*num_cols + col;
 }
@@ -141,7 +141,7 @@ inline I row_major(const I &row, const I &col, const I &num_cols)
  * Return column-major index from 2d array index, A[row,col]. 
  */
 template<class I>
-inline I col_major(const I &row, const I &col, const I &num_rows) 
+inline I col_major(const I row, const I col, const I num_rows) 
 {
     return col*num_rows + row;
 }
@@ -290,7 +290,11 @@ inline void norm(const T x[], const I n, F &normx)
 {
     normx = sqrt(real(dot_prod(x,x,n)));
 }
-
+template<class I, class T>
+inline T norm(const T x[], const I n)
+{
+    return std::sqrt(dot_prod(x,x,n));
+}
 
 /* axpy(x, y, alpha, n)
  *
@@ -1107,7 +1111,7 @@ std::vector<T> QR(T A[],
                   const I is_col_major)
 {
     // Funciton poIer for row or column major matrices
-    I (*get_ind)(const I&, const I&, const I&);
+    I (*get_ind)(const I, const I, const I);
     const I *C;
     if (is_col_major) {
         get_ind = &col_major;
@@ -1228,7 +1232,7 @@ void upper_tri_solve(const T R[],
                      const I is_col_major)
 {
     // Funciton pointer for row or column major matrices
-    I (*get_ind)(const I&, const I&, const I&);
+    I (*get_ind)(const I, const I, const I);
     const I *C;
     if (is_col_major) {
         get_ind = &col_major;
@@ -1299,7 +1303,7 @@ void lower_tri_solve(const T L[],
                      const I is_col_major)
 {
     // Funciton poIer for row or column major matrices
-    I (*get_ind)(const I&, const I&, const I&);
+    I (*get_ind)(const I, const I, const I);
     const I *C;
     if (is_col_major) {
         get_ind = &col_major;
@@ -1370,7 +1374,7 @@ void least_squares(T A[],
                    const I is_col_major=0)
 {
     // Function pointer for row or column major matrices
-    I (*get_ind)(const I&, const I&, const I&);
+    I (*get_ind)(const I, const I, const I);
     if (is_col_major) {
         get_ind = &col_major;
     }
@@ -1600,6 +1604,5 @@ void filter_matrix_rows(const I n_row,
         }
     }
 }
-
 
 #endif

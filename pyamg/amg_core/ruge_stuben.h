@@ -1262,7 +1262,10 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
                                     const I C_colinds[], const int C_colinds_size,
                                     const T C_data[], const int C_data_size,
                                     const I Cpts[], const int Cpts_size,
-                                    const I splitting[], const int splitting_size )
+                                    const I splitting[], const int splitting_size,
+                                    const I use_gmres = 0,
+                                    const I maxiter = 10,
+                                    const I precondition = 1 )
 {
     I is_col_major = true;
 
@@ -1335,7 +1338,12 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         // Solve linear system (least squares solves exactly when full rank)
         // s.t. (RA)_ij = 0 for (i,j) within the sparsity pattern of R. Store
         // solution in data vector for R.
-        least_squares(&A0[0], &b0[0], &data[rowptr[row]], size_N, size_N, is_col_major);
+        if (use_gmres) {
+            dense_GMRES(&A0[0], &b0[0], &data[rowptr[row]], size_N, is_col_major, maxiter, precondition);
+        }
+        else {
+            least_squares(&A0[0], &b0[0], &data[rowptr[row]], size_N, size_N, is_col_major);
+        }
 
         // Add identity for C-point in this row
         colinds[ind] = cpoint;

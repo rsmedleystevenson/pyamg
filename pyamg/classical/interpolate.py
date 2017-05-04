@@ -402,7 +402,8 @@ def neumann_ideal_interpolation(A, splitting, theta=0.0, degree=1, cost=[0]):
     return P
 
 
-def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=1, cost=[0]):
+def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=1,
+                                  use_gmres=False, maxiter=10, precondition=True, cost=[0]):
     """ Compute approximate ideal restriction by setting RA = 0, within the
     sparsity pattern of R. Sparsity pattern of R for the ith row (i.e. ith
     C-point) is the set of all strongly connected F-points, or the max_row
@@ -496,7 +497,8 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
         R_data = np.zeros(nnz, dtype=A.dtype)
         amg_core.approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
                                                 A.indices, A.data, C.indptr, C.indices,
-                                                C.data, Cpts, splitting)
+                                                C.data, Cpts, splitting, use_gmres, maxiter,
+                                                precondition)
         R = csr_matrix((R_data, R_colinds, R_rowptr), shape=[nc,A.shape[0]])
 
     R.eliminate_zeros()

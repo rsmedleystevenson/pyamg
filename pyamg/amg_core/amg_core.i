@@ -184,6 +184,7 @@ INSTANTIATE_INDEX_ONLY(connected_components)
 INSTANTIATE_INDEXDATA_COMPLEX(apply_householders)
 INSTANTIATE_INDEXDATA_COMPLEX(householder_hornerscheme)
 INSTANTIATE_INDEXDATA_COMPLEX(apply_givens)
+INSTANTIATE_INDEXDATA(dense_GMRES)
 
 /*----------------------------------------------------------------------------
   relaxation.h
