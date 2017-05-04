@@ -1220,18 +1220,19 @@ std::vector<T> QR(T A[],
  * -----
  * R need not be square, the system will be solved over the
  * rank r upper-triangular block. If remaining entries in
- * solution are unused, they will be set to zero.
+ * solution are unused, they will be set to zero. If a zero
+ * is encountered on the ith diagonal, x[i] is set to zero. 
  *
  */        
 template<class I, class T>
 void upper_tri_solve(const T R[],
                      const T rhs[],
                      T x[],
-                     const I &m,
-                     const I &n,
+                     const I m,
+                     const I n,
                      const I is_col_major)
 {
-    // Funciton pointer for row or column major matrices
+    // Function pointer for row or column major matrices
     I (*get_ind)(const I, const I, const I);
     const I *C;
     if (is_col_major) {
@@ -1251,10 +1252,11 @@ void upper_tri_solve(const T R[],
             temp -= R[get_ind(i,j,*C)]*x[j];
         }
         if (std::abs(R[get_ind(i,i,*C)]) < 1e-12) {
-            std::cout << "Warning: Upper triangular matrix near singular.\n"
-                         "Dividing by ~ 0.\n";
+            x[i] = 0.0;
         }
-        x[i] = temp / R[get_ind(i,i,*C)];
+        else {
+            x[i] = temp / R[get_ind(i,i,*C)];            
+        }
     }
 
     // If rank < size of rhs, set free elements in x to zero
@@ -1291,7 +1293,9 @@ void upper_tri_solve(const T R[],
  * -----
  * L need not be square, the system will be solved over the
  * rank r lower-triangular block. If remaining entries in
- * solution are unused, they will be set to zero.
+ * solution are unused, they will be set to zero. If a zero
+ * is encountered on the ith diagonal, x[i] is set to zero. 
+ *
  *
  */
 template<class I, class T>
@@ -1302,7 +1306,7 @@ void lower_tri_solve(const T L[],
                      const I &n,
                      const I is_col_major)
 {
-    // Funciton poIer for row or column major matrices
+    // Function pointer for row or column major matrices
     I (*get_ind)(const I, const I, const I);
     const I *C;
     if (is_col_major) {
@@ -1322,10 +1326,11 @@ void lower_tri_solve(const T L[],
             temp -= L[get_ind(i,j,*C)]*x[j];
         }
         if (std::abs(L[get_ind(i,i,*C)]) < 1e-12) {
-            std::cout << "Warning: Lower triangular matrix near singular.\n"
-                         "Dividing by ~ 0.\n";
+            x[i] = 0.0;
         }
-        x[i] = temp / L[get_ind(i,i,*C)];
+        else{
+            x[i] = temp / L[get_ind(i,i,*C)];
+        }
     }
 
     // If rank < size of rhs, set free elements in x to zero

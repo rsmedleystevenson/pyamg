@@ -9,6 +9,7 @@
 #include <algorithm>
 
 #include "linalg.h"
+#include "krylov.h"
 #include "graph.h"
 
 
@@ -1338,11 +1339,20 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         // Solve linear system (least squares solves exactly when full rank)
         // s.t. (RA)_ij = 0 for (i,j) within the sparsity pattern of R. Store
         // solution in data vector for R.
-        if (use_gmres) {
-            dense_GMRES(&A0[0], &b0[0], &data[rowptr[row]], size_N, is_col_major, maxiter, precondition);
-        }
-        else {
-            least_squares(&A0[0], &b0[0], &data[rowptr[row]], size_N, size_N, is_col_major);
+        if (size_N > 0) {
+            if (use_gmres) {
+                std::vector<T> test(size_N);
+                // dense_GMRES(&A0[0], &b0[0], &data[rowptr[row]], size_N, is_col_major, maxiter, precondition);
+                dense_GMRES(&A0[0], &b0[0], &test[0], size_N, is_col_major, maxiter, precondition);
+                // std::cout << "success1, ";
+                for (I zz=0; zz<size_N; zz++) {
+                    data[rowptr[row] + zz] = test[zz];
+                }
+                // std::cout << "success2.\n";
+            }
+            else {
+                least_squares(&A0[0], &b0[0], &data[rowptr[row]], size_N, size_N, is_col_major);
+            }
         }
 
         // Add identity for C-point in this row
