@@ -489,7 +489,8 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
         amg_core.block_approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
                                                       A.indices, A.data.ravel(), C.indptr,
                                                       C.indices, C.data, Cpts, splitting,
-                                                      blocksize)
+                                                      blocksize, use_gmres, maxiter,
+                                                      precondition)
         R = bsr_matrix((R_data.reshape(nnz,blocksize,blocksize), R_colinds, R_rowptr),
                         blocksize=[blocksize,blocksize], shape=[nc*blocksize,A.shape[0]])
     # Not block matrix

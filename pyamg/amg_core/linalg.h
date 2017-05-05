@@ -1138,12 +1138,17 @@ std::vector<T> QR(T A[],
 
         // Get norm of next column of A to be reflected. Choose sign
         // opposite that of A_jj to avoid catastrophic cancellation.
+        // Skip loop if norm is zero, as that means column of A is all
+        // zero.
         T normx = 0;
         for (I i=j; i<m; i++) {
             T temp = A[get_ind(i,j,*C)];
             normx += temp*temp;
         }
         normx = std::sqrt(normx);
+        if (normx < 1e-12) {
+            continue;
+        }
         normx *= -1*signof(A[get_ind(j,j,*C)]);
 
         // Form vector v for Householder matrix H = I - tau*vv^T

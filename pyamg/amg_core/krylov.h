@@ -292,10 +292,10 @@ void dense_GMRES(T A[],
             axpy(b, &V[v_ind], -temp, n);
         }
 
-        // Check if residual approximately zero; if so, set matrix size (maxiter) and exit loop
+        // Check if residual approximately zero; if so, set matrix rank and exit loop
         normb = norm(b, n);
         if (normb < 1e-12) {
-            rank = j;
+            rank = j+1;
             if (j < (maxiter-1)) {
                 H[get_ind(j+1,j,C_h)] = 0.0;
             }

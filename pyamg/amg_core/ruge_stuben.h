@@ -1341,14 +1341,7 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
         // solution in data vector for R.
         if (size_N > 0) {
             if (use_gmres) {
-                std::vector<T> test(size_N);
-                // dense_GMRES(&A0[0], &b0[0], &data[rowptr[row]], size_N, is_col_major, maxiter, precondition);
-                dense_GMRES(&A0[0], &b0[0], &test[0], size_N, is_col_major, maxiter, precondition);
-                // std::cout << "success1, ";
-                for (I zz=0; zz<size_N; zz++) {
-                    data[rowptr[row] + zz] = test[zz];
-                }
-                // std::cout << "success2.\n";
+                dense_GMRES(&A0[0], &b0[0], &data[rowptr[row]], size_N, is_col_major, maxiter, precondition);
             }
             else {
                 least_squares(&A0[0], &b0[0], &data[rowptr[row]], size_N, size_N, is_col_major);
@@ -1378,7 +1371,10 @@ void block_approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_siz
                                           const T C_data[], const int C_data_size,
                                           const I Cpts[], const int Cpts_size,
                                           const I splitting[], const int splitting_size,
-                                          const I blocksize )
+                                          const I blocksize,
+                                          const I use_gmres = 0,
+                                          const I maxiter = 10,
+                                          const I precondition = 1  )
 {
     I is_col_major = true;
 
@@ -1452,12 +1448,9 @@ void block_approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_siz
                 // Increase block column count
                 this_block_col += 1;
             }
-            // Incresae block row count
+            // Increase block row count
             this_block_row += 1;
         }
-
-        // Take QR of local matrix for linear solves, R stored in A0
-        std::vector<T> Q = QR(&A0[0],num_DOFs,num_DOFs,is_col_major);
 
         // Build local right hand side given by blocks b_j = -A_{cpt,N_j}, where N_j
         // is the jth indice in the neighborhood of strongly connected F-points
@@ -1491,22 +1484,45 @@ void block_approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_siz
         }
 
         // Solve local linear system for each row in block
-        std::vector<T> rhs(num_DOFs);
-        for (I this_row=0; this_row<blocksize; this_row++) {
-            I b_ind0 = num_DOFs * this_row;
+        if (use_gmres) {
+                
+            // Apply GMRES to right-hand-side for each DOF in block
+            std::vector<T> rhs(num_DOFs);
+            for (I this_row=0; this_row<blocksize; this_row++) {
+                I b_ind0 = num_DOFs * this_row;
 
-            // Multiply right hand side, rhs := Q^T*b
-            for (I i=0; i<num_DOFs; i++) {
-                rhs[i] = 0.0;
-                for (I k=0; k<num_DOFs; k++) {
-                    rhs[i] += b0[b_ind0 + k] * Q[col_major(k,i,num_DOFs)];
+                // Transfer rhs in b[] to rhs[] (solution to all systems will be stored in b[])
+                for (I i=0; i<num_DOFs; i++) {
+                    rhs[i] = b0[b_ind0 + i];
                 }
-            }
 
-            // Solve upper triangular system from QR, store solution in b0
-            upper_tri_solve(&A0[0], &rhs[0], &b0[b_ind0], num_DOFs, num_DOFs, is_col_major);
+                // Solve system using GMRES
+                dense_GMRES(&A0[0], &rhs[0], &b0[b_ind0], num_DOFs,
+                            is_col_major, maxiter, precondition);
+            }
         }
+        else {
+            // Take QR of local matrix for linear solves, R stored in A0
+            std::vector<T> Q = QR(&A0[0], num_DOFs, num_DOFs, is_col_major);
             
+            // Solve each block based on QR decomposition
+            std::vector<T> rhs(num_DOFs);
+            for (I this_row=0; this_row<blocksize; this_row++) {
+                I b_ind0 = num_DOFs * this_row;
+
+                // Multiply right hand side, rhs := Q^T*b (assumes Q stored in row-major)
+                for (I i=0; i<num_DOFs; i++) {
+                    rhs[i] = 0.0;
+                    for (I k=0; k<num_DOFs; k++) {
+                        rhs[i] += b0[b_ind0 + k] * Q[col_major(k,i,num_DOFs)];
+                    }
+                }
+
+                // Solve upper triangular system from QR, store solution in b0
+                upper_tri_solve(&A0[0], &rhs[0], &b0[b_ind0], num_DOFs, num_DOFs, is_col_major);
+            }
+        }
+
         // Add solution for each block row to data array. See section on RHS for
         // mapping between bsr data array and row-major array solution stored in
         for (I block_ind=0; block_ind<size_N; block_ind++) {
@@ -1515,7 +1531,7 @@ void block_approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_siz
                     I bsr_ind = rowptr[row]*blocksize*blocksize + block_ind*blocksize*blocksize + 
                                 this_row*blocksize + this_col;
                     I row_ind = num_DOFs*this_row + block_ind*blocksize + this_col;
-                    if (std::abs(b0[row_ind]) > 1e-16) {
+                    if (std::abs(b0[row_ind]) > 1e-15) {
                         data[bsr_ind] = b0[row_ind];                    
                     }
                     else {
