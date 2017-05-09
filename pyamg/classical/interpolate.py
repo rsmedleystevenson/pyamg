@@ -269,14 +269,13 @@ def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, cost=[0]):
     Does not support block matrices.
     """
 
-    A = A.tocsr()
-    warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
+    if not isspmatrix_csr(A):
+        A = A.tocsr()
+        warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
     
+    C = csr_matrix(A, copy=True)
     if theta > 0.0:
-        C = csr_matrix(A, copy=True)
         filter_matrix_rows(C, theta, diagonal=True, lump=False)
-    else:
-        C = A
 
     Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
     Fpts = np.array(np.where(splitting == 0)[0], dtype='int32')
