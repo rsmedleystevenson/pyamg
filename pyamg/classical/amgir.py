@@ -208,6 +208,26 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         raise ValueError('unknown C/F splitting method (%s)' % CF)
     levels[-1].complexity['CF'] += kwargs['cost'][0] * C.nnz / float(A.nnz)
 
+    # Generate the interpolation matrix that maps from the coarse-grid to the
+    # fine-grid
+    r_flag = False
+    fn, kwargs = unpack_arg(interp)
+    if fn == 'standard':
+        P = standard_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'direct':
+        P = direct_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'inject':
+        P = injection_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'trivial':
+        P = trivial_interpolation(A, splitting, **kwargs)
+    elif fn == 'neumann':
+        P = neumann_ideal_interpolation(A, splitting, **kwargs)
+    elif fn == 'restrict':
+        r_flag = True
+    else:
+        raise ValueError('unknown interpolation method (%s)' % interp)
+    levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
+
     # Build restriction operator
     fn, kwargs = unpack_arg(restrict)
     if fn is None:
@@ -225,6 +245,25 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     else:
         raise ValueError('unknown restriction method (%s)' % restrict)
 
+    # If set P = R^T
+    if r_flag:
+        P = R.T
+
+    # Optional different interpolation for RAP
+    fn, kwargs = unpack_arg(coarse_grid_P)
+    if fn == 'standard':
+        P_temp = standard_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'direct':
+        P_temp = direct_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'inject':
+        P_temp = injection_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'trivial':
+        P_temp = trivial_interpolation(A, splitting, **kwargs)
+    elif fn == 'neumann':
+        P_temp = neumann_ideal_interpolation(A, splitting, **kwargs)
+    else:
+        P_temp = P
+
     # Optional different restriction for RAP
     fn, kwargs = unpack_arg(coarse_grid_R)
     if fn is None:
@@ -241,40 +280,6 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         R_temp = csr_matrix(R_temp.T)
     else:
         raise ValueError('unknown restriction method (%s)' % restrict)
-
-    # Generate the interpolation matrix that maps from the coarse-grid to the
-    # fine-grid
-    fn, kwargs = unpack_arg(interp)
-    if fn == 'standard':
-        P = standard_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'direct':
-        P = direct_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'inject':
-        P = injection_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'trivial':
-        P = trivial_interpolation(A, splitting, **kwargs)
-    elif fn == 'neumann':
-        P = neumann_ideal_interpolation(A, splitting, **kwargs)
-    elif fn == 'restrict':
-        P = R.T
-    else:
-        raise ValueError('unknown interpolation method (%s)' % interp)
-    levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
-
-    # Optional different interpolation for RAP
-    fn, kwargs = unpack_arg(coarse_grid_P)
-    if fn == 'standard':
-        P_temp = standard_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'direct':
-        P_temp = direct_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'inject':
-        P_temp = injection_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'trivial':
-        P_temp = trivial_interpolation(A, splitting, **kwargs)
-    elif fn == 'neumann':
-        P_temp = neumann_ideal_interpolation(A, splitting, **kwargs)
-    else:
-        P_temp = P
 
     # Store relevant information for this level
     if keep:
