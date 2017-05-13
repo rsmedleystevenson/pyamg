@@ -35,6 +35,7 @@ def AMGir_solver(A,
                                 'C_iterations': 0} ),
                  filter_operator=None,
                  coarse_grid_P=None, 
+                 coarse_grid_R=None, 
                  max_levels=20, max_coarse=20,
                  keep=False, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
@@ -127,7 +128,7 @@ def AMGir_solver(A,
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
         bottom = extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
-                                  coarse_grid_P, keep)
+                                  coarse_grid_P, coarse_grid_R, keep)
         if bottom:
             break
 
@@ -138,7 +139,7 @@ def AMGir_solver(A,
 
 # internal function
 def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
-                     coarse_grid_P, keep):
+                     coarse_grid_P, coarse_grid_R, keep):
     """ helper function for local methods """
 
     # Filter operator. Need to keep original matrix on fineest level for
@@ -224,6 +225,23 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     else:
         raise ValueError('unknown restriction method (%s)' % restrict)
 
+    # Optional different restriction for RAP
+    fn, kwargs = unpack_arg(coarse_grid_R)
+    if fn is None:
+        R_temp = R
+    elif fn == 'air':
+        R_temp = approximate_ideal_restriction(A, splitting, **kwargs)
+    elif fn == 'neumann':
+        R_temp = neumann_ideal_restriction(A, splitting, **kwargs)
+    elif fn == 'inject':
+        R_temp = injection_interpolation(A, C, splitting, **kwargs)
+        R_temp = csr_matrix(R_temp.T)
+    elif fn == 'trivial':
+        R_temp = trivial_interpolation(A, splitting, **kwargs)
+        R_temp = csr_matrix(R_temp.T)
+    else:
+        raise ValueError('unknown restriction method (%s)' % restrict)
+
     # Generate the interpolation matrix that maps from the coarse-grid to the
     # fine-grid
     fn, kwargs = unpack_arg(interp)
@@ -267,9 +285,9 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     levels[-1].splitting = splitting  # C/F splitting
 
     # Form coarse grid operator, get complexity
-    levels[-1].complexity['RAP'] = mat_mat_complexity(R,A) / float(A.nnz)
-    RA = R * A
-    levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P) / float(A.nnz)
+    levels[-1].complexity['RAP'] = mat_mat_complexity(R_temp,A) / float(A.nnz)
+    RA = R_temp * A
+    levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P_temp) / float(A.nnz)
     A = RA * P_temp
 
     levels.append(multilevel_solver.level())
