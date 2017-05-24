@@ -1342,6 +1342,7 @@ def tracemin_cg(A, Bc, Bf, W, Cpts, Fpts, maxiter, tol, tau,
     # Scale Aff by tau to avoid multiplying correction by tau each CG iteration.
     if X_norm:
         Xff = sparse.diags(Aff.diagonal(),0,format='csr')
+        Xff.data *= (1-tau)
 
     Aff.data *= tau
     cost[0] += Aff.nnz / float(A.nnz)
