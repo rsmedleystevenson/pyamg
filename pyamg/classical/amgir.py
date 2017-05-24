@@ -222,6 +222,9 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         P = trivial_interpolation(A, splitting, **kwargs)
     elif fn == 'neumann':
         P = neumann_ideal_interpolation(A, splitting, **kwargs)
+    elif fn == 'air':
+        P = approximate_ideal_restriction(A.T, splitting, **kwargs)
+        P = P.T
     elif fn == 'restrict':
         r_flag = True
     else:
