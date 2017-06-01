@@ -108,7 +108,13 @@ __all__ = ['RS', 'PMIS', 'PMISc', 'CLJP', 'CLJPc', 'MIS', 'weighted_matching']
 __docformat__ = "restructuredtext en"
 
 
-def RS(S, second_pass=True, cost=[0]):
+def FindBoundaryAdjacentPoints(A):
+    influence = np.empty(A.shape[0], dtype='intc')
+    amg_core.find_boundary_adjacent_points(A.shape[0], A.indptr, A.indices, A.data, influence)
+    return influence
+
+
+def RS(S, influence=None, cost=[0]):
     """Compute a C/F splitting using Ruge-Stuben coarsening
 
     Parameters
@@ -147,17 +153,23 @@ def RS(S, second_pass=True, cost=[0]):
     S = remove_diagonal(S)
 
     T = S.T.tocsr()  # transpose S for efficient column access
+
     splitting = np.empty(S.shape[0], dtype='intc')
-    influence = np.zeros((S.shape[0],), dtype='intc')
+
+    if (influence == None):
+        influence = np.zeros(S.shape[0], dtype='intc')
 
     amg_core.rs_cf_splitting(S.shape[0],
                              S.indptr, S.indices,
                              T.indptr, T.indices,
                              influence,
                              splitting)
-    if second_pass:
-        amg_core.rs_cf_splitting_pass2(S.shape[0], S.indptr,
-                                S.indices, splitting)
+    amg_core.rs_cf_splitting_pass2(S.shape[0], S.indptr,
+                                   S.indices, splitting)
+
+    splitting[np.where(splitting == 0)] = 2
+    splitting[np.where(splitting == 1)] = 0
+    splitting[np.where(splitting == 2)] = 1
 
     return splitting
 
