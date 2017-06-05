@@ -207,9 +207,6 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
 
     """
 
-    # TODO : block = 'block' has a seg-fault
-
-
     if (theta < 0 or theta > 1):
         raise ValueError('expected theta in [0,1]')
 
@@ -220,10 +217,11 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
 
     # Block structure considered before computing SOC
     if block == 'block' and blocksize > 1:
-        M, N = A.shape
         R, C = A.blocksize
         if R != C:
             raise ValueError('Matrix must have square blocks')
+
+        N = A.shape[0] / R
 
         # SOC based on maximum element in each block
         if norm == 'abs':
@@ -247,16 +245,16 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
         Sx = np.empty_like(data)
 
         if norm == 'abs' or norm == 'fro':
-            amg_core.classical_strength_of_connection_abs(A.shape[0], theta, A.indptr,
-                                                          A.indices, data, Sp, Sj, Sx)
+            amg_core.classical_strength_of_connection_abs(N, theta, A.indptr, A.indices,
+                                                          data, Sp, Sj, Sx)
         elif norm == 'min':
-            amg_core.classical_strength_of_connection_min(A.shape[0], theta, A.indptr,
-                                                          A.indices, data, Sp, Sj, Sx)
+            amg_core.classical_strength_of_connection_min(N, theta, A.indptr, A.indices,
+                                                          data, Sp, Sj, Sx)
         else:  
             raise ValueError("Unrecognized option for norm.")
     
         # One pass through nnz to find largest entry, one to filter
-        S = sparse.csr_matrix((Sx, Sj, Sp), shape=[N/R, N/R])
+        S = sparse.csr_matrix((Sx, Sj, Sp), shape=[N, N])
         cost[0] += 2
         
         # Take magnitude and scale by largest entry
