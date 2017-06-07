@@ -267,7 +267,6 @@ INSTANTIATE_INDEXDATA(remove_strong_FF_connections)
 INSTANTIATE_INDEXDATA(cr_helper)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass1)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass2)
-INSTANTIATE_INDEXDATA(injection_interpolation)
 INSTANTIATE_INDEXDATA(block_approx_ideal_restriction_pass2)
 
 /*----------------------------------------------------------------------------

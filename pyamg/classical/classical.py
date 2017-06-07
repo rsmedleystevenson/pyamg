@@ -215,7 +215,7 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
         P = direct_interpolation(A, C, splitting, **kwargs)
     elif fn == 'one_point':
         P = one_point_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'injection':
+    elif fn == 'inject':
         P = injection_interpolation(A, splitting, **kwargs)
     else:
         raise ValueError('unknown interpolation method (%s)' % interpolation)
@@ -246,7 +246,7 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
             temp_C = C.T.tocsr()
             R = one_point_interpolation(A, temp_C, splitting, **kwargs)
             R = R.T.tocsr()
-        elif fn == 'injection':         # Don't need A^T or C^T here
+        elif fn == 'inject':         # Don't need A^T or C^T here
             R = injection_interpolation(A, splitting, **kwargs)
             R = R.T.tocsr()
         else:
@@ -273,7 +273,7 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
             temp_C = C.T.tocsr()
             R = one_point_interpolation(A, temp_C, splitting, **kwargs)
             R = R.T.tobsr()
-        elif fn == 'injection':         # Don't need A^T or C^T here
+        elif fn == 'inject':         # Don't need A^T or C^T here
             R = injection_interpolation(A, splitting, **kwargs)
             R = R.T.tobsr()
         else:

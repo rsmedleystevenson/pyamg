@@ -27,7 +27,7 @@ __all__ = ['AMGir_solver']
 def AMGir_solver(A,
                  strength=('classical', {'theta': 0.3 ,'norm': 'min'}),
                  CF='RS',
-                 interp='inject',
+                 interp='one_point',
                  restrict='neumann',
                  presmoother=None,
                  postsmoother=('FC_jacobi', {'omega': 1.0, 'iterations': 1,
@@ -214,18 +214,25 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     fn, kwargs = unpack_arg(interp)
     if fn == 'standard':
         P = standard_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'distance_two':
+        P = distance_two_interpolation(A, C, splitting, **kwargs)
     elif fn == 'direct':
         P = direct_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'one_point':
+        P = one_point_interpolation(A, C, splitting, **kwargs)
     elif fn == 'inject':
-        P = injection_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'trivial':
-        P = trivial_interpolation(A, splitting, **kwargs)
+        P = injection_interpolation(A, splitting, **kwargs)
     elif fn == 'neumann':
         P = neumann_ideal_interpolation(A, splitting, **kwargs)
     elif fn == 'air':
-	temp_A = csr_matrix(A.T)
-        P = approximate_ideal_restriction(temp_A, splitting, **kwargs)
-        P = csr_matrix(P.T)
+	    if isspmatrix_bsr(A): 
+            temp_A = bsr_matrix(A.T)
+            P = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P = bsr_matrix(P.T)
+        else:
+            temp_A = csr_matrix(A.T)
+            P = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P = csr_matrix(P.T)
     elif fn == 'restrict':
         r_flag = True
     else:
@@ -240,12 +247,41 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         R = approximate_ideal_restriction(A, splitting, **kwargs)
     elif fn == 'neumann':
         R = neumann_ideal_restriction(A, splitting, **kwargs)
-    elif fn == 'inject':
-        R = injection_interpolation(A, C, splitting, **kwargs)
-        R = csr_matrix(R.T)
-    elif fn == 'trivial':
-        R = trivial_interpolation(A, splitting, **kwargs)
-        R = csr_matrix(R.T)
+    elif fn == 'one_point':         # Don't need A^T here
+        temp_C = C.T.tocsr()
+        R = one_point_interpolation(A, temp_C, splitting, **kwargs)
+        if isspmatrix_bsr(A):
+            R = R.T.tobsr()
+        else:
+            R = R.T.tocsr()
+    elif fn == 'inject':            # Don't need A^T or C^T here
+        R = injection_interpolation(A, splitting, **kwargs)
+        if isspmatrix_bsr(A):
+            R = R.T.tobsr()
+        else:
+            R = R.T.tocsr()
+    elif fn == 'standard':
+        if isspmatrix_bsr(A):
+            temp_A = A.T.tobsr()
+            temp_C = C.T.tobsr()
+            R = standard_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R = R.T.tobsr()
+        else: 
+            temp_A = A.T.tocsr()
+            temp_C = C.T.tocsr()
+            R = standard_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R = R.T.tocsr()
+    elif fn == 'direct':
+        if isspmatrix_bsr(A):
+            temp_A = A.T.tobsr()
+            temp_C = C.T.tobsr()
+            R = direct_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R = R.T.tobsr()        
+        else:
+            temp_A = A.T.tocsr()
+            temp_C = C.T.tocsr()
+            R = direct_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R = R.T.tocsr()
     else:
         raise ValueError('unknown restriction method (%s)' % restrict)
 
@@ -257,33 +293,71 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     fn, kwargs = unpack_arg(coarse_grid_P)
     if fn == 'standard':
         P_temp = standard_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'distance_two':
+        P_temp = distance_two_interpolation(A, C, splitting, **kwargs)
     elif fn == 'direct':
         P_temp = direct_interpolation(A, C, splitting, **kwargs)
+    elif fn == 'one_point':
+        P_temp = one_point_interpolation(A, C, splitting, **kwargs)
     elif fn == 'inject':
-        P_temp = injection_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'trivial':
-        P_temp = trivial_interpolation(A, splitting, **kwargs)
+        P_temp = injection_interpolation(A, splitting, **kwargs)
     elif fn == 'neumann':
         P_temp = neumann_ideal_interpolation(A, splitting, **kwargs)
+    elif fn == 'air':
+        if isspmatrix_bsr(A): 
+            temp_A = bsr_matrix(A.T)
+            P_temp = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P_temp = bsr_matrix(P_temp.T)
+        else:
+            temp_A = csr_matrix(A.T)
+            P_temp = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P_temp = csr_matrix(P_temp.T)
     else:
         P_temp = P
 
     # Optional different restriction for RAP
     fn, kwargs = unpack_arg(coarse_grid_R)
-    if fn is None:
-        R_temp = R
-    elif fn == 'air':
+    if fn == 'air':
         R_temp = approximate_ideal_restriction(A, splitting, **kwargs)
     elif fn == 'neumann':
         R_temp = neumann_ideal_restriction(A, splitting, **kwargs)
-    elif fn == 'inject':
-        R_temp = injection_interpolation(A, C, splitting, **kwargs)
-        R_temp = csr_matrix(R_temp.T)
-    elif fn == 'trivial':
-        R_temp = trivial_interpolation(A, splitting, **kwargs)
-        R_temp = csr_matrix(R_temp.T)
+    elif fn == 'one_point':         # Don't need A^T here
+        temp_C = C.T.tocsr()
+        R_temp = one_point_interpolation(A, temp_C, splitting, **kwargs)
+        if isspmatrix_bsr(A):
+            R_temp = R_temp.T.tobsr()
+        else:
+            R_temp = R_temp.T.tocsr()
+    elif fn == 'inject':            # Don't need A^T or C^T here
+        R_temp = injection_interpolation(A, splitting, **kwargs)
+        if isspmatrix_bsr(A):
+            R_temp = R_temp.T.tobsr()
+        else:
+            R_temp = R_temp.T.tocsr()
+    elif fn == 'standard':
+        if isspmatrix_bsr(A):
+            temp_A = A.T.tobsr()
+            temp_C = C.T.tobsr()
+            R_temp = standard_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R_temp = R_temp.T.tobsr()
+        else: 
+            temp_A = A.T.tocsr()
+            temp_C = C.T.tocsr()
+            R_temp = standard_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R_temp = R_temp.T.tocsr()
+    elif fn == 'direct':
+        if isspmatrix_bsr(A):
+            temp_A = A.T.tobsr()
+            temp_C = C.T.tobsr()
+            R_temp = direct_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R_temp = R_temp.T.tobsr()        
+        else:
+            temp_A = A.T.tocsr()
+            temp_C = C.T.tocsr()
+            R_temp = direct_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R_temp = R_temp.T.tocsr()
     else:
-        raise ValueError('unknown restriction method (%s)' % restrict)
+        R_temp = R
 
     # Store relevant information for this level
     if keep:
@@ -298,6 +372,12 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     RA = R_temp * A
     levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P_temp) / float(A.nnz)
     A = RA * P_temp
+
+    # Make sure coarse-grid operator is in correct sparse format
+    if (isspmatrix_csr(P) and (not isspmatrix_csr(A))):
+        A = A.tocsr()
+    elif (isspmatrix_bsr(P) and (not isspmatrix_bsr(A))):
+        A = A.tobsr()
 
     levels.append(multilevel_solver.level())
     levels[-1].A = A
