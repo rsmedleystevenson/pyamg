@@ -4,7 +4,8 @@ from __future__ import absolute_import
 __docformat__ = "restructuredtext en"
 
 from warnings import warn
-from scipy.sparse import csr_matrix, isspmatrix_csr, SparseEfficiencyWarning, block_diag
+from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr, \
+    SparseEfficiencyWarning, block_diag
 import numpy as np
 from copy import deepcopy
 
@@ -17,7 +18,7 @@ from pyamg.strength import classical_strength_of_connection, \
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks, \
     filter_matrix_rows
 from pyamg.classical.interpolate import direct_interpolation, standard_interpolation, \
-     trivial_interpolation, injection_interpolation, approximate_ideal_restriction, \
+     one_point_interpolation, injection_interpolation, approximate_ideal_restriction, \
      neumann_ideal_restriction, neumann_ideal_interpolation
 from pyamg.classical.split import *
 from pyamg.classical.cr import CR
@@ -225,7 +226,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     elif fn == 'neumann':
         P = neumann_ideal_interpolation(A, splitting, **kwargs)
     elif fn == 'air':
-	    if isspmatrix_bsr(A): 
+        if isspmatrix_bsr(A):
             temp_A = bsr_matrix(A.T)
             P = approximate_ideal_restriction(temp_A, splitting, **kwargs)
             P = bsr_matrix(P.T)

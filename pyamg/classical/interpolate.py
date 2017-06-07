@@ -629,8 +629,8 @@ def neumann_ideal_interpolation(A, splitting, theta=0.0, degree=1, cost=[0]):
     return P
 
 
-def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=1,
-                                  use_gmres=False, maxiter=10, precondition=True, cost=[0]):
+def approximate_ideal_restriction(A, splitting, theta=0.1, degree=1, use_gmres=False,
+                                  maxiter=10, precondition=True, cost=[0]):
     """ Compute approximate ideal restriction by setting RA = 0, within the
     sparsity pattern of R. Sparsity pattern of R for the ith row (i.e. ith
     C-point) is the set of all strongly connected F-points, or the max_row
@@ -640,16 +640,20 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
     ----------
     A : {csr_matrix}
         NxN matrix in CSR or BSR format
+    splitting : array
+        C/F splitting stored in an array of length N
     theta : float, default 0.1
         Solve local system for each row of R for all values
             |A_ij| >= 0.1 * max_{i!=k} |A_ik|
     degree : int, default 1
         Expand sparsity pattern for R by considering strongly connected
-        neighbors within 'degree' of a given node 
-    splitting : array
-        C/F splitting stored in an array of length N
-    max_row : int
-        Maximum size of sparsity pattern for any row in R
+        neighbors within 'degree' of a given node. Only supports degree 1 and 2.
+    use_gmres : bool
+        Solve local linear system for each row of R using GMRES
+    maxiter : int
+        Maximum number of GMRES iterations
+    precondition : bool
+        Diagonally precondition GMRES
 
     Returns
     -------
@@ -682,29 +686,9 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
     nc = Cpts.shape[0]
     n = C.shape[0]
 
-    # Expand sparsity pattern for R
-    C.data[np.abs(C.data)<1e-16] = 0
-    C.eliminate_zeros()
-    if degree == 1:
-        pass
-    elif degree == 2:
-        C = csr_matrix(C*C)
-    elif degree == 3:
-        C = csr_matrix(C*C*C)
-    elif degree == 4:
-        C = csr_matrix(C*C)
-        C = csr_matrix(C*C)
-    else:
-        raise ValueError("Only sparsity degree 1-4 supported.")
-
-    # Form row pointer for R
     R_rowptr = np.empty(nc+1, dtype='int32')
-    if max_row is None:
-        amg_core.approx_ideal_restriction_pass1(R_rowptr, C.indptr, C.indices,
-                                                C.data, Cpts, splitting)
-    else:
-        amg_core.approx_ideal_restriction_pass1(R_rowptr, C.indptr, C.indices,
-                                                C.data, Cpts, splitting, max_row)
+    amg_core.approx_ideal_restriction_pass1(R_rowptr, C.indptr, C.indices,
+                                            Cpts, splitting, degree)       
 
     # Build restriction operator
     nnz = R_rowptr[-1]
@@ -716,7 +700,7 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
         amg_core.block_approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
                                                       A.indices, A.data.ravel(), C.indptr,
                                                       C.indices, C.data, Cpts, splitting,
-                                                      blocksize, use_gmres, maxiter,
+                                                      blocksize, degree, use_gmres, maxiter,
                                                       precondition)
         R = bsr_matrix((R_data.reshape(nnz,blocksize,blocksize), R_colinds, R_rowptr),
                         blocksize=[blocksize,blocksize], shape=[nc*blocksize,A.shape[0]])
@@ -725,8 +709,8 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, max_row=None, degree=
         R_data = np.zeros(nnz, dtype=A.dtype)
         amg_core.approx_ideal_restriction_pass2(R_rowptr, R_colinds, R_data, A.indptr,
                                                 A.indices, A.data, C.indptr, C.indices,
-                                                C.data, Cpts, splitting, use_gmres, maxiter,
-                                                precondition)
+                                                C.data, Cpts, splitting, degree, use_gmres, maxiter,
+                                                precondition)            
         R = csr_matrix((R_data, R_colinds, R_rowptr), shape=[nc,A.shape[0]])
 
     R.eliminate_zeros()

@@ -536,6 +536,13 @@ def distance_two_amg_interpolation_pass1(n_nodes, C_rowptr, C_colinds, splitting
     """distance_two_amg_interpolation_pass1(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int const [] splitting, int [] P_rowptr)"""
     return _amg_core.distance_two_amg_interpolation_pass1(n_nodes, C_rowptr, C_colinds, splitting, P_rowptr)
 
+def approx_ideal_restriction_pass1(rowptr, C_rowptr, C_colinds, Cpts, splitting, distance=2):
+    """
+    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, int const [] Cpts, int const [] splitting, int const distance=2)
+    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, int const [] Cpts, int const [] splitting)
+    """
+    return _amg_core.approx_ideal_restriction_pass1(rowptr, C_rowptr, C_colinds, Cpts, splitting, distance)
+
 def classical_strength_of_connection_min(*args):
     """
     classical_strength_of_connection_min(int const n_row, float const theta, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] C_rowptr, int [] C_colinds, float [] C_data)
@@ -592,37 +599,32 @@ def cr_helper(*args):
     """
     return _amg_core.cr_helper(*args)
 
-def approx_ideal_restriction_pass1(*args):
-    """
-    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, float [] C_data, int const [] Cpts, int const [] splitting, int const max_row)
-    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, float [] C_data, int const [] Cpts, int const [] splitting)
-    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, double [] C_data, int const [] Cpts, int const [] splitting, int const max_row)
-    approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, double [] C_data, int const [] Cpts, int const [] splitting)
-    """
-    return _amg_core.approx_ideal_restriction_pass1(*args)
-
 def approx_ideal_restriction_pass2(*args):
     """
-    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0, int const maxiter=10, int const precondition=1)
-    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0, int const maxiter=10)
-    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0, int const maxiter=10, int const precondition=1)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0, int const maxiter=10)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2)
     approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting)
-    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0, int const maxiter=10, int const precondition=1)
-    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0, int const maxiter=10)
-    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0, int const maxiter=10, int const precondition=1)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0, int const maxiter=10)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0)
+    approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2)
     approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting)
     """
     return _amg_core.approx_ideal_restriction_pass2(*args)
 
 def block_approx_ideal_restriction_pass2(*args):
     """
-    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0, int const maxiter=10, int const precondition=1)
-    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0, int const maxiter=10)
-    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0, int const maxiter=10, int const precondition=1)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0, int const maxiter=10)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2)
     block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize)
-    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0, int const maxiter=10, int const precondition=1)
-    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0, int const maxiter=10)
-    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0, int const maxiter=10, int const precondition=1)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0, int const maxiter=10)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0)
+    block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2)
     block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize)
     """
     return _amg_core.block_approx_ideal_restriction_pass2(*args)

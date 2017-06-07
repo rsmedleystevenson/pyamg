@@ -255,6 +255,7 @@ INSTANTIATE_INDEX_ONLY(cljp_naive_splitting)
 INSTANTIATE_INDEX_ONLY(rs_direct_interpolation_pass1)
 INSTANTIATE_INDEX_ONLY(rs_standard_interpolation_pass1)
 INSTANTIATE_INDEX_ONLY(distance_two_amg_interpolation_pass1)
+INSTANTIATE_INDEX_ONLY(approx_ideal_restriction_pass1)
 
 INSTANTIATE_INDEXDATA(classical_strength_of_connection_min)
 INSTANTIATE_INDEXDATA(one_point_interpolation)
@@ -265,9 +266,9 @@ INSTANTIATE_INDEXDATA(mod_standard_interpolation_pass2)
 INSTANTIATE_INDEXDATA(distance_two_amg_interpolation_pass2)
 INSTANTIATE_INDEXDATA(remove_strong_FF_connections)
 INSTANTIATE_INDEXDATA(cr_helper)
-INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass1)
 INSTANTIATE_INDEXDATA(approx_ideal_restriction_pass2)
 INSTANTIATE_INDEXDATA(block_approx_ideal_restriction_pass2)
+
 
 /*----------------------------------------------------------------------------
   pairwise.h

@@ -145,7 +145,6 @@ def ruge_stuben_solver(A,
     levels = [multilevel_solver.level()]
     levels[-1].A = A
     levels[-1].block_starts = block_starts
-    levels[-1].influence = influence
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
         extend_hierarchy(levels, strength, CF, interpolation, restriction, keep)

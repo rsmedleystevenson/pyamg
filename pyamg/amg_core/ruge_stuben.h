@@ -983,7 +983,6 @@ void one_point_interpolation(const I rowptr[], const int rowptr_size,
 }
 
 
-//-------------------
 /* First pass of classical AMG interpolation to build row pointer for P based
  * on SOC matrix and CF-splitting. Same method used for standard and modified
  * AMG interpolation below. 
@@ -1962,7 +1961,7 @@ bool sort_2nd(const std::pair<int,double> &left,const std::pair<int,double> &rig
 // }
 
 
-/* Build row_pointer for approximate ideal restriction in CSR form.
+/* Build row_pointer for approximate ideal restriction in CSR or BSR form.
  * 
  * Parameters
  * ----------
@@ -1972,29 +1971,24 @@ bool sort_2nd(const std::pair<int,double> &left,const std::pair<int,double> &rig
  *          Row pointer for SOC matrix, C
  *      C_colinds : const array<int>
  *          Column indices for SOC matrix, C
- *      C_data : array<float>
- *          Data array for SOC matrix, C
  *      Cpts : array<int>
  *          List of global C-point indices
  *      splitting : const array<int>
  *          Boolean array with 1 denoting C-points and 0 F-points
- *      max_row : int
- *          Maximum size of sparsity pattern for one row of R
+ *      distance : int, default 2
+ *          Distance of F-point neighborhood to consider, options are 1 and 2.
  *
  * Returns
  * -------
- * Nothing, rowptr[] modified in place. If a given C-point has more strong
- * F-connections than max_row, the smallest are set to zero in C_data.
- *
+ * Nothing, rowptr[] modified in place.
  */
-template<class I, class T>
+template<class I>
 void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
                                     const I C_rowptr[], const int C_rowptr_size,
                                     const I C_colinds[], const int C_colinds_size,
-                                          T C_data[], const int C_data_size,
                                     const I Cpts[], const int Cpts_size,
                                     const I splitting[], const int splitting_size,
-                                    const I max_row = std::numeric_limits<I>::max() )
+                                    const I distance = 2)
 {
     I nnz = 0;
     rowptr[0] = 0;
@@ -2004,28 +1998,28 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
         I cpoint = Cpts[row];
 
         // Determine number of strongly connected F-points in sparsity for R.
-        // Store strength values and indices.
-        std::vector<std::pair<I,T> > neighborhood;
         for (I i=C_rowptr[cpoint]; i<C_rowptr[cpoint+1]; i++) {
-            if ( (splitting[C_colinds[i]] == F_NODE) && (std::abs(C_data[i]) > 1e-16) ) {
-                neighborhood.push_back(std::make_pair(i, C_data[i]));
-            }
-        }
+            I this_point = C_colinds[i];
+            if (splitting[this_point] == F_NODE) {
+                nnz++;
 
-        // If neighborhood is larger than the maximum nonzeros per row, sort
-        // F-point neighborhood by strength, set SOC matrix equal to zero in
-        // smallest elements (i.e. no longer strongly connected).
-        I size = neighborhood.size();
-        if (size > max_row) {
-            std::sort(neighborhood.begin(), neighborhood.end(), sort_2nd);
-            for (I i=max_row; i<size; i++) {
-                C_data[neighborhood[i].first] = 0;
+                // Strong distance-two F-to-F connections
+                if (distance == 2) {
+                    for (I kk = C_rowptr[this_point]; kk < C_rowptr[this_point+1]; kk++){
+                        if ((splitting[C_colinds[kk]] == F_NODE) && (this_point != cpoint)) {
+                            nnz++;
+                        }
+                    } 
+                }
             }
         }
 
         // Set row-pointer for this row of R (including identity on C-points).
-        nnz += (1 + std::min(size, max_row));
+        nnz += 1;
         rowptr[row+1] = nnz; 
+    }
+    if ((distance != 1) && (distance != 2)) {
+        std::cout << "Can only choose distance one or two neighborhood for AIR.\n";
     }
 }
 
@@ -2057,6 +2051,8 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
  *          List of global C-point indices
  *      splitting : const array<int>
  *          Boolean array with 1 denoting C-points and 0 F-points
+ *      distance : int, default 2
+ *          Distance of F-point neighborhood to consider, options are 1 and 2.
  *      use_gmres : bool, default 0
  *          Use GMRES for local dense solve
  *      maxiter : int, default 10
@@ -2071,7 +2067,6 @@ void approx_ideal_restriction_pass1(      I rowptr[], const int rowptr_size,
  * Notes
  * -----
  * data[] must be passed in initialized to zero.
- *
  */
 template<class I, class T>
 void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
@@ -2085,6 +2080,7 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
                                     const T C_data[], const int C_data_size,
                                     const I Cpts[], const int Cpts_size,
                                     const I splitting[], const int splitting_size,
+                                    const I distance = 2,
                                     const I use_gmres = 0,
                                     const I maxiter = 10,
                                     const I precondition = 1 )
@@ -2099,9 +2095,20 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
 
         // Set column indices for R as strongly connected F-points.
         for (I i=C_rowptr[cpoint]; i<C_rowptr[cpoint+1]; i++) {
-            if ( (splitting[C_colinds[i]] == F_NODE) && (std::abs(C_data[i]) > 1e-16) ) {
+            I this_point = C_colinds[i];
+            if (splitting[this_point] == F_NODE) {
                 colinds[ind] = C_colinds[i];
                 ind +=1 ;
+
+                // Strong distance-two F-to-F connections
+                if (distance == 2) {
+                    for (I kk = C_rowptr[this_point]; kk < C_rowptr[this_point+1]; kk++){
+                        if ((splitting[C_colinds[kk]] == F_NODE) && (this_point != cpoint)) {
+                            colinds[ind] = C_colinds[kk];
+                            ind +=1 ;
+                        }
+                    } 
+                }
             }
         }
 
@@ -2204,6 +2211,8 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
  *          Boolean array with 1 denoting C-points and 0 F-points
  *      blocksize : int
  *          Blocksize of matrix (assume square blocks)
+ *      distance : int, default 2
+ *          Distance of F-point neighborhood to consider, options are 1 and 2.
  *      use_gmres : bool, default 0
  *          Use GMRES for local dense solve
  *      maxiter : int, default 10
@@ -2218,7 +2227,6 @@ void approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
  * Notes
  * -----
  * data[] must be passed in initialized to zero.
- *
  */
 template<class I, class T>
 void block_approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_size,
@@ -2233,9 +2241,10 @@ void block_approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_siz
                                           const I Cpts[], const int Cpts_size,
                                           const I splitting[], const int splitting_size,
                                           const I blocksize,
+                                          const I distance = 2,
                                           const I use_gmres = 0,
                                           const I maxiter = 10,
-                                          const I precondition = 1  )
+                                          const I precondition = 1 )
 {
     I is_col_major = true;
 
@@ -2247,9 +2256,20 @@ void block_approx_ideal_restriction_pass2(const I rowptr[], const int rowptr_siz
 
         // Set column indices for R as strongly connected F-points.
         for (I i=C_rowptr[cpoint]; i<C_rowptr[cpoint+1]; i++) {
-            if ( (splitting[C_colinds[i]] == F_NODE) && (std::abs(C_data[i]) > 1e-16) ) {
+            I this_point = C_colinds[i];
+            if (splitting[this_point] == F_NODE) {
                 colinds[ind] = C_colinds[i];
                 ind += 1 ;
+
+                // Strong distance-two F-to-F connections
+                if (distance == 2) {
+                    for (I kk = C_rowptr[this_point]; kk < C_rowptr[this_point+1]; kk++){
+                        if ((splitting[C_colinds[kk]] == F_NODE) && (this_point != cpoint)) {
+                            colinds[ind] = C_colinds[kk];
+                            ind += 1 ;
+                        }
+                    } 
+                }
             }
         }
 

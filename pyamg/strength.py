@@ -258,6 +258,7 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
         # Take magnitude and scale by largest entry
         S.data = np.abs(S.data)
         S = scale_rows_by_largest_entry(S)
+        S.eliminate_zeros()
 
         # Assume largest entry can be tracked from filtering.
         # 1 WU to scale matrix. 
@@ -290,6 +291,7 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
         # Take magnitude and scale by largest entry
         S.data = np.abs(S.data)
         S = scale_rows_by_largest_entry(S)
+        S.eliminate_zeros()
 
         # Assume largest entry can be tracked from filtering.
         # 1 WU to scale matrix. 

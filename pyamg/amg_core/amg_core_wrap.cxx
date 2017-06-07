@@ -29151,6 +29151,268 @@ fail:
 }
 
 
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  int *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  int arg11 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  PyArrayObject *array3 = NULL ;
+  int i3 = 1 ;
+  PyArrayObject *array5 = NULL ;
+  int i5 = 1 ;
+  PyArrayObject *array7 = NULL ;
+  int i7 = 1 ;
+  PyArrayObject *array9 = NULL ;
+  int i9 = 1 ;
+  int val11 ;
+  int ecode11 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOO:approx_ideal_restriction_pass1",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  {
+    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
+    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
+      || !require_native(array3)) SWIG_fail;
+    arg3 = (int*) array_data(array3);
+    arg4 = 1;
+    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
+  }
+  {
+    array5 = obj_to_array_no_conversion(obj2, NPY_INT);
+    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
+      || !require_native(array5)) SWIG_fail;
+    arg5 = (int*) array_data(array5);
+    arg6 = 1;
+    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
+  }
+  {
+    array7 = obj_to_array_no_conversion(obj3, NPY_INT);
+    if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
+      || !require_native(array7)) SWIG_fail;
+    arg7 = (int*) array_data(array7);
+    arg8 = 1;
+    for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
+  }
+  {
+    array9 = obj_to_array_no_conversion(obj4, NPY_INT);
+    if (!array9 || !require_dimensions(array9,1) || !require_contiguous(array9)
+      || !require_native(array9)) SWIG_fail;
+    arg9 = (int*) array_data(array9);
+    arg10 = 1;
+    for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
+  }
+  ecode11 = SWIG_AsVal_int(obj5, &val11);
+  if (!SWIG_IsOK(ecode11)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode11), "in method '" "approx_ideal_restriction_pass1" "', argument " "11"" of type '" "int""'");
+  } 
+  arg11 = static_cast< int >(val11);
+  approx_ideal_restriction_pass1< int >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,arg11);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  int *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  PyArrayObject *array3 = NULL ;
+  int i3 = 1 ;
+  PyArrayObject *array5 = NULL ;
+  int i5 = 1 ;
+  PyArrayObject *array7 = NULL ;
+  int i7 = 1 ;
+  PyArrayObject *array9 = NULL ;
+  int i9 = 1 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOO:approx_ideal_restriction_pass1",&obj0,&obj1,&obj2,&obj3,&obj4)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  {
+    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
+    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
+      || !require_native(array3)) SWIG_fail;
+    arg3 = (int*) array_data(array3);
+    arg4 = 1;
+    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
+  }
+  {
+    array5 = obj_to_array_no_conversion(obj2, NPY_INT);
+    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
+      || !require_native(array5)) SWIG_fail;
+    arg5 = (int*) array_data(array5);
+    arg6 = 1;
+    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
+  }
+  {
+    array7 = obj_to_array_no_conversion(obj3, NPY_INT);
+    if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
+      || !require_native(array7)) SWIG_fail;
+    arg7 = (int*) array_data(array7);
+    arg8 = 1;
+    for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
+  }
+  {
+    array9 = obj_to_array_no_conversion(obj4, NPY_INT);
+    if (!array9 || !require_dimensions(array9,1) || !require_contiguous(array9)
+      || !require_native(array9)) SWIG_fail;
+    arg9 = (int*) array_data(array9);
+    arg10 = 1;
+    for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
+  }
+  approx_ideal_restriction_pass1< int >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1(PyObject *self, PyObject *args) {
+  Py_ssize_t argc;
+  PyObject *argv[7] = {
+    0
+  };
+  Py_ssize_t ii;
+  
+  if (!PyTuple_Check(args)) SWIG_fail;
+  argc = args ? PyObject_Length(args) : 0;
+  for (ii = 0; (ii < 6) && (ii < argc); ii++) {
+    argv[ii] = PyTuple_GET_ITEM(args,ii);
+  }
+  if (argc == 5) {
+    int _v;
+    {
+      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
+        NPY_INT);
+    }
+    if (_v) {
+      {
+        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
+          NPY_INT);
+      }
+      if (_v) {
+        {
+          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
+            NPY_INT);
+        }
+        if (_v) {
+          {
+            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
+              NPY_INT);
+          }
+          if (_v) {
+            {
+              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
+                NPY_INT);
+            }
+            if (_v) {
+              if (argc <= 5) {
+                return _wrap_approx_ideal_restriction_pass1__SWIG_3(self, args);
+              }
+              return _wrap_approx_ideal_restriction_pass1__SWIG_3(self, args);
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 6) {
+    int _v;
+    {
+      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
+        NPY_INT);
+    }
+    if (_v) {
+      {
+        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
+          NPY_INT);
+      }
+      if (_v) {
+        {
+          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
+            NPY_INT);
+        }
+        if (_v) {
+          {
+            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
+              NPY_INT);
+          }
+          if (_v) {
+            {
+              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
+                NPY_INT);
+            }
+            if (_v) {
+              {
+                int res = SWIG_AsVal_int(argv[5], NULL);
+                _v = SWIG_CheckState(res);
+              }
+              if (_v) {
+                return _wrap_approx_ideal_restriction_pass1__SWIG_2(self, args);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  
+fail:
+  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'approx_ideal_restriction_pass1'.\n"
+    "  Possible C/C++ prototypes are:\n"
+    "    approx_ideal_restriction_pass1< int >(int [],int const,int const [],int const,int const [],int const,int const [],int const,int const [],int const,int const)\n"
+    "    approx_ideal_restriction_pass1< int >(int [],int const,int const [],int const,int const [],int const,int const [],int const,int const [],int const)\n");
+  return 0;
+}
+
+
 SWIGINTERN PyObject *_wrap_classical_strength_of_connection_min__SWIG_1(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int arg1 ;
@@ -32303,21 +32565,34 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_2(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_5(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
   int *arg3 ;
   int arg4 ;
-  int *arg5 ;
+  float *arg5 ;
   int arg6 ;
-  float *arg7 ;
+  int *arg7 ;
   int arg8 ;
   int *arg9 ;
   int arg10 ;
-  int *arg11 ;
+  float *arg11 ;
   int arg12 ;
-  int arg13 ;
+  int *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  float *arg17 ;
+  int arg18 ;
+  int *arg19 ;
+  int arg20 ;
+  int *arg21 ;
+  int arg22 ;
+  int arg23 ;
+  int arg24 ;
+  int arg25 ;
+  int arg26 ;
   PyArrayObject *array1 = NULL ;
   int i1 = 1 ;
   PyArrayObject *array3 = NULL ;
@@ -32330,8 +32605,24 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_2(PyObject *SWIG
   int i9 = 1 ;
   PyArrayObject *array11 = NULL ;
   int i11 = 1 ;
-  int val13 ;
-  int ecode13 = 0 ;
+  PyArrayObject *array13 = NULL ;
+  int i13 = 1 ;
+  PyArrayObject *array15 = NULL ;
+  int i15 = 1 ;
+  PyArrayObject *array17 = NULL ;
+  int i17 = 1 ;
+  PyArrayObject *array19 = NULL ;
+  int i19 = 1 ;
+  PyArrayObject *array21 = NULL ;
+  int i21 = 1 ;
+  int val23 ;
+  int ecode23 = 0 ;
+  int val24 ;
+  int ecode24 = 0 ;
+  int val25 ;
+  int ecode25 = 0 ;
+  int val26 ;
+  int ecode26 = 0 ;
   PyObject * obj0 = 0 ;
   PyObject * obj1 = 0 ;
   PyObject * obj2 = 0 ;
@@ -32339,8 +32630,16 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_2(PyObject *SWIG
   PyObject * obj4 = 0 ;
   PyObject * obj5 = 0 ;
   PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
   
-  if (!PyArg_ParseTuple(args,(char *)"OOOOOOO:approx_ideal_restriction_pass1",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6)) SWIG_fail;
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOO:approx_ideal_restriction_pass2",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14)) SWIG_fail;
   {
     array1 = obj_to_array_no_conversion(obj0, NPY_INT);
     if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
@@ -32358,18 +32657,18 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_2(PyObject *SWIG
     for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
   }
   {
-    array5 = obj_to_array_no_conversion(obj2, NPY_INT);
+    array5 = obj_to_array_no_conversion(obj2, NPY_FLOAT);
     if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
       || !require_native(array5)) SWIG_fail;
-    arg5 = (int*) array_data(array5);
+    arg5 = (float*) array_data(array5);
     arg6 = 1;
     for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
   }
   {
-    array7 = obj_to_array_no_conversion(obj3, NPY_FLOAT);
+    array7 = obj_to_array_no_conversion(obj3, NPY_INT);
     if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
       || !require_native(array7)) SWIG_fail;
-    arg7 = (float*) array_data(array7);
+    arg7 = (int*) array_data(array7);
     arg8 = 1;
     for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
   }
@@ -32382,208 +32681,74 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_2(PyObject *SWIG
     for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
   }
   {
-    array11 = obj_to_array_no_conversion(obj5, NPY_INT);
+    array11 = obj_to_array_no_conversion(obj5, NPY_FLOAT);
     if (!array11 || !require_dimensions(array11,1) || !require_contiguous(array11)
       || !require_native(array11)) SWIG_fail;
-    arg11 = (int*) array_data(array11);
+    arg11 = (float*) array_data(array11);
     arg12 = 1;
     for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
   }
-  ecode13 = SWIG_AsVal_int(obj6, &val13);
-  if (!SWIG_IsOK(ecode13)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode13), "in method '" "approx_ideal_restriction_pass1" "', argument " "13"" of type '" "int""'");
+  {
+    array13 = obj_to_array_no_conversion(obj6, NPY_INT);
+    if (!array13 || !require_dimensions(array13,1) || !require_contiguous(array13)
+      || !require_native(array13)) SWIG_fail;
+    arg13 = (int*) array_data(array13);
+    arg14 = 1;
+    for (i13=0; i13 < array_numdims(array13); ++i13) arg14 *= array_size(array13,i13);
+  }
+  {
+    array15 = obj_to_array_no_conversion(obj7, NPY_INT);
+    if (!array15 || !require_dimensions(array15,1) || !require_contiguous(array15)
+      || !require_native(array15)) SWIG_fail;
+    arg15 = (int*) array_data(array15);
+    arg16 = 1;
+    for (i15=0; i15 < array_numdims(array15); ++i15) arg16 *= array_size(array15,i15);
+  }
+  {
+    array17 = obj_to_array_no_conversion(obj8, NPY_FLOAT);
+    if (!array17 || !require_dimensions(array17,1) || !require_contiguous(array17)
+      || !require_native(array17)) SWIG_fail;
+    arg17 = (float*) array_data(array17);
+    arg18 = 1;
+    for (i17=0; i17 < array_numdims(array17); ++i17) arg18 *= array_size(array17,i17);
+  }
+  {
+    array19 = obj_to_array_no_conversion(obj9, NPY_INT);
+    if (!array19 || !require_dimensions(array19,1) || !require_contiguous(array19)
+      || !require_native(array19)) SWIG_fail;
+    arg19 = (int*) array_data(array19);
+    arg20 = 1;
+    for (i19=0; i19 < array_numdims(array19); ++i19) arg20 *= array_size(array19,i19);
+  }
+  {
+    array21 = obj_to_array_no_conversion(obj10, NPY_INT);
+    if (!array21 || !require_dimensions(array21,1) || !require_contiguous(array21)
+      || !require_native(array21)) SWIG_fail;
+    arg21 = (int*) array_data(array21);
+    arg22 = 1;
+    for (i21=0; i21 < array_numdims(array21); ++i21) arg22 *= array_size(array21,i21);
+  }
+  ecode23 = SWIG_AsVal_int(obj11, &val23);
+  if (!SWIG_IsOK(ecode23)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode23), "in method '" "approx_ideal_restriction_pass2" "', argument " "23"" of type '" "int""'");
   } 
-  arg13 = static_cast< int >(val13);
-  approx_ideal_restriction_pass1< int,float >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8,(int const (*))arg9,arg10,(int const (*))arg11,arg12,arg13);
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_3(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  int *arg1 ;
-  int arg2 ;
-  int *arg3 ;
-  int arg4 ;
-  int *arg5 ;
-  int arg6 ;
-  float *arg7 ;
-  int arg8 ;
-  int *arg9 ;
-  int arg10 ;
-  int *arg11 ;
-  int arg12 ;
-  PyArrayObject *array1 = NULL ;
-  int i1 = 1 ;
-  PyArrayObject *array3 = NULL ;
-  int i3 = 1 ;
-  PyArrayObject *array5 = NULL ;
-  int i5 = 1 ;
-  PyArrayObject *array7 = NULL ;
-  int i7 = 1 ;
-  PyArrayObject *array9 = NULL ;
-  int i9 = 1 ;
-  PyArrayObject *array11 = NULL ;
-  int i11 = 1 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  PyObject * obj3 = 0 ;
-  PyObject * obj4 = 0 ;
-  PyObject * obj5 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOOOOO:approx_ideal_restriction_pass1",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
-  {
-    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
-    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
-      || !require_native(array1)) SWIG_fail;
-    arg1 = (int*) array_data(array1);
-    arg2 = 1;
-    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
-  }
-  {
-    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
-    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
-      || !require_native(array3)) SWIG_fail;
-    arg3 = (int*) array_data(array3);
-    arg4 = 1;
-    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
-  }
-  {
-    array5 = obj_to_array_no_conversion(obj2, NPY_INT);
-    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
-      || !require_native(array5)) SWIG_fail;
-    arg5 = (int*) array_data(array5);
-    arg6 = 1;
-    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
-  }
-  {
-    array7 = obj_to_array_no_conversion(obj3, NPY_FLOAT);
-    if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
-      || !require_native(array7)) SWIG_fail;
-    arg7 = (float*) array_data(array7);
-    arg8 = 1;
-    for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
-  }
-  {
-    array9 = obj_to_array_no_conversion(obj4, NPY_INT);
-    if (!array9 || !require_dimensions(array9,1) || !require_contiguous(array9)
-      || !require_native(array9)) SWIG_fail;
-    arg9 = (int*) array_data(array9);
-    arg10 = 1;
-    for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
-  }
-  {
-    array11 = obj_to_array_no_conversion(obj5, NPY_INT);
-    if (!array11 || !require_dimensions(array11,1) || !require_contiguous(array11)
-      || !require_native(array11)) SWIG_fail;
-    arg11 = (int*) array_data(array11);
-    arg12 = 1;
-    for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
-  }
-  approx_ideal_restriction_pass1< int,float >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8,(int const (*))arg9,arg10,(int const (*))arg11,arg12);
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  int *arg1 ;
-  int arg2 ;
-  int *arg3 ;
-  int arg4 ;
-  int *arg5 ;
-  int arg6 ;
-  double *arg7 ;
-  int arg8 ;
-  int *arg9 ;
-  int arg10 ;
-  int *arg11 ;
-  int arg12 ;
-  int arg13 ;
-  PyArrayObject *array1 = NULL ;
-  int i1 = 1 ;
-  PyArrayObject *array3 = NULL ;
-  int i3 = 1 ;
-  PyArrayObject *array5 = NULL ;
-  int i5 = 1 ;
-  PyArrayObject *array7 = NULL ;
-  int i7 = 1 ;
-  PyArrayObject *array9 = NULL ;
-  int i9 = 1 ;
-  PyArrayObject *array11 = NULL ;
-  int i11 = 1 ;
-  int val13 ;
-  int ecode13 = 0 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  PyObject * obj3 = 0 ;
-  PyObject * obj4 = 0 ;
-  PyObject * obj5 = 0 ;
-  PyObject * obj6 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOOOOOO:approx_ideal_restriction_pass1",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6)) SWIG_fail;
-  {
-    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
-    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
-      || !require_native(array1)) SWIG_fail;
-    arg1 = (int*) array_data(array1);
-    arg2 = 1;
-    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
-  }
-  {
-    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
-    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
-      || !require_native(array3)) SWIG_fail;
-    arg3 = (int*) array_data(array3);
-    arg4 = 1;
-    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
-  }
-  {
-    array5 = obj_to_array_no_conversion(obj2, NPY_INT);
-    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
-      || !require_native(array5)) SWIG_fail;
-    arg5 = (int*) array_data(array5);
-    arg6 = 1;
-    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
-  }
-  {
-    array7 = obj_to_array_no_conversion(obj3, NPY_DOUBLE);
-    if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
-      || !require_native(array7)) SWIG_fail;
-    arg7 = (double*) array_data(array7);
-    arg8 = 1;
-    for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
-  }
-  {
-    array9 = obj_to_array_no_conversion(obj4, NPY_INT);
-    if (!array9 || !require_dimensions(array9,1) || !require_contiguous(array9)
-      || !require_native(array9)) SWIG_fail;
-    arg9 = (int*) array_data(array9);
-    arg10 = 1;
-    for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
-  }
-  {
-    array11 = obj_to_array_no_conversion(obj5, NPY_INT);
-    if (!array11 || !require_dimensions(array11,1) || !require_contiguous(array11)
-      || !require_native(array11)) SWIG_fail;
-    arg11 = (int*) array_data(array11);
-    arg12 = 1;
-    for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
-  }
-  ecode13 = SWIG_AsVal_int(obj6, &val13);
-  if (!SWIG_IsOK(ecode13)) {
-    SWIG_exception_fail(SWIG_ArgError(ecode13), "in method '" "approx_ideal_restriction_pass1" "', argument " "13"" of type '" "int""'");
+  arg23 = static_cast< int >(val23);
+  ecode24 = SWIG_AsVal_int(obj12, &val24);
+  if (!SWIG_IsOK(ecode24)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode24), "in method '" "approx_ideal_restriction_pass2" "', argument " "24"" of type '" "int""'");
   } 
-  arg13 = static_cast< int >(val13);
-  approx_ideal_restriction_pass1< int,double >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8,(int const (*))arg9,arg10,(int const (*))arg11,arg12,arg13);
+  arg24 = static_cast< int >(val24);
+  ecode25 = SWIG_AsVal_int(obj13, &val25);
+  if (!SWIG_IsOK(ecode25)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode25), "in method '" "approx_ideal_restriction_pass2" "', argument " "25"" of type '" "int""'");
+  } 
+  arg25 = static_cast< int >(val25);
+  ecode26 = SWIG_AsVal_int(obj14, &val26);
+  if (!SWIG_IsOK(ecode26)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode26), "in method '" "approx_ideal_restriction_pass2" "', argument " "26"" of type '" "int""'");
+  } 
+  arg26 = static_cast< int >(val26);
+  approx_ideal_restriction_pass2< int,float >((int const (*))arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(float const (*))arg11,arg12,(int const (*))arg13,arg14,(int const (*))arg15,arg16,(float const (*))arg17,arg18,(int const (*))arg19,arg20,(int const (*))arg21,arg22,arg23,arg24,arg25,arg26);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -32591,299 +32756,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1__SWIG_5(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
-  PyObject *resultobj = 0;
-  int *arg1 ;
-  int arg2 ;
-  int *arg3 ;
-  int arg4 ;
-  int *arg5 ;
-  int arg6 ;
-  double *arg7 ;
-  int arg8 ;
-  int *arg9 ;
-  int arg10 ;
-  int *arg11 ;
-  int arg12 ;
-  PyArrayObject *array1 = NULL ;
-  int i1 = 1 ;
-  PyArrayObject *array3 = NULL ;
-  int i3 = 1 ;
-  PyArrayObject *array5 = NULL ;
-  int i5 = 1 ;
-  PyArrayObject *array7 = NULL ;
-  int i7 = 1 ;
-  PyArrayObject *array9 = NULL ;
-  int i9 = 1 ;
-  PyArrayObject *array11 = NULL ;
-  int i11 = 1 ;
-  PyObject * obj0 = 0 ;
-  PyObject * obj1 = 0 ;
-  PyObject * obj2 = 0 ;
-  PyObject * obj3 = 0 ;
-  PyObject * obj4 = 0 ;
-  PyObject * obj5 = 0 ;
-  
-  if (!PyArg_ParseTuple(args,(char *)"OOOOOO:approx_ideal_restriction_pass1",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5)) SWIG_fail;
-  {
-    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
-    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
-      || !require_native(array1)) SWIG_fail;
-    arg1 = (int*) array_data(array1);
-    arg2 = 1;
-    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
-  }
-  {
-    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
-    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
-      || !require_native(array3)) SWIG_fail;
-    arg3 = (int*) array_data(array3);
-    arg4 = 1;
-    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
-  }
-  {
-    array5 = obj_to_array_no_conversion(obj2, NPY_INT);
-    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
-      || !require_native(array5)) SWIG_fail;
-    arg5 = (int*) array_data(array5);
-    arg6 = 1;
-    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
-  }
-  {
-    array7 = obj_to_array_no_conversion(obj3, NPY_DOUBLE);
-    if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
-      || !require_native(array7)) SWIG_fail;
-    arg7 = (double*) array_data(array7);
-    arg8 = 1;
-    for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
-  }
-  {
-    array9 = obj_to_array_no_conversion(obj4, NPY_INT);
-    if (!array9 || !require_dimensions(array9,1) || !require_contiguous(array9)
-      || !require_native(array9)) SWIG_fail;
-    arg9 = (int*) array_data(array9);
-    arg10 = 1;
-    for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
-  }
-  {
-    array11 = obj_to_array_no_conversion(obj5, NPY_INT);
-    if (!array11 || !require_dimensions(array11,1) || !require_contiguous(array11)
-      || !require_native(array11)) SWIG_fail;
-    arg11 = (int*) array_data(array11);
-    arg12 = 1;
-    for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
-  }
-  approx_ideal_restriction_pass1< int,double >(arg1,arg2,(int const (*))arg3,arg4,(int const (*))arg5,arg6,arg7,arg8,(int const (*))arg9,arg10,(int const (*))arg11,arg12);
-  resultobj = SWIG_Py_Void();
-  return resultobj;
-fail:
-  return NULL;
-}
-
-
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass1(PyObject *self, PyObject *args) {
-  Py_ssize_t argc;
-  PyObject *argv[8] = {
-    0
-  };
-  Py_ssize_t ii;
-  
-  if (!PyTuple_Check(args)) SWIG_fail;
-  argc = args ? PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 7) && (ii < argc); ii++) {
-    argv[ii] = PyTuple_GET_ITEM(args,ii);
-  }
-  if (argc == 6) {
-    int _v;
-    {
-      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
-        NPY_INT);
-    }
-    if (_v) {
-      {
-        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
-          NPY_INT);
-      }
-      if (_v) {
-        {
-          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
-            NPY_INT);
-        }
-        if (_v) {
-          {
-            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
-              NPY_FLOAT);
-          }
-          if (_v) {
-            {
-              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
-                NPY_INT);
-            }
-            if (_v) {
-              {
-                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
-                  NPY_INT);
-              }
-              if (_v) {
-                if (argc <= 6) {
-                  return _wrap_approx_ideal_restriction_pass1__SWIG_3(self, args);
-                }
-                return _wrap_approx_ideal_restriction_pass1__SWIG_3(self, args);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  if (argc == 6) {
-    int _v;
-    {
-      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
-        NPY_INT);
-    }
-    if (_v) {
-      {
-        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
-          NPY_INT);
-      }
-      if (_v) {
-        {
-          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
-            NPY_INT);
-        }
-        if (_v) {
-          {
-            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
-              NPY_DOUBLE);
-          }
-          if (_v) {
-            {
-              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
-                NPY_INT);
-            }
-            if (_v) {
-              {
-                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
-                  NPY_INT);
-              }
-              if (_v) {
-                if (argc <= 6) {
-                  return _wrap_approx_ideal_restriction_pass1__SWIG_5(self, args);
-                }
-                return _wrap_approx_ideal_restriction_pass1__SWIG_5(self, args);
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  if (argc == 7) {
-    int _v;
-    {
-      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
-        NPY_INT);
-    }
-    if (_v) {
-      {
-        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
-          NPY_INT);
-      }
-      if (_v) {
-        {
-          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
-            NPY_INT);
-        }
-        if (_v) {
-          {
-            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
-              NPY_DOUBLE);
-          }
-          if (_v) {
-            {
-              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
-                NPY_INT);
-            }
-            if (_v) {
-              {
-                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
-                  NPY_INT);
-              }
-              if (_v) {
-                {
-                  int res = SWIG_AsVal_int(argv[6], NULL);
-                  _v = SWIG_CheckState(res);
-                }
-                if (_v) {
-                  return _wrap_approx_ideal_restriction_pass1__SWIG_4(self, args);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  if (argc == 7) {
-    int _v;
-    {
-      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
-        NPY_INT);
-    }
-    if (_v) {
-      {
-        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
-          NPY_INT);
-      }
-      if (_v) {
-        {
-          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
-            NPY_INT);
-        }
-        if (_v) {
-          {
-            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
-              NPY_FLOAT);
-          }
-          if (_v) {
-            {
-              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
-                NPY_INT);
-            }
-            if (_v) {
-              {
-                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
-                  NPY_INT);
-              }
-              if (_v) {
-                {
-                  int res = SWIG_AsVal_int(argv[6], NULL);
-                  _v = SWIG_CheckState(res);
-                }
-                if (_v) {
-                  return _wrap_approx_ideal_restriction_pass1__SWIG_2(self, args);
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-  
-fail:
-  SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'approx_ideal_restriction_pass1'.\n"
-    "  Possible C/C++ prototypes are:\n"
-    "    approx_ideal_restriction_pass1< int,float >(int [],int const,int const [],int const,int const [],int const,float [],int const,int const [],int const,int const [],int const,int const)\n"
-    "    approx_ideal_restriction_pass1< int,float >(int [],int const,int const [],int const,int const [],int const,float [],int const,int const [],int const,int const [],int const)\n"
-    "    approx_ideal_restriction_pass1< int,double >(int [],int const,int const [],int const,int const [],int const,double [],int const,int const [],int const,int const [],int const,int const)\n"
-    "    approx_ideal_restriction_pass1< int,double >(int [],int const,int const [],int const,int const [],int const,double [],int const,int const [],int const,int const [],int const)\n");
-  return 0;
-}
-
-
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_6(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -33065,7 +32938,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_5(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_7(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -33238,7 +33111,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_6(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_8(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -33402,7 +33275,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_7(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_9(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -33557,7 +33430,198 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_8(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_10(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  double *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  double *arg11 ;
+  int arg12 ;
+  int *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  double *arg17 ;
+  int arg18 ;
+  int *arg19 ;
+  int arg20 ;
+  int *arg21 ;
+  int arg22 ;
+  int arg23 ;
+  int arg24 ;
+  int arg25 ;
+  int arg26 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  PyArrayObject *array3 = NULL ;
+  int i3 = 1 ;
+  PyArrayObject *array5 = NULL ;
+  int i5 = 1 ;
+  PyArrayObject *array7 = NULL ;
+  int i7 = 1 ;
+  PyArrayObject *array9 = NULL ;
+  int i9 = 1 ;
+  PyArrayObject *array11 = NULL ;
+  int i11 = 1 ;
+  PyArrayObject *array13 = NULL ;
+  int i13 = 1 ;
+  PyArrayObject *array15 = NULL ;
+  int i15 = 1 ;
+  PyArrayObject *array17 = NULL ;
+  int i17 = 1 ;
+  PyArrayObject *array19 = NULL ;
+  int i19 = 1 ;
+  PyArrayObject *array21 = NULL ;
+  int i21 = 1 ;
+  int val23 ;
+  int ecode23 = 0 ;
+  int val24 ;
+  int ecode24 = 0 ;
+  int val25 ;
+  int ecode25 = 0 ;
+  int val26 ;
+  int ecode26 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOO:approx_ideal_restriction_pass2",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  {
+    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
+    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
+      || !require_native(array3)) SWIG_fail;
+    arg3 = (int*) array_data(array3);
+    arg4 = 1;
+    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
+  }
+  {
+    array5 = obj_to_array_no_conversion(obj2, NPY_DOUBLE);
+    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
+      || !require_native(array5)) SWIG_fail;
+    arg5 = (double*) array_data(array5);
+    arg6 = 1;
+    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
+  }
+  {
+    array7 = obj_to_array_no_conversion(obj3, NPY_INT);
+    if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
+      || !require_native(array7)) SWIG_fail;
+    arg7 = (int*) array_data(array7);
+    arg8 = 1;
+    for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
+  }
+  {
+    array9 = obj_to_array_no_conversion(obj4, NPY_INT);
+    if (!array9 || !require_dimensions(array9,1) || !require_contiguous(array9)
+      || !require_native(array9)) SWIG_fail;
+    arg9 = (int*) array_data(array9);
+    arg10 = 1;
+    for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
+  }
+  {
+    array11 = obj_to_array_no_conversion(obj5, NPY_DOUBLE);
+    if (!array11 || !require_dimensions(array11,1) || !require_contiguous(array11)
+      || !require_native(array11)) SWIG_fail;
+    arg11 = (double*) array_data(array11);
+    arg12 = 1;
+    for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
+  }
+  {
+    array13 = obj_to_array_no_conversion(obj6, NPY_INT);
+    if (!array13 || !require_dimensions(array13,1) || !require_contiguous(array13)
+      || !require_native(array13)) SWIG_fail;
+    arg13 = (int*) array_data(array13);
+    arg14 = 1;
+    for (i13=0; i13 < array_numdims(array13); ++i13) arg14 *= array_size(array13,i13);
+  }
+  {
+    array15 = obj_to_array_no_conversion(obj7, NPY_INT);
+    if (!array15 || !require_dimensions(array15,1) || !require_contiguous(array15)
+      || !require_native(array15)) SWIG_fail;
+    arg15 = (int*) array_data(array15);
+    arg16 = 1;
+    for (i15=0; i15 < array_numdims(array15); ++i15) arg16 *= array_size(array15,i15);
+  }
+  {
+    array17 = obj_to_array_no_conversion(obj8, NPY_DOUBLE);
+    if (!array17 || !require_dimensions(array17,1) || !require_contiguous(array17)
+      || !require_native(array17)) SWIG_fail;
+    arg17 = (double*) array_data(array17);
+    arg18 = 1;
+    for (i17=0; i17 < array_numdims(array17); ++i17) arg18 *= array_size(array17,i17);
+  }
+  {
+    array19 = obj_to_array_no_conversion(obj9, NPY_INT);
+    if (!array19 || !require_dimensions(array19,1) || !require_contiguous(array19)
+      || !require_native(array19)) SWIG_fail;
+    arg19 = (int*) array_data(array19);
+    arg20 = 1;
+    for (i19=0; i19 < array_numdims(array19); ++i19) arg20 *= array_size(array19,i19);
+  }
+  {
+    array21 = obj_to_array_no_conversion(obj10, NPY_INT);
+    if (!array21 || !require_dimensions(array21,1) || !require_contiguous(array21)
+      || !require_native(array21)) SWIG_fail;
+    arg21 = (int*) array_data(array21);
+    arg22 = 1;
+    for (i21=0; i21 < array_numdims(array21); ++i21) arg22 *= array_size(array21,i21);
+  }
+  ecode23 = SWIG_AsVal_int(obj11, &val23);
+  if (!SWIG_IsOK(ecode23)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode23), "in method '" "approx_ideal_restriction_pass2" "', argument " "23"" of type '" "int""'");
+  } 
+  arg23 = static_cast< int >(val23);
+  ecode24 = SWIG_AsVal_int(obj12, &val24);
+  if (!SWIG_IsOK(ecode24)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode24), "in method '" "approx_ideal_restriction_pass2" "', argument " "24"" of type '" "int""'");
+  } 
+  arg24 = static_cast< int >(val24);
+  ecode25 = SWIG_AsVal_int(obj13, &val25);
+  if (!SWIG_IsOK(ecode25)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode25), "in method '" "approx_ideal_restriction_pass2" "', argument " "25"" of type '" "int""'");
+  } 
+  arg25 = static_cast< int >(val25);
+  ecode26 = SWIG_AsVal_int(obj14, &val26);
+  if (!SWIG_IsOK(ecode26)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode26), "in method '" "approx_ideal_restriction_pass2" "', argument " "26"" of type '" "int""'");
+  } 
+  arg26 = static_cast< int >(val26);
+  approx_ideal_restriction_pass2< int,double >((int const (*))arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(double const (*))arg11,arg12,(int const (*))arg13,arg14,(int const (*))arg15,arg16,(double const (*))arg17,arg18,(int const (*))arg19,arg20,(int const (*))arg21,arg22,arg23,arg24,arg25,arg26);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_11(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -33739,7 +33803,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_9(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_12(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -33912,7 +33976,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_10(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_13(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -34076,7 +34140,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_11(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2__SWIG_14(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -34233,14 +34297,14 @@ fail:
 
 SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObject *args) {
   Py_ssize_t argc;
-  PyObject *argv[15] = {
+  PyObject *argv[16] = {
     0
   };
   Py_ssize_t ii;
   
   if (!PyTuple_Check(args)) SWIG_fail;
   argc = args ? PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 14) && (ii < argc); ii++) {
+  for (ii = 0; (ii < 15) && (ii < argc); ii++) {
     argv[ii] = PyTuple_GET_ITEM(args,ii);
   }
   if (argc == 11) {
@@ -34301,9 +34365,9 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
                         }
                         if (_v) {
                           if (argc <= 11) {
-                            return _wrap_approx_ideal_restriction_pass2__SWIG_7(self, args);
+                            return _wrap_approx_ideal_restriction_pass2__SWIG_9(self, args);
                           }
-                          return _wrap_approx_ideal_restriction_pass2__SWIG_7(self, args);
+                          return _wrap_approx_ideal_restriction_pass2__SWIG_9(self, args);
                         }
                       }
                     }
@@ -34374,9 +34438,9 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
                         }
                         if (_v) {
                           if (argc <= 11) {
-                            return _wrap_approx_ideal_restriction_pass2__SWIG_11(self, args);
+                            return _wrap_approx_ideal_restriction_pass2__SWIG_14(self, args);
                           }
-                          return _wrap_approx_ideal_restriction_pass2__SWIG_11(self, args);
+                          return _wrap_approx_ideal_restriction_pass2__SWIG_14(self, args);
                         }
                       }
                     }
@@ -34451,7 +34515,7 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
                             _v = SWIG_CheckState(res);
                           }
                           if (_v) {
-                            return _wrap_approx_ideal_restriction_pass2__SWIG_10(self, args);
+                            return _wrap_approx_ideal_restriction_pass2__SWIG_13(self, args);
                           }
                         }
                       }
@@ -34527,7 +34591,7 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
                             _v = SWIG_CheckState(res);
                           }
                           if (_v) {
-                            return _wrap_approx_ideal_restriction_pass2__SWIG_6(self, args);
+                            return _wrap_approx_ideal_restriction_pass2__SWIG_8(self, args);
                           }
                         }
                       }
@@ -34608,7 +34672,7 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
                               _v = SWIG_CheckState(res);
                             }
                             if (_v) {
-                              return _wrap_approx_ideal_restriction_pass2__SWIG_5(self, args);
+                              return _wrap_approx_ideal_restriction_pass2__SWIG_7(self, args);
                             }
                           }
                         }
@@ -34690,7 +34754,7 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
                               _v = SWIG_CheckState(res);
                             }
                             if (_v) {
-                              return _wrap_approx_ideal_restriction_pass2__SWIG_9(self, args);
+                              return _wrap_approx_ideal_restriction_pass2__SWIG_12(self, args);
                             }
                           }
                         }
@@ -34777,7 +34841,7 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
                                 _v = SWIG_CheckState(res);
                               }
                               if (_v) {
-                                return _wrap_approx_ideal_restriction_pass2__SWIG_8(self, args);
+                                return _wrap_approx_ideal_restriction_pass2__SWIG_11(self, args);
                               }
                             }
                           }
@@ -34865,7 +34929,195 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
                                 _v = SWIG_CheckState(res);
                               }
                               if (_v) {
-                                return _wrap_approx_ideal_restriction_pass2__SWIG_4(self, args);
+                                return _wrap_approx_ideal_restriction_pass2__SWIG_6(self, args);
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 15) {
+    int _v;
+    {
+      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
+        NPY_INT);
+    }
+    if (_v) {
+      {
+        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
+          NPY_INT);
+      }
+      if (_v) {
+        {
+          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
+            NPY_FLOAT);
+        }
+        if (_v) {
+          {
+            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
+              NPY_INT);
+          }
+          if (_v) {
+            {
+              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
+                NPY_INT);
+            }
+            if (_v) {
+              {
+                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
+                  NPY_FLOAT);
+              }
+              if (_v) {
+                {
+                  _v = is_array(argv[6]) && PyArray_EquivTypenums(array_type(argv[6]),
+                    NPY_INT);
+                }
+                if (_v) {
+                  {
+                    _v = is_array(argv[7]) && PyArray_EquivTypenums(array_type(argv[7]),
+                      NPY_INT);
+                  }
+                  if (_v) {
+                    {
+                      _v = is_array(argv[8]) && PyArray_EquivTypenums(array_type(argv[8]),
+                        NPY_FLOAT);
+                    }
+                    if (_v) {
+                      {
+                        _v = is_array(argv[9]) && PyArray_EquivTypenums(array_type(argv[9]),
+                          NPY_INT);
+                      }
+                      if (_v) {
+                        {
+                          _v = is_array(argv[10]) && PyArray_EquivTypenums(array_type(argv[10]),
+                            NPY_INT);
+                        }
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            {
+                              int res = SWIG_AsVal_int(argv[12], NULL);
+                              _v = SWIG_CheckState(res);
+                            }
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                {
+                                  int res = SWIG_AsVal_int(argv[14], NULL);
+                                  _v = SWIG_CheckState(res);
+                                }
+                                if (_v) {
+                                  return _wrap_approx_ideal_restriction_pass2__SWIG_5(self, args);
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 15) {
+    int _v;
+    {
+      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
+        NPY_INT);
+    }
+    if (_v) {
+      {
+        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
+          NPY_INT);
+      }
+      if (_v) {
+        {
+          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
+            NPY_DOUBLE);
+        }
+        if (_v) {
+          {
+            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
+              NPY_INT);
+          }
+          if (_v) {
+            {
+              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
+                NPY_INT);
+            }
+            if (_v) {
+              {
+                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
+                  NPY_DOUBLE);
+              }
+              if (_v) {
+                {
+                  _v = is_array(argv[6]) && PyArray_EquivTypenums(array_type(argv[6]),
+                    NPY_INT);
+                }
+                if (_v) {
+                  {
+                    _v = is_array(argv[7]) && PyArray_EquivTypenums(array_type(argv[7]),
+                      NPY_INT);
+                  }
+                  if (_v) {
+                    {
+                      _v = is_array(argv[8]) && PyArray_EquivTypenums(array_type(argv[8]),
+                        NPY_DOUBLE);
+                    }
+                    if (_v) {
+                      {
+                        _v = is_array(argv[9]) && PyArray_EquivTypenums(array_type(argv[9]),
+                          NPY_INT);
+                      }
+                      if (_v) {
+                        {
+                          _v = is_array(argv[10]) && PyArray_EquivTypenums(array_type(argv[10]),
+                            NPY_INT);
+                        }
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            {
+                              int res = SWIG_AsVal_int(argv[12], NULL);
+                              _v = SWIG_CheckState(res);
+                            }
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                {
+                                  int res = SWIG_AsVal_int(argv[14], NULL);
+                                  _v = SWIG_CheckState(res);
+                                }
+                                if (_v) {
+                                  return _wrap_approx_ideal_restriction_pass2__SWIG_10(self, args);
+                                }
                               }
                             }
                           }
@@ -34885,10 +35137,12 @@ SWIGINTERN PyObject *_wrap_approx_ideal_restriction_pass2(PyObject *self, PyObje
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'approx_ideal_restriction_pass2'.\n"
     "  Possible C/C++ prototypes are:\n"
+    "    approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const,int const,int const,int const)\n"
     "    approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const,int const,int const)\n"
     "    approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const,int const)\n"
     "    approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const)\n"
     "    approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const)\n"
+    "    approx_ideal_restriction_pass2< int,double >(int const [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,int const,int const,int const,int const)\n"
     "    approx_ideal_restriction_pass2< int,double >(int const [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,int const,int const,int const)\n"
     "    approx_ideal_restriction_pass2< int,double >(int const [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,int const,int const)\n"
     "    approx_ideal_restriction_pass2< int,double >(int const [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,int const)\n"
@@ -34897,7 +35151,207 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_4(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_5(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  float *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  float *arg11 ;
+  int arg12 ;
+  int *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  float *arg17 ;
+  int arg18 ;
+  int *arg19 ;
+  int arg20 ;
+  int *arg21 ;
+  int arg22 ;
+  int arg23 ;
+  int arg24 ;
+  int arg25 ;
+  int arg26 ;
+  int arg27 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  PyArrayObject *array3 = NULL ;
+  int i3 = 1 ;
+  PyArrayObject *array5 = NULL ;
+  int i5 = 1 ;
+  PyArrayObject *array7 = NULL ;
+  int i7 = 1 ;
+  PyArrayObject *array9 = NULL ;
+  int i9 = 1 ;
+  PyArrayObject *array11 = NULL ;
+  int i11 = 1 ;
+  PyArrayObject *array13 = NULL ;
+  int i13 = 1 ;
+  PyArrayObject *array15 = NULL ;
+  int i15 = 1 ;
+  PyArrayObject *array17 = NULL ;
+  int i17 = 1 ;
+  PyArrayObject *array19 = NULL ;
+  int i19 = 1 ;
+  PyArrayObject *array21 = NULL ;
+  int i21 = 1 ;
+  int val23 ;
+  int ecode23 = 0 ;
+  int val24 ;
+  int ecode24 = 0 ;
+  int val25 ;
+  int ecode25 = 0 ;
+  int val26 ;
+  int ecode26 = 0 ;
+  int val27 ;
+  int ecode27 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOO:block_approx_ideal_restriction_pass2",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  {
+    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
+    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
+      || !require_native(array3)) SWIG_fail;
+    arg3 = (int*) array_data(array3);
+    arg4 = 1;
+    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
+  }
+  {
+    array5 = obj_to_array_no_conversion(obj2, NPY_FLOAT);
+    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
+      || !require_native(array5)) SWIG_fail;
+    arg5 = (float*) array_data(array5);
+    arg6 = 1;
+    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
+  }
+  {
+    array7 = obj_to_array_no_conversion(obj3, NPY_INT);
+    if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
+      || !require_native(array7)) SWIG_fail;
+    arg7 = (int*) array_data(array7);
+    arg8 = 1;
+    for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
+  }
+  {
+    array9 = obj_to_array_no_conversion(obj4, NPY_INT);
+    if (!array9 || !require_dimensions(array9,1) || !require_contiguous(array9)
+      || !require_native(array9)) SWIG_fail;
+    arg9 = (int*) array_data(array9);
+    arg10 = 1;
+    for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
+  }
+  {
+    array11 = obj_to_array_no_conversion(obj5, NPY_FLOAT);
+    if (!array11 || !require_dimensions(array11,1) || !require_contiguous(array11)
+      || !require_native(array11)) SWIG_fail;
+    arg11 = (float*) array_data(array11);
+    arg12 = 1;
+    for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
+  }
+  {
+    array13 = obj_to_array_no_conversion(obj6, NPY_INT);
+    if (!array13 || !require_dimensions(array13,1) || !require_contiguous(array13)
+      || !require_native(array13)) SWIG_fail;
+    arg13 = (int*) array_data(array13);
+    arg14 = 1;
+    for (i13=0; i13 < array_numdims(array13); ++i13) arg14 *= array_size(array13,i13);
+  }
+  {
+    array15 = obj_to_array_no_conversion(obj7, NPY_INT);
+    if (!array15 || !require_dimensions(array15,1) || !require_contiguous(array15)
+      || !require_native(array15)) SWIG_fail;
+    arg15 = (int*) array_data(array15);
+    arg16 = 1;
+    for (i15=0; i15 < array_numdims(array15); ++i15) arg16 *= array_size(array15,i15);
+  }
+  {
+    array17 = obj_to_array_no_conversion(obj8, NPY_FLOAT);
+    if (!array17 || !require_dimensions(array17,1) || !require_contiguous(array17)
+      || !require_native(array17)) SWIG_fail;
+    arg17 = (float*) array_data(array17);
+    arg18 = 1;
+    for (i17=0; i17 < array_numdims(array17); ++i17) arg18 *= array_size(array17,i17);
+  }
+  {
+    array19 = obj_to_array_no_conversion(obj9, NPY_INT);
+    if (!array19 || !require_dimensions(array19,1) || !require_contiguous(array19)
+      || !require_native(array19)) SWIG_fail;
+    arg19 = (int*) array_data(array19);
+    arg20 = 1;
+    for (i19=0; i19 < array_numdims(array19); ++i19) arg20 *= array_size(array19,i19);
+  }
+  {
+    array21 = obj_to_array_no_conversion(obj10, NPY_INT);
+    if (!array21 || !require_dimensions(array21,1) || !require_contiguous(array21)
+      || !require_native(array21)) SWIG_fail;
+    arg21 = (int*) array_data(array21);
+    arg22 = 1;
+    for (i21=0; i21 < array_numdims(array21); ++i21) arg22 *= array_size(array21,i21);
+  }
+  ecode23 = SWIG_AsVal_int(obj11, &val23);
+  if (!SWIG_IsOK(ecode23)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode23), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "23"" of type '" "int""'");
+  } 
+  arg23 = static_cast< int >(val23);
+  ecode24 = SWIG_AsVal_int(obj12, &val24);
+  if (!SWIG_IsOK(ecode24)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode24), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "24"" of type '" "int""'");
+  } 
+  arg24 = static_cast< int >(val24);
+  ecode25 = SWIG_AsVal_int(obj13, &val25);
+  if (!SWIG_IsOK(ecode25)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode25), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "25"" of type '" "int""'");
+  } 
+  arg25 = static_cast< int >(val25);
+  ecode26 = SWIG_AsVal_int(obj14, &val26);
+  if (!SWIG_IsOK(ecode26)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode26), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "26"" of type '" "int""'");
+  } 
+  arg26 = static_cast< int >(val26);
+  ecode27 = SWIG_AsVal_int(obj15, &val27);
+  if (!SWIG_IsOK(ecode27)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode27), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "27"" of type '" "int""'");
+  } 
+  arg27 = static_cast< int >(val27);
+  block_approx_ideal_restriction_pass2< int,float >((int const (*))arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(float const (*))arg11,arg12,(int const (*))arg13,arg14,(int const (*))arg15,arg16,(float const (*))arg17,arg18,(int const (*))arg19,arg20,(int const (*))arg21,arg22,arg23,arg24,arg25,arg26,arg27);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_6(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -35088,7 +35542,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_5(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_7(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -35270,7 +35724,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_6(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_8(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -35443,7 +35897,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_7(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_9(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -35607,7 +36061,207 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_8(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_10(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+  PyObject *resultobj = 0;
+  int *arg1 ;
+  int arg2 ;
+  int *arg3 ;
+  int arg4 ;
+  double *arg5 ;
+  int arg6 ;
+  int *arg7 ;
+  int arg8 ;
+  int *arg9 ;
+  int arg10 ;
+  double *arg11 ;
+  int arg12 ;
+  int *arg13 ;
+  int arg14 ;
+  int *arg15 ;
+  int arg16 ;
+  double *arg17 ;
+  int arg18 ;
+  int *arg19 ;
+  int arg20 ;
+  int *arg21 ;
+  int arg22 ;
+  int arg23 ;
+  int arg24 ;
+  int arg25 ;
+  int arg26 ;
+  int arg27 ;
+  PyArrayObject *array1 = NULL ;
+  int i1 = 1 ;
+  PyArrayObject *array3 = NULL ;
+  int i3 = 1 ;
+  PyArrayObject *array5 = NULL ;
+  int i5 = 1 ;
+  PyArrayObject *array7 = NULL ;
+  int i7 = 1 ;
+  PyArrayObject *array9 = NULL ;
+  int i9 = 1 ;
+  PyArrayObject *array11 = NULL ;
+  int i11 = 1 ;
+  PyArrayObject *array13 = NULL ;
+  int i13 = 1 ;
+  PyArrayObject *array15 = NULL ;
+  int i15 = 1 ;
+  PyArrayObject *array17 = NULL ;
+  int i17 = 1 ;
+  PyArrayObject *array19 = NULL ;
+  int i19 = 1 ;
+  PyArrayObject *array21 = NULL ;
+  int i21 = 1 ;
+  int val23 ;
+  int ecode23 = 0 ;
+  int val24 ;
+  int ecode24 = 0 ;
+  int val25 ;
+  int ecode25 = 0 ;
+  int val26 ;
+  int ecode26 = 0 ;
+  int val27 ;
+  int ecode27 = 0 ;
+  PyObject * obj0 = 0 ;
+  PyObject * obj1 = 0 ;
+  PyObject * obj2 = 0 ;
+  PyObject * obj3 = 0 ;
+  PyObject * obj4 = 0 ;
+  PyObject * obj5 = 0 ;
+  PyObject * obj6 = 0 ;
+  PyObject * obj7 = 0 ;
+  PyObject * obj8 = 0 ;
+  PyObject * obj9 = 0 ;
+  PyObject * obj10 = 0 ;
+  PyObject * obj11 = 0 ;
+  PyObject * obj12 = 0 ;
+  PyObject * obj13 = 0 ;
+  PyObject * obj14 = 0 ;
+  PyObject * obj15 = 0 ;
+  
+  if (!PyArg_ParseTuple(args,(char *)"OOOOOOOOOOOOOOOO:block_approx_ideal_restriction_pass2",&obj0,&obj1,&obj2,&obj3,&obj4,&obj5,&obj6,&obj7,&obj8,&obj9,&obj10,&obj11,&obj12,&obj13,&obj14,&obj15)) SWIG_fail;
+  {
+    array1 = obj_to_array_no_conversion(obj0, NPY_INT);
+    if (!array1 || !require_dimensions(array1,1) || !require_contiguous(array1)
+      || !require_native(array1)) SWIG_fail;
+    arg1 = (int*) array_data(array1);
+    arg2 = 1;
+    for (i1=0; i1 < array_numdims(array1); ++i1) arg2 *= array_size(array1,i1);
+  }
+  {
+    array3 = obj_to_array_no_conversion(obj1, NPY_INT);
+    if (!array3 || !require_dimensions(array3,1) || !require_contiguous(array3)
+      || !require_native(array3)) SWIG_fail;
+    arg3 = (int*) array_data(array3);
+    arg4 = 1;
+    for (i3=0; i3 < array_numdims(array3); ++i3) arg4 *= array_size(array3,i3);
+  }
+  {
+    array5 = obj_to_array_no_conversion(obj2, NPY_DOUBLE);
+    if (!array5 || !require_dimensions(array5,1) || !require_contiguous(array5)
+      || !require_native(array5)) SWIG_fail;
+    arg5 = (double*) array_data(array5);
+    arg6 = 1;
+    for (i5=0; i5 < array_numdims(array5); ++i5) arg6 *= array_size(array5,i5);
+  }
+  {
+    array7 = obj_to_array_no_conversion(obj3, NPY_INT);
+    if (!array7 || !require_dimensions(array7,1) || !require_contiguous(array7)
+      || !require_native(array7)) SWIG_fail;
+    arg7 = (int*) array_data(array7);
+    arg8 = 1;
+    for (i7=0; i7 < array_numdims(array7); ++i7) arg8 *= array_size(array7,i7);
+  }
+  {
+    array9 = obj_to_array_no_conversion(obj4, NPY_INT);
+    if (!array9 || !require_dimensions(array9,1) || !require_contiguous(array9)
+      || !require_native(array9)) SWIG_fail;
+    arg9 = (int*) array_data(array9);
+    arg10 = 1;
+    for (i9=0; i9 < array_numdims(array9); ++i9) arg10 *= array_size(array9,i9);
+  }
+  {
+    array11 = obj_to_array_no_conversion(obj5, NPY_DOUBLE);
+    if (!array11 || !require_dimensions(array11,1) || !require_contiguous(array11)
+      || !require_native(array11)) SWIG_fail;
+    arg11 = (double*) array_data(array11);
+    arg12 = 1;
+    for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
+  }
+  {
+    array13 = obj_to_array_no_conversion(obj6, NPY_INT);
+    if (!array13 || !require_dimensions(array13,1) || !require_contiguous(array13)
+      || !require_native(array13)) SWIG_fail;
+    arg13 = (int*) array_data(array13);
+    arg14 = 1;
+    for (i13=0; i13 < array_numdims(array13); ++i13) arg14 *= array_size(array13,i13);
+  }
+  {
+    array15 = obj_to_array_no_conversion(obj7, NPY_INT);
+    if (!array15 || !require_dimensions(array15,1) || !require_contiguous(array15)
+      || !require_native(array15)) SWIG_fail;
+    arg15 = (int*) array_data(array15);
+    arg16 = 1;
+    for (i15=0; i15 < array_numdims(array15); ++i15) arg16 *= array_size(array15,i15);
+  }
+  {
+    array17 = obj_to_array_no_conversion(obj8, NPY_DOUBLE);
+    if (!array17 || !require_dimensions(array17,1) || !require_contiguous(array17)
+      || !require_native(array17)) SWIG_fail;
+    arg17 = (double*) array_data(array17);
+    arg18 = 1;
+    for (i17=0; i17 < array_numdims(array17); ++i17) arg18 *= array_size(array17,i17);
+  }
+  {
+    array19 = obj_to_array_no_conversion(obj9, NPY_INT);
+    if (!array19 || !require_dimensions(array19,1) || !require_contiguous(array19)
+      || !require_native(array19)) SWIG_fail;
+    arg19 = (int*) array_data(array19);
+    arg20 = 1;
+    for (i19=0; i19 < array_numdims(array19); ++i19) arg20 *= array_size(array19,i19);
+  }
+  {
+    array21 = obj_to_array_no_conversion(obj10, NPY_INT);
+    if (!array21 || !require_dimensions(array21,1) || !require_contiguous(array21)
+      || !require_native(array21)) SWIG_fail;
+    arg21 = (int*) array_data(array21);
+    arg22 = 1;
+    for (i21=0; i21 < array_numdims(array21); ++i21) arg22 *= array_size(array21,i21);
+  }
+  ecode23 = SWIG_AsVal_int(obj11, &val23);
+  if (!SWIG_IsOK(ecode23)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode23), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "23"" of type '" "int""'");
+  } 
+  arg23 = static_cast< int >(val23);
+  ecode24 = SWIG_AsVal_int(obj12, &val24);
+  if (!SWIG_IsOK(ecode24)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode24), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "24"" of type '" "int""'");
+  } 
+  arg24 = static_cast< int >(val24);
+  ecode25 = SWIG_AsVal_int(obj13, &val25);
+  if (!SWIG_IsOK(ecode25)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode25), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "25"" of type '" "int""'");
+  } 
+  arg25 = static_cast< int >(val25);
+  ecode26 = SWIG_AsVal_int(obj14, &val26);
+  if (!SWIG_IsOK(ecode26)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode26), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "26"" of type '" "int""'");
+  } 
+  arg26 = static_cast< int >(val26);
+  ecode27 = SWIG_AsVal_int(obj15, &val27);
+  if (!SWIG_IsOK(ecode27)) {
+    SWIG_exception_fail(SWIG_ArgError(ecode27), "in method '" "block_approx_ideal_restriction_pass2" "', argument " "27"" of type '" "int""'");
+  } 
+  arg27 = static_cast< int >(val27);
+  block_approx_ideal_restriction_pass2< int,double >((int const (*))arg1,arg2,arg3,arg4,arg5,arg6,(int const (*))arg7,arg8,(int const (*))arg9,arg10,(double const (*))arg11,arg12,(int const (*))arg13,arg14,(int const (*))arg15,arg16,(double const (*))arg17,arg18,(int const (*))arg19,arg20,(int const (*))arg21,arg22,arg23,arg24,arg25,arg26,arg27);
+  resultobj = SWIG_Py_Void();
+  return resultobj;
+fail:
+  return NULL;
+}
+
+
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_11(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -35798,7 +36452,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_9(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_12(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -35980,7 +36634,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_10(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_13(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -36153,7 +36807,7 @@ fail:
 }
 
 
-SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_11(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
+SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2__SWIG_14(PyObject *SWIGUNUSEDPARM(self), PyObject *args) {
   PyObject *resultobj = 0;
   int *arg1 ;
   int arg2 ;
@@ -36319,14 +36973,14 @@ fail:
 
 SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, PyObject *args) {
   Py_ssize_t argc;
-  PyObject *argv[16] = {
+  PyObject *argv[17] = {
     0
   };
   Py_ssize_t ii;
   
   if (!PyTuple_Check(args)) SWIG_fail;
   argc = args ? PyObject_Length(args) : 0;
-  for (ii = 0; (ii < 15) && (ii < argc); ii++) {
+  for (ii = 0; (ii < 16) && (ii < argc); ii++) {
     argv[ii] = PyTuple_GET_ITEM(args,ii);
   }
   if (argc == 12) {
@@ -36391,7 +37045,7 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
                             _v = SWIG_CheckState(res);
                           }
                           if (_v) {
-                            return _wrap_block_approx_ideal_restriction_pass2__SWIG_7(self, args);
+                            return _wrap_block_approx_ideal_restriction_pass2__SWIG_9(self, args);
                           }
                         }
                       }
@@ -36467,7 +37121,7 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
                             _v = SWIG_CheckState(res);
                           }
                           if (_v) {
-                            return _wrap_block_approx_ideal_restriction_pass2__SWIG_11(self, args);
+                            return _wrap_block_approx_ideal_restriction_pass2__SWIG_14(self, args);
                           }
                         }
                       }
@@ -36548,7 +37202,7 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
                               _v = SWIG_CheckState(res);
                             }
                             if (_v) {
-                              return _wrap_block_approx_ideal_restriction_pass2__SWIG_10(self, args);
+                              return _wrap_block_approx_ideal_restriction_pass2__SWIG_13(self, args);
                             }
                           }
                         }
@@ -36630,7 +37284,7 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
                               _v = SWIG_CheckState(res);
                             }
                             if (_v) {
-                              return _wrap_block_approx_ideal_restriction_pass2__SWIG_6(self, args);
+                              return _wrap_block_approx_ideal_restriction_pass2__SWIG_8(self, args);
                             }
                           }
                         }
@@ -36717,7 +37371,7 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
                                 _v = SWIG_CheckState(res);
                               }
                               if (_v) {
-                                return _wrap_block_approx_ideal_restriction_pass2__SWIG_5(self, args);
+                                return _wrap_block_approx_ideal_restriction_pass2__SWIG_7(self, args);
                               }
                             }
                           }
@@ -36805,7 +37459,7 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
                                 _v = SWIG_CheckState(res);
                               }
                               if (_v) {
-                                return _wrap_block_approx_ideal_restriction_pass2__SWIG_9(self, args);
+                                return _wrap_block_approx_ideal_restriction_pass2__SWIG_12(self, args);
                               }
                             }
                           }
@@ -36898,7 +37552,7 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
                                   _v = SWIG_CheckState(res);
                                 }
                                 if (_v) {
-                                  return _wrap_block_approx_ideal_restriction_pass2__SWIG_8(self, args);
+                                  return _wrap_block_approx_ideal_restriction_pass2__SWIG_11(self, args);
                                 }
                               }
                             }
@@ -36992,7 +37646,207 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
                                   _v = SWIG_CheckState(res);
                                 }
                                 if (_v) {
-                                  return _wrap_block_approx_ideal_restriction_pass2__SWIG_4(self, args);
+                                  return _wrap_block_approx_ideal_restriction_pass2__SWIG_6(self, args);
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 16) {
+    int _v;
+    {
+      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
+        NPY_INT);
+    }
+    if (_v) {
+      {
+        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
+          NPY_INT);
+      }
+      if (_v) {
+        {
+          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
+            NPY_FLOAT);
+        }
+        if (_v) {
+          {
+            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
+              NPY_INT);
+          }
+          if (_v) {
+            {
+              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
+                NPY_INT);
+            }
+            if (_v) {
+              {
+                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
+                  NPY_FLOAT);
+              }
+              if (_v) {
+                {
+                  _v = is_array(argv[6]) && PyArray_EquivTypenums(array_type(argv[6]),
+                    NPY_INT);
+                }
+                if (_v) {
+                  {
+                    _v = is_array(argv[7]) && PyArray_EquivTypenums(array_type(argv[7]),
+                      NPY_INT);
+                  }
+                  if (_v) {
+                    {
+                      _v = is_array(argv[8]) && PyArray_EquivTypenums(array_type(argv[8]),
+                        NPY_FLOAT);
+                    }
+                    if (_v) {
+                      {
+                        _v = is_array(argv[9]) && PyArray_EquivTypenums(array_type(argv[9]),
+                          NPY_INT);
+                      }
+                      if (_v) {
+                        {
+                          _v = is_array(argv[10]) && PyArray_EquivTypenums(array_type(argv[10]),
+                            NPY_INT);
+                        }
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            {
+                              int res = SWIG_AsVal_int(argv[12], NULL);
+                              _v = SWIG_CheckState(res);
+                            }
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                {
+                                  int res = SWIG_AsVal_int(argv[14], NULL);
+                                  _v = SWIG_CheckState(res);
+                                }
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    return _wrap_block_approx_ideal_restriction_pass2__SWIG_5(self, args);
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  if (argc == 16) {
+    int _v;
+    {
+      _v = is_array(argv[0]) && PyArray_EquivTypenums(array_type(argv[0]),
+        NPY_INT);
+    }
+    if (_v) {
+      {
+        _v = is_array(argv[1]) && PyArray_EquivTypenums(array_type(argv[1]),
+          NPY_INT);
+      }
+      if (_v) {
+        {
+          _v = is_array(argv[2]) && PyArray_EquivTypenums(array_type(argv[2]),
+            NPY_DOUBLE);
+        }
+        if (_v) {
+          {
+            _v = is_array(argv[3]) && PyArray_EquivTypenums(array_type(argv[3]),
+              NPY_INT);
+          }
+          if (_v) {
+            {
+              _v = is_array(argv[4]) && PyArray_EquivTypenums(array_type(argv[4]),
+                NPY_INT);
+            }
+            if (_v) {
+              {
+                _v = is_array(argv[5]) && PyArray_EquivTypenums(array_type(argv[5]),
+                  NPY_DOUBLE);
+              }
+              if (_v) {
+                {
+                  _v = is_array(argv[6]) && PyArray_EquivTypenums(array_type(argv[6]),
+                    NPY_INT);
+                }
+                if (_v) {
+                  {
+                    _v = is_array(argv[7]) && PyArray_EquivTypenums(array_type(argv[7]),
+                      NPY_INT);
+                  }
+                  if (_v) {
+                    {
+                      _v = is_array(argv[8]) && PyArray_EquivTypenums(array_type(argv[8]),
+                        NPY_DOUBLE);
+                    }
+                    if (_v) {
+                      {
+                        _v = is_array(argv[9]) && PyArray_EquivTypenums(array_type(argv[9]),
+                          NPY_INT);
+                      }
+                      if (_v) {
+                        {
+                          _v = is_array(argv[10]) && PyArray_EquivTypenums(array_type(argv[10]),
+                            NPY_INT);
+                        }
+                        if (_v) {
+                          {
+                            int res = SWIG_AsVal_int(argv[11], NULL);
+                            _v = SWIG_CheckState(res);
+                          }
+                          if (_v) {
+                            {
+                              int res = SWIG_AsVal_int(argv[12], NULL);
+                              _v = SWIG_CheckState(res);
+                            }
+                            if (_v) {
+                              {
+                                int res = SWIG_AsVal_int(argv[13], NULL);
+                                _v = SWIG_CheckState(res);
+                              }
+                              if (_v) {
+                                {
+                                  int res = SWIG_AsVal_int(argv[14], NULL);
+                                  _v = SWIG_CheckState(res);
+                                }
+                                if (_v) {
+                                  {
+                                    int res = SWIG_AsVal_int(argv[15], NULL);
+                                    _v = SWIG_CheckState(res);
+                                  }
+                                  if (_v) {
+                                    return _wrap_block_approx_ideal_restriction_pass2__SWIG_10(self, args);
+                                  }
                                 }
                               }
                             }
@@ -37013,10 +37867,12 @@ SWIGINTERN PyObject *_wrap_block_approx_ideal_restriction_pass2(PyObject *self, 
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'block_approx_ideal_restriction_pass2'.\n"
     "  Possible C/C++ prototypes are:\n"
+    "    block_approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const,int const,int const,int const,int const)\n"
     "    block_approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const,int const,int const,int const)\n"
     "    block_approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const,int const,int const)\n"
     "    block_approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const,int const)\n"
     "    block_approx_ideal_restriction_pass2< int,float >(int const [],int const,int [],int const,float [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const,int const [],int const,int const)\n"
+    "    block_approx_ideal_restriction_pass2< int,double >(int const [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,int const,int const,int const,int const,int const)\n"
     "    block_approx_ideal_restriction_pass2< int,double >(int const [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,int const,int const,int const,int const)\n"
     "    block_approx_ideal_restriction_pass2< int,double >(int const [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,int const,int const,int const)\n"
     "    block_approx_ideal_restriction_pass2< int,double >(int const [],int const,int [],int const,double [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const,int const [],int const,int const,int const)\n"
@@ -40367,6 +41223,10 @@ static PyMethodDef SwigMethods[] = {
 	 { (char *)"rs_direct_interpolation_pass1", _wrap_rs_direct_interpolation_pass1, METH_VARARGS, (char *)"rs_direct_interpolation_pass1(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int const [] splitting, int [] P_rowptr)"},
 	 { (char *)"rs_standard_interpolation_pass1", _wrap_rs_standard_interpolation_pass1, METH_VARARGS, (char *)"rs_standard_interpolation_pass1(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int const [] splitting, int [] P_rowptr)"},
 	 { (char *)"distance_two_amg_interpolation_pass1", _wrap_distance_two_amg_interpolation_pass1, METH_VARARGS, (char *)"distance_two_amg_interpolation_pass1(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int const [] splitting, int [] P_rowptr)"},
+	 { (char *)"approx_ideal_restriction_pass1", _wrap_approx_ideal_restriction_pass1, METH_VARARGS, (char *)"\n"
+		"approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, int const [] Cpts, int const [] splitting, int const distance=2)\n"
+		"approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, int const [] Cpts, int const [] splitting)\n"
+		""},
 	 { (char *)"classical_strength_of_connection_min", _wrap_classical_strength_of_connection_min, METH_VARARGS, (char *)"\n"
 		"classical_strength_of_connection_min(int const n_row, float const theta, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] C_rowptr, int [] C_colinds, float [] C_data)\n"
 		"classical_strength_of_connection_min(int const n_row, double const theta, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] C_rowptr, int [] C_colinds, double [] C_data)\n"
@@ -40399,30 +41259,28 @@ static PyMethodDef SwigMethods[] = {
 		"cr_helper(int const [] A_rowptr, int const [] A_colinds, float const [] B, float [] e, int [] indices, int [] splitting, float [] gamma, float const thetacs, float [] cost)\n"
 		"cr_helper(int const [] A_rowptr, int const [] A_colinds, double const [] B, double [] e, int [] indices, int [] splitting, double [] gamma, double const thetacs, double [] cost)\n"
 		""},
-	 { (char *)"approx_ideal_restriction_pass1", _wrap_approx_ideal_restriction_pass1, METH_VARARGS, (char *)"\n"
-		"approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, float [] C_data, int const [] Cpts, int const [] splitting, int const max_row)\n"
-		"approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, float [] C_data, int const [] Cpts, int const [] splitting)\n"
-		"approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, double [] C_data, int const [] Cpts, int const [] splitting, int const max_row)\n"
-		"approx_ideal_restriction_pass1(int [] rowptr, int const [] C_rowptr, int const [] C_colinds, double [] C_data, int const [] Cpts, int const [] splitting)\n"
-		""},
 	 { (char *)"approx_ideal_restriction_pass2", _wrap_approx_ideal_restriction_pass2, METH_VARARGS, (char *)"\n"
-		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0, int const maxiter=10, int const precondition=1)\n"
-		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0, int const maxiter=10)\n"
-		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0)\n"
+		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0, int const maxiter=10, int const precondition=1)\n"
+		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0, int const maxiter=10)\n"
+		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0)\n"
+		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2)\n"
 		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting)\n"
-		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0, int const maxiter=10, int const precondition=1)\n"
-		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0, int const maxiter=10)\n"
-		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const use_gmres=0)\n"
+		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0, int const maxiter=10, int const precondition=1)\n"
+		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0, int const maxiter=10)\n"
+		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2, int const use_gmres=0)\n"
+		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const distance=2)\n"
 		"approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting)\n"
 		""},
 	 { (char *)"block_approx_ideal_restriction_pass2", _wrap_block_approx_ideal_restriction_pass2, METH_VARARGS, (char *)"\n"
-		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0, int const maxiter=10, int const precondition=1)\n"
-		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0, int const maxiter=10)\n"
-		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0)\n"
+		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0, int const maxiter=10, int const precondition=1)\n"
+		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0, int const maxiter=10)\n"
+		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0)\n"
+		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2)\n"
 		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, float [] data, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize)\n"
-		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0, int const maxiter=10, int const precondition=1)\n"
-		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0, int const maxiter=10)\n"
-		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const use_gmres=0)\n"
+		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0, int const maxiter=10, int const precondition=1)\n"
+		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0, int const maxiter=10)\n"
+		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2, int const use_gmres=0)\n"
+		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize, int const distance=2)\n"
 		"block_approx_ideal_restriction_pass2(int const [] rowptr, int [] colinds, double [] data, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] Cpts, int const [] splitting, int const blocksize)\n"
 		""},
 	 { (char *)"drake_CF_matching", _wrap_drake_CF_matching, METH_VARARGS, (char *)"\n"
