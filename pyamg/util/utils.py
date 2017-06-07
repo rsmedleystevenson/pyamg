@@ -749,18 +749,17 @@ def amalgamate(A, blocksize, norm='abs', cost=[0]):
         Matrix to amalgamate
     blocksize : int
         blocksize to use while amalgamating
+    norm : string
+        Norm to amalgamate entries by
+            'abs'  : C_ij = k, where k is the maximum absolute value in block C_ij
+            'min'  : C_ij = k, where k is the hard minimum value in block C_ij
+            'fro'  : C_ij = k, where k is the Frobenius norm of block C_ij
 
     Returns
     -------
     A_amal : csr_matrix
         Amalgamated  matrix A, first, convert A to BSR with square blocksize
-        and then return a CSR matrix of ones using the resulting BSR indptr and
-        indices
-    norm : string
-        Norm to amalgamate entries by. 
-            'abs'  : C_ij = k, where k is the maximum absolute value in block C_ij
-            'min'  : C_ij = k, where k is the hard minimum value in block C_ij
-            'fro'  : C_ij = k, where k is the Frobenius norm of block C_ij
+        and then return a CSR matrix  with data based on the chosen norm of blocks.
 
     Notes
     -----
@@ -783,7 +782,6 @@ def amalgamate(A, blocksize, norm='abs', cost=[0]):
     >>> amalgamate(A,2).todense()
     matrix([[ 1.,  1.],
             [ 0.,  0.]])
-
 
     """
 
@@ -817,7 +815,6 @@ def amalgamate(A, blocksize, norm='abs', cost=[0]):
 
 def UnAmal(A, RowsPerBlock, ColsPerBlock):
     """
-
     Unamalgamate a CSR A with blocks of 1's.  This operation is equivalent to
     replacing each entry of A with ones(RowsPerBlock, ColsPerBlock), i.e., this
     is equivalent to setting all of A's nonzeros to 1 and then doing a

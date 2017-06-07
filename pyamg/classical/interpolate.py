@@ -8,15 +8,15 @@ from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr, \
 from pyamg import amg_core
 from pyamg.relaxation.relaxation import boundary_relaxation
 from pyamg.strength import classical_strength_of_connection
-from pyamg.util.utils import filter_matrix_rows
+from pyamg.util.utils import filter_matrix_rows, UnAmal
 
 __all__ = ['direct_interpolation', 'standard_interpolation',
-           'trivial_interpolation', 'injection_interpolation',
+           'one_point_interpolation', 'injection_interpolation',
            'neumann_ideal_interpolation', 'neumann_ideal_restriction',
-           'approximate_ideal_restriction']
+           'approximate_ideal_restriction', 'distance_two_interpolation']
 
 
-def direct_interpolation(A, C, splitting, cost=[0]):
+def direct_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
     """Create prolongator using direct interpolation
 
     Parameters
@@ -28,6 +28,12 @@ def direct_interpolation(A, C, splitting, cost=[0]):
         Must have zero diagonal
     splitting : array
         C/F splitting stored in an array of length N
+    theta : float in [0,1), default None
+        theta value defining strong connections in a classical AMG sense. Provide if
+        different SOC used for P than for CF-splitting; otherwise, theta = None. 
+    norm : string, default 'abs'
+        Norm used in redefining classical SOC. Options are 'min' and 'abs' for CSR matrices,
+        and 'min', 'abs', and 'fro' for BSR matrices. See strength.py for more information.
 
     Returns
     -------
@@ -50,38 +56,76 @@ def direct_interpolation(A, C, splitting, cost=[0]):
      [ 0.   0.   1. ]]
 
     """
-    if not isspmatrix_csr(A):
-        raise TypeError('expected csr_matrix for A')
-
     if not isspmatrix_csr(C):
-        raise TypeError('expected csr_matrix for C')
+        raise TypeError('Expected csr_matrix SOC matrix, C.')
 
-    # Interpolation weights are computed based on entries in A, but subject to
-    # the sparsity pattern of C.  So, copy the entries of A into the
-    # sparsity pattern of C.
-    C = C.copy()
-    C.data[:] = 1.0
-    C = C.multiply(A)
+    # Block BSR format. Transfer A to CSR and the splitting and SOC matrix to have
+    # DOFs corresponding to CSR A
+    if isspmatrix_bsr(A):
+        temp_A = A.tocsr()
+        temp_A.eliminate_zeros()
+        splitting0 = splitting * np.ones((A.blocksize[0],1), dtype='intc')
+        splitting0 = np.reshape(splitting0, (np.prod(splitting0.shape),), order='F')
+        if theta is not None:
+            C0 = classical_strength_of_connection(A, theta=theta, norm=norm, cost=cost)
+            C0 = UnAmal(C0, A.blocksize[0], A.blocksize[1])
+        else:
+            C0 = UnAmal(C, A.blocksize[0], A.blocksize[1])
+        C0 = C0.tocsr()
+        C0.eliminate_zeros()
 
-    Pp = np.empty_like(A.indptr)
+        # Interpolation weights are computed based on entries in A, but subject to the
+        # sparsity pattern of C.  So, copy the entries of A into sparsity pattern of C.
+        C0.data[:] = 1.0
+        C0 = C0.multiply(temp_A)
 
-    amg_core.rs_direct_interpolation_pass1(A.shape[0],
-                                           C.indptr, C.indices, splitting, Pp)
+        P_indptr = np.empty_like(temp_A.indptr)
+        amg_core.rs_direct_interpolation_pass1(temp_A.shape[0], C0.indptr, C0.indices, 
+                                               splitting0, P_indptr)
 
-    nnz = Pp[-1]
-    Pj = np.empty(nnz, dtype=Pp.dtype)
-    Px = np.empty(nnz, dtype=A.dtype)
+        nnz = P_indptr[-1]
+        P_colinds = np.empty(nnz, dtype=P_indptr.dtype)
+        P_data = np.empty(nnz, dtype=A.dtype)
 
-    amg_core.rs_direct_interpolation_pass2(A.shape[0],
-                                           A.indptr, A.indices, A.data,
-                                           C.indptr, C.indices, C.data,
-                                           splitting,
-                                           Pp, Pj, Px)
+        amg_core.rs_direct_interpolation_pass2(temp_A.shape[0], temp_A.indptr, temp_A.indices,
+                                               temp_A.data, C0.indptr, C0.indices, C0.data,
+                                               splitting0, P_indptr, P_colinds, P_data)
 
-    return csr_matrix((Px, Pj, Pp))
+        nc = np.sum(splitting0)
+        n = A.shape[0]
+        P = csr_matrix((P_data, P_colinds, P_indptr), shape=[n,nc])
+        return P.tobsr(blocksize=A.blocksize)
+
+    # CSR format
+    else:
+        if theta is not None:
+            C0 = classical_strength_of_connection(A, theta=theta, norm=norm, cost=cost)
+        else:
+            C0 = C.copy()
+        C0.eliminate_zeros()
+
+        # Interpolation weights are computed based on entries in A, but subject to the
+        # sparsity pattern of C.  So, copy the entries of A into sparsity pattern of C.
+        C0.data[:] = 1.0
+        C0 = C0.multiply(A)
+
+        P_indptr = np.empty_like(A.indptr)
+        amg_core.rs_direct_interpolation_pass1(A.shape[0], C0.indptr, C0.indices, 
+                                               splitting, P_indptr)
+        nnz = P_indptr[-1]
+        P_colinds = np.empty(nnz, dtype=P_indptr.dtype)
+        P_data = np.empty(nnz, dtype=A.dtype)
+
+        amg_core.rs_direct_interpolation_pass2(A.shape[0], A.indptr, A.indices,
+                                               A.data, C0.indptr, C0.indices, C0.data,
+                                               splitting, P_indptr, P_colinds, P_data)
+
+        nc = np.sum(splitting)
+        n = A.shape[0]
+        return csr_matrix((P_data, P_colinds, P_indptr), shape=[n,nc])
 
 
-def standard_interpolation(A, C, splitting, theta=None, norm=None, cost=[0]):
+def standard_interpolation(A, C, splitting, theta=None, norm='min', modified=True, cost=[0]):
     """Create prolongator using standard interpolation
 
     Parameters
@@ -93,6 +137,16 @@ def standard_interpolation(A, C, splitting, theta=None, norm=None, cost=[0]):
         Must have zero diagonal
     splitting : array
         C/F splitting stored in an array of length N
+    theta : float in [0,1), default None
+        theta value defining strong connections in a classical AMG sense. Provide if
+        different SOC used for P than for CF-splitting; otherwise, theta = None. 
+    norm : string, default 'abs'
+        Norm used in redefining classical SOC. Options are 'min' and 'abs' for CSR matrices,
+        and 'min', 'abs', and 'fro' for BSR matrices. See strength.py for more information.
+    modified : bool, default True
+        Use modified classical interpolation. More robust if RS coarsening with second
+        pass is not used for CF splitting. Ignores interpolating from strong F-connections
+        without a common C-neighbor.
 
     Returns
     -------
@@ -115,44 +169,218 @@ def standard_interpolation(A, C, splitting, theta=None, norm=None, cost=[0]):
      [ 0.   0.   1. ]]
 
     """
-    if not isspmatrix_csr(A):
-        raise TypeError('expected csr_matrix for A')
-
     if not isspmatrix_csr(C):
-        raise TypeError('expected csr_matrix for C')
+        raise TypeError('Expected csr_matrix SOC matrix, C.')
 
-    if theta is not None:
-        if norm is None:
-            C0 = classical_strength_of_connection(A, theta=theta, block=None, norm='min', cost=cost)
+    nc = np.sum(splitting)
+    n = A.shape[0]
+
+    # Block BSR format. Transfer A to CSR and the splitting and SOC matrix to have
+    # DOFs corresponding to CSR A
+    if isspmatrix_bsr(A):
+        temp_A = A.tocsr()
+        splitting0 = splitting * np.ones((A.blocksize[0],1), dtype='intc')
+        splitting0 = np.reshape(splitting0, (np.prod(splitting0.shape),), order='F')
+        if theta is not None:
+            C0 = classical_strength_of_connection(A, theta=theta, norm=norm, cost=cost)
+            C0 = UnAmal(C0, A.blocksize[0], A.blocksize[1])
         else:
-            C0 = classical_strength_of_connection(A, theta=theta, block=None, norm=norm, cost=cost)
+            C0 = UnAmal(C, A.blocksize[0], A.blocksize[1])
+        C0 = C0.tocsr()
+
+        # Use modified standard interpolation by ignoring strong F-connections that do
+        # not have a common C-point.
+        if modified:
+            amg_core.remove_strong_FF_connections(temp_A.shape[0], C0.indptr, C0.indices,
+                                                  C0.data, splitting)
+        C0.eliminate_zeros()
+
+        # Interpolation weights are computed based on entries in A, but subject to
+        # the sparsity pattern of C.  So, copy the entries of A into the
+        # sparsity pattern of C.
+        C0.data[:] = 1.0
+        C0 = C0.multiply(temp_A)
+
+        P_indptr = np.empty_like(temp_A.indptr)
+        amg_core.rs_standard_interpolation_pass1(temp_A.shape[0], C0.indptr,
+                                                 C0.indices, splitting0, P_indptr)
+        nnz = P_indptr[-1]
+        P_colinds = np.empty(nnz, dtype=P_indptr.dtype)
+        P_data = np.empty(nnz, dtype=temp_A.dtype)
+
+        if modified:
+            amg_core.mod_standard_interpolation_pass2(temp_A.shape[0], temp_A.indptr, temp_A.indices,
+                                                      temp_A.data, C0.indptr, C0.indices,
+                                                      C0.data, splitting0, P_indptr,
+                                                      P_colinds, P_data)
+        else:
+            amg_core.rs_standard_interpolation_pass2(temp_A.shape[0], temp_A.indptr, temp_A.indices,
+                                                     temp_A.data, C0.indptr, C0.indices,
+                                                     C0.data, splitting0, P_indptr,
+                                                     P_colinds, P_data)
+
+        nc = np.sum(splitting0)
+        n = A.shape[0] 
+        P = csr_matrix((P_data, P_colinds, P_indptr), shape=[n,nc])
+        return P.tobsr(blocksize=A.blocksize)
+
+    # CSR format
     else:
-        C0 = C.copy()
+        if theta is not None:
+            C0 = classical_strength_of_connection(A, theta=theta, norm=norm, cost=cost)
+        else:
+            C0 = C.copy()
 
-    # Interpolation weights are computed based on entries in A, but subject to
-    # the sparsity pattern of C.  So, copy the entries of A into the
-    # sparsity pattern of C.
-    C0.data[:] = 1.0
-    C0 = C0.multiply(A)
+        # Use modified standard interpolation by ignoring strong F-connections that do
+        # not have a common C-point.
+        if modified:
+            amg_core.remove_strong_FF_connections(A.shape[0], C0.indptr, C0.indices, C0.data, splitting)
+        C0.eliminate_zeros()
 
-    Pp = np.empty_like(A.indptr)
-    amg_core.rs_standard_interpolation_pass1(A.shape[0], C0.indptr,
-    										 C0.indices, splitting, Pp)
+        # Interpolation weights are computed based on entries in A, but subject to
+        # the sparsity pattern of C.  So, copy the entries of A into the
+        # sparsity pattern of C.
+        C0.data[:] = 1.0
+        C0 = C0.multiply(A)
 
-    nnz = Pp[-1]
-    Pj = np.empty(nnz, dtype=Pp.dtype)
-    Px = np.empty(nnz, dtype=A.dtype)
+        P_indptr = np.empty_like(A.indptr)
+        amg_core.rs_standard_interpolation_pass1(A.shape[0], C0.indptr,
+                                                 C0.indices, splitting, P_indptr)
+        nnz = P_indptr[-1]
+        P_colinds = np.empty(nnz, dtype=P_indptr.dtype)
+        P_data = np.empty(nnz, dtype=A.dtype)
 
-    amg_core.rs_standard_interpolation_pass2(A.shape[0],
-                                             A.indptr, A.indices, A.data,
-                                             C0.indptr, C0.indices, C0.data,
-                                             splitting,
-                                             Pp, Pj, Px)
-    return  csr_matrix((Px, Pj, Pp))
+        if modified:
+            amg_core.mod_standard_interpolation_pass2(A.shape[0], A.indptr, A.indices,
+                                                      A.data, C0.indptr, C0.indices,
+                                                      C0.data, splitting, P_indptr,
+                                                      P_colinds, P_data)
+        else:
+            amg_core.rs_standard_interpolation_pass2(A.shape[0], A.indptr, A.indices,
+                                                     A.data, C0.indptr, C0.indices,
+                                                     C0.data, splitting, P_indptr,
+                                                     P_colinds, P_data)
+        nc = np.sum(splitting)
+        n = A.shape[0]
+        return csr_matrix((P_data, P_colinds, P_indptr), shape=[n,nc])
 
 
-def trivial_interpolation(A, splitting, cost=[0]):
-    """ Create trivial classical interpolation operator, that is C-points are
+def distance_two_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
+    #
+    #
+    # TODO: there is something wrong with the C-version of this
+    #
+    #
+    """Create prolongator using distance-two AMG interpolation (extended+i interpolaton).
+
+    Parameters
+    ----------
+    A : {csr_matrix}
+        NxN matrix in CSR format
+    C : {csr_matrix}
+        Strength-of-Connection matrix
+        Must have zero diagonal
+    splitting : array
+        C/F splitting stored in an array of length N
+    theta : float in [0,1), default None
+        theta value defining strong connections in a classical AMG sense. Provide if
+        different SOC used for P than for CF-splitting; otherwise, theta = None. 
+    norm : string, default 'abs'
+        Norm used in redefining classical SOC. Options are 'min' and 'abs' for CSR matrices,
+        and 'min', 'abs', and 'fro' for BSR matrices. See strength.py for more information.
+
+    Returns
+    -------
+    P : {csr_matrix}
+        Prolongator using standard interpolation
+
+    Examples
+    --------
+    >>> from pyamg.gallery import poisson
+    >>> from pyamg.classical import standard_interpolation
+    >>> import numpy as np
+    >>> A = poisson((5,),format='csr')
+    >>> splitting = np.array([1,0,1,0,1], dtype='intc')
+    >>> P = standard_interpolation(A, A, splitting)
+    >>> print P.todense()
+    [[ 1.   0.   0. ]
+     [ 0.5  0.5  0. ]
+     [ 0.   1.   0. ]
+     [ 0.   0.5  0.5]
+     [ 0.   0.   1. ]]
+
+    """
+    if not isspmatrix_csr(C):
+        raise TypeError('Expected csr_matrix SOC matrix, C.')
+
+    nc = np.sum(splitting)
+    n = A.shape[0]
+
+    # Block BSR format. Transfer A to CSR and the splitting and SOC matrix to have
+    # DOFs corresponding to CSR A
+    if isspmatrix_bsr(A):
+        temp_A = A.tocsr()
+        splitting0 = splitting * np.ones((A.blocksize[0],1), dtype='intc')
+        splitting0 = np.reshape(splitting0, (np.prod(splitting0.shape),), order='F')
+        if theta is not None:
+            C0 = classical_strength_of_connection(A, theta=theta, norm=norm, cost=cost)
+            C0 = UnAmal(C0, A.blocksize[0], A.blocksize[1])
+        else:
+            C0 = UnAmal(C, A.blocksize[0], A.blocksize[1])
+        C0 = C0.tocsr()
+        C0.eliminate_zeros()
+
+        # Interpolation weights are computed based on entries in A, but subject to
+        # the sparsity pattern of C.  So, copy the entries of A into the
+        # sparsity pattern of C.
+        C0.data[:] = 1.0
+        C0 = C0.multiply(temp_A)
+        P_indptr = np.empty_like(temp_A.indptr)
+        amg_core.distance_two_amg_interpolation_pass1(temp_A.shape[0], C0.indptr,
+                                                      C0.indices, splitting0, P_indptr)
+        nnz = P_indptr[-1]
+        P_colinds = np.empty(nnz, dtype=P_indptr.dtype)
+        P_data = np.empty(nnz, dtype=temp_A.dtype)
+        amg_core.distance_two_amg_interpolation_pass2(temp_A.shape[0], temp_A.indptr, temp_A.indices,
+                                                      temp_A.data, C0.indptr, C0.indices,
+                                                      C0.data, splitting0, P_indptr,
+                                                      P_colinds, P_data)
+        nc = np.sum(splitting0)
+        n = A.shape[0] 
+        P = csr_matrix((P_data, P_colinds, P_indptr), shape=[n,nc])
+        return P.tobsr(blocksize=A.blocksize)
+
+    # CSR format
+    else:
+        if theta is not None:
+            C0 = classical_strength_of_connection(A, theta=theta, norm=norm, cost=cost)
+        else:
+            C0 = C.copy()
+        C0.eliminate_zeros()
+
+        # Interpolation weights are computed based on entries in A, but subject to
+        # the sparsity pattern of C.  So, copy the entries of A into the
+        # sparsity pattern of C.
+        C0.data[:] = 1.0
+        C0 = C0.multiply(A)
+
+        P_indptr = np.empty_like(A.indptr)
+        amg_core.distance_two_amg_interpolation_pass1(A.shape[0], C0.indptr,
+                                                      C0.indices, splitting, P_indptr)
+        nnz = P_indptr[-1]
+        P_colinds = np.empty(nnz, dtype=P_indptr.dtype)
+        P_data = np.empty(nnz, dtype=A.dtype)
+        amg_core.distance_two_amg_interpolation_pass2(A.shape[0], A.indptr, A.indices,
+                                                      A.data, C0.indptr, C0.indices,
+                                                      C0.data, splitting, P_indptr,
+                                                      P_colinds, P_data)
+        nc = np.sum(splitting)
+        n = A.shape[0]
+        return csr_matrix((P_data, P_colinds, P_indptr), shape=[n,nc])
+
+
+def injection_interpolation(A, splitting, cost=[0]):
+    """ Create interpolation operator by injection, that is C-points are
     interpolated by value and F-points are not interpolated.
 
     Parameters
@@ -193,10 +421,10 @@ def trivial_interpolation(A, splitting, cost=[0]):
                           shape=[n*blocksize,nc*blocksize])
 
 
-def injection_interpolation(A, C, splitting, cost=[0]):
-    """ Create full injection interpolation operator, that is C-points are
-    interpolated by value and F-points are interpolated by value from their
-    strongest-connected C-point neighbor.
+def one_point_interpolation(A, C, splitting, cost=[0]):
+    """ Create one-point interpolation operator, that is C-points are
+    interpolated by value and F-points are interpolated by value from
+    their strongest-connected C-point neighbor.
 
     Parameters
     ----------
@@ -229,7 +457,7 @@ def injection_interpolation(A, C, splitting, cost=[0]):
     nc = np.sum(splitting)
     P_rowptr = np.arange(start=0, stop=(n+1), step=1, dtype='int32')
     P_colinds = np.empty((n,),dtype='int32')
-    amg_core.injection_interpolation(P_rowptr, P_colinds, C.indptr,
+    amg_core.one_point_interpolation(P_rowptr, P_colinds, C.indptr,
                                      C.indices, C.data, splitting)
     if blocksize == 1:
         P_data = np.ones((n,), dtype=A.dtype)

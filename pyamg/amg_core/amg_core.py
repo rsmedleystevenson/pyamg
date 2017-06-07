@@ -489,6 +489,7 @@ F_NODE = _amg_core.F_NODE
 C_NODE = _amg_core.C_NODE
 U_NODE = _amg_core.U_NODE
 PRE_F_NODE = _amg_core.PRE_F_NODE
+<<<<<<< HEAD
 
 def sort_2nd(left, right):
     """sort_2nd(std::pair< int,double > const & left, std::pair< int,double > const & right) -> bool"""
@@ -509,16 +510,28 @@ def classical_strength_of_connection_min(*args):
     classical_strength_of_connection_min(int const n_row, double const theta, int const [] Ap, int const [] Aj, double const [] Ax, int [] Sp, int [] Sj, double [] Sx)
     """
     return _amg_core.classical_strength_of_connection_min(*args)
+=======
+
+def classical_strength_of_connection_abs(*args):
+    """
+    classical_strength_of_connection_abs(int const n_row, float const theta, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] C_rowptr, int [] C_colinds, float [] C_data)
+    classical_strength_of_connection_abs(int const n_row, double const theta, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] C_rowptr, int [] C_colinds, double [] C_data)
+    classical_strength_of_connection_abs(int const n_row, float const theta, int const [] A_rowptr, int const [] A_colinds, std::complex< float > const [] A_data, int [] C_rowptr, int [] C_colinds, std::complex< float > [] C_data)
+    classical_strength_of_connection_abs(int const n_row, double const theta, int const [] A_rowptr, int const [] A_colinds, std::complex< double > const [] A_data, int [] C_rowptr, int [] C_colinds, std::complex< double > [] C_data)
+    """
+    return _amg_core.classical_strength_of_connection_abs(*args)
+>>>>>>> classical
 
 def maximum_row_value(*args):
     """
-    maximum_row_value(int const n_row, float [] x, int const [] Ap, int const [] Aj, float const [] Ax)
-    maximum_row_value(int const n_row, double [] x, int const [] Ap, int const [] Aj, double const [] Ax)
-    maximum_row_value(int const n_row, std::complex< float > [] x, int const [] Ap, int const [] Aj, std::complex< float > const [] Ax)
-    maximum_row_value(int const n_row, std::complex< double > [] x, int const [] Ap, int const [] Aj, std::complex< double > const [] Ax)
+    maximum_row_value(int const n_row, float [] x, int const [] A_rowptr, int const [] A_colinds, float const [] A_data)
+    maximum_row_value(int const n_row, double [] x, int const [] A_rowptr, int const [] A_colinds, double const [] A_data)
+    maximum_row_value(int const n_row, std::complex< float > [] x, int const [] A_rowptr, int const [] A_colinds, std::complex< float > const [] A_data)
+    maximum_row_value(int const n_row, std::complex< double > [] x, int const [] A_rowptr, int const [] A_colinds, std::complex< double > const [] A_data)
     """
     return _amg_core.maximum_row_value(*args)
 
+<<<<<<< HEAD
 def rs_cf_splitting(n_nodes, Sp, Sj, Tp, Tj, influence, splitting):
     """rs_cf_splitting(int const n_nodes, int const [] Sp, int const [] Sj, int const [] Tp, int const [] Tj, int const [] influence, int [] splitting)"""
     return _amg_core.rs_cf_splitting(n_nodes, Sp, Sj, Tp, Tj, influence, splitting)
@@ -526,19 +539,50 @@ def rs_cf_splitting(n_nodes, Sp, Sj, Tp, Tj, influence, splitting):
 def rs_cf_splitting_pass2(n_nodes, Sp, Sj, splitting):
     """rs_cf_splitting_pass2(int const n_nodes, int const [] Sp, int const [] Sj, int [] splitting)"""
     return _amg_core.rs_cf_splitting_pass2(n_nodes, Sp, Sj, splitting)
+=======
+def rs_cf_splitting(n_nodes, C_rowptr, C_colinds, Tp, Tj, influence, splitting):
+    """rs_cf_splitting(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int const [] Tp, int const [] Tj, int const [] influence, int [] splitting)"""
+    return _amg_core.rs_cf_splitting(n_nodes, C_rowptr, C_colinds, Tp, Tj, influence, splitting)
+>>>>>>> classical
 
-def cljp_naive_splitting(n, Sp, Sj, Tp, Tj, splitting, colorflag):
-    """cljp_naive_splitting(int const n, int const [] Sp, int const [] Sj, int const [] Tp, int const [] Tj, int [] splitting, int const colorflag)"""
-    return _amg_core.cljp_naive_splitting(n, Sp, Sj, Tp, Tj, splitting, colorflag)
+def rs_cf_splitting_pass2(n_nodes, C_rowptr, C_colinds, splitting):
+    """rs_cf_splitting_pass2(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int [] splitting)"""
+    return _amg_core.rs_cf_splitting_pass2(n_nodes, C_rowptr, C_colinds, splitting)
 
-def rs_direct_interpolation_pass1(n_nodes, Sp, Sj, splitting, Bp):
-    """rs_direct_interpolation_pass1(int const n_nodes, int const [] Sp, int const [] Sj, int const [] splitting, int [] Bp)"""
-    return _amg_core.rs_direct_interpolation_pass1(n_nodes, Sp, Sj, splitting, Bp)
+def cljp_naive_splitting(n, C_rowptr, C_colinds, Tp, Tj, splitting, colorflag):
+    """cljp_naive_splitting(int const n, int const [] C_rowptr, int const [] C_colinds, int const [] Tp, int const [] Tj, int [] splitting, int const colorflag)"""
+    return _amg_core.cljp_naive_splitting(n, C_rowptr, C_colinds, Tp, Tj, splitting, colorflag)
+
+def rs_direct_interpolation_pass1(n_nodes, C_rowptr, C_colinds, splitting, P_rowptr):
+    """rs_direct_interpolation_pass1(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int const [] splitting, int [] P_rowptr)"""
+    return _amg_core.rs_direct_interpolation_pass1(n_nodes, C_rowptr, C_colinds, splitting, P_rowptr)
+
+def rs_standard_interpolation_pass1(n_nodes, C_rowptr, C_colinds, splitting, P_rowptr):
+    """rs_standard_interpolation_pass1(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int const [] splitting, int [] P_rowptr)"""
+    return _amg_core.rs_standard_interpolation_pass1(n_nodes, C_rowptr, C_colinds, splitting, P_rowptr)
+
+def distance_two_amg_interpolation_pass1(n_nodes, C_rowptr, C_colinds, splitting, P_rowptr):
+    """distance_two_amg_interpolation_pass1(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, int const [] splitting, int [] P_rowptr)"""
+    return _amg_core.distance_two_amg_interpolation_pass1(n_nodes, C_rowptr, C_colinds, splitting, P_rowptr)
+
+def classical_strength_of_connection_min(*args):
+    """
+    classical_strength_of_connection_min(int const n_row, float const theta, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int [] C_rowptr, int [] C_colinds, float [] C_data)
+    classical_strength_of_connection_min(int const n_row, double const theta, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] C_rowptr, int [] C_colinds, double [] C_data)
+    """
+    return _amg_core.classical_strength_of_connection_min(*args)
+
+def one_point_interpolation(*args):
+    """
+    one_point_interpolation(int const [] rowptr, int const rowptr_size, int [] colinds, int const colinds_size, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting)
+    one_point_interpolation(int const [] rowptr, int const rowptr_size, int [] colinds, int const colinds_size, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting)
+    """
+    return _amg_core.one_point_interpolation(*args)
 
 def rs_direct_interpolation_pass2(*args):
     """
-    rs_direct_interpolation_pass2(int const n_nodes, int const [] Ap, int const [] Aj, float const [] Ax, int const [] Sp, int const [] Sj, float const [] Sx, int const [] splitting, int const [] Bp, int [] Bj, float [] Bx)
-    rs_direct_interpolation_pass2(int const n_nodes, int const [] Ap, int const [] Aj, double const [] Ax, int const [] Sp, int const [] Sj, double const [] Sx, int const [] splitting, int const [] Bp, int [] Bj, double [] Bx)
+    rs_direct_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, float [] P_data)
+    rs_direct_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, double [] P_data)
     """
     return _amg_core.rs_direct_interpolation_pass2(*args)
 
@@ -548,10 +592,31 @@ def rs_standard_interpolation_pass1(n_nodes, Sp, Sj, splitting, Bp):
 
 def rs_standard_interpolation_pass2(*args):
     """
-    rs_standard_interpolation_pass2(int const n_nodes, int const [] Ap, int const [] Aj, float const [] Ax, int const [] Sp, int const [] Sj, float const [] Sx, int const [] splitting, int const [] Bp, int [] Bj, float [] Bx)
-    rs_standard_interpolation_pass2(int const n_nodes, int const [] Ap, int const [] Aj, double const [] Ax, int const [] Sp, int const [] Sj, double const [] Sx, int const [] splitting, int const [] Bp, int [] Bj, double [] Bx)
+    rs_standard_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, float [] P_data)
+    rs_standard_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, double [] P_data)
     """
     return _amg_core.rs_standard_interpolation_pass2(*args)
+
+def mod_standard_interpolation_pass2(*args):
+    """
+    mod_standard_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, float [] P_data)
+    mod_standard_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, double [] P_data)
+    """
+    return _amg_core.mod_standard_interpolation_pass2(*args)
+
+def distance_two_amg_interpolation_pass2(*args):
+    """
+    distance_two_amg_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, float [] P_data)
+    distance_two_amg_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, double [] P_data)
+    """
+    return _amg_core.distance_two_amg_interpolation_pass2(*args)
+
+def remove_strong_FF_connections(*args):
+    """
+    remove_strong_FF_connections(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, float [] C_data, int const [] splitting)
+    remove_strong_FF_connections(int const n_nodes, int const [] C_rowptr, int const [] C_colinds, double [] C_data, int const [] splitting)
+    """
+    return _amg_core.remove_strong_FF_connections(*args)
 
 def cr_helper(*args):
     """

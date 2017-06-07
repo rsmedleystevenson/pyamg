@@ -149,7 +149,7 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
         Square, sparse matrix in CSR or BSR format
     theta : float
         Threshold parameter in [0,1].
-    block : string, default None
+    block : string, default None for CSR matrix and 'block' for BSR matrix
         How to treat block structure of A:
             None         : Compute SOC based on A as CSR matrix.
             'block'      : Compute SOC based on norm of blocks of A.
@@ -177,9 +177,6 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
     -----
     - A symmetric A does not necessarily yield a symmetric strength matrix S
     - Calls C++ function classical_strength_of_connection
-    - The version as implemented is designed form M-matrices.  Trottenberg et
-      al. use max A[i,k] over all negative entries, which is the same.  A
-      positive edge weight never indicates a strong connection.
 
     References
     ----------
@@ -206,6 +203,8 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
     >>> S = classical_strength_of_connection(A, 0.0)
 
     """
+    if (theta < 0 or theta > 1):
+        raise ValueError('expected theta in [0,1]')
 
     if (theta < 0 or theta > 1):
         raise ValueError('expected theta in [0,1]')
@@ -216,19 +215,18 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
         blocksize = 1
 
     # Block structure considered before computing SOC
-    if block == 'block' and blocksize > 1:
+    if (block == 'block') or sparse.isspmatrix_bsr(A):
         R, C = A.blocksize
-        if R != C:
+        if (R != C) or (R < 1):
             raise ValueError('Matrix must have square blocks')
 
         N = A.shape[0] / R
 
-        # SOC based on maximum element in each block
+        # SOC based on maximum absolute value element in each block
         if norm == 'abs':
             data = np.max(np.max(np.abs(A.data),axis=1),axis=1)
             cost[0] += 1
         # SOC based on hard minimum of entry in each off-diagonal block
-        # and absou
         elif norm == 'min':
             data = np.min(np.min(A.data,axis=1),axis=1)
             cost[0] += 1
@@ -239,22 +237,22 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
         else:
             raise ValueError("Invalid choice of norm.")
 
-        data[np.abs(data)<1e-15] = 0.0
-        Sp = np.empty_like(A.indptr)
-        Sj = np.empty_like(A.indices)
-        Sx = np.empty_like(data)
+        data[np.abs(data)<1e-16] = 0.0
+        S_rowptr = np.empty_like(A.indptr)
+        S_colinds = np.empty_like(A.indices)
+        S_data = np.empty_like(data)
 
         if norm == 'abs' or norm == 'fro':
-            amg_core.classical_strength_of_connection_abs(N, theta, A.indptr, A.indices,
-                                                          data, Sp, Sj, Sx)
+            amg_core.classical_strength_of_connection_abs(N, theta, A.indptr, A.indices, data,
+                                                          S_rowptr, S_colinds, S_data)
         elif norm == 'min':
-            amg_core.classical_strength_of_connection_min(N, theta, A.indptr, A.indices,
-                                                          data, Sp, Sj, Sx)
+            amg_core.classical_strength_of_connection_min(N, theta, A.indptr, A.indices, data,
+                                                          S_rowptr, S_colinds, S_data)
         else:  
             raise ValueError("Unrecognized option for norm.")
     
         # One pass through nnz to find largest entry, one to filter
-        S = sparse.csr_matrix((Sx, Sj, Sp), shape=[N, N])
+        S = sparse.csr_matrix((S_data, S_colinds, S_rowptr), shape=[N, N])
         cost[0] += 2
         
         # Take magnitude and scale by largest entry
@@ -269,25 +267,21 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
 
     # SOC computed based on A as CSR
     else:
-        if sparse.isspmatrix_bsr(A):
-            warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
-            A = sparse.csr_matrix(A)
-
-        Sp = np.empty_like(A.indptr)
-        Sj = np.empty_like(A.indices)
-        Sx = np.empty_like(A.data)
+        S_rowptr = np.empty_like(A.indptr)
+        S_colinds = np.empty_like(A.indices)
+        S_data = np.empty_like(A.data)
 
         if norm == 'abs' or norm == 'fro':
             amg_core.classical_strength_of_connection_abs(A.shape[0], theta, A.indptr,
-                                                          A.indices, A.data, Sp, Sj, Sx)
+                                                          A.indices, A.data, S_rowptr, S_colinds, S_data)
         elif norm == 'min':
             amg_core.classical_strength_of_connection_min(A.shape[0], theta, A.indptr,
-                                                          A.indices, A.data, Sp, Sj, Sx)
+                                                          A.indices, A.data, S_rowptr, S_colinds, S_data)
         else:  
             raise ValueError("Unrecognized option for norm.")
 
         # One pass through nnz to find largest entry, one to filter
-        S = sparse.csr_matrix((Sx, Sj, Sp), shape=A.shape)
+        S = sparse.csr_matrix((S_data, S_colinds, S_rowptr), shape=A.shape)
         cost[0] += 2
 
         if blocksize > 1 and block == 'amalgamate':
@@ -369,16 +363,16 @@ def symmetric_strength_of_connection(A, theta=0, cost=[0]):
 
     if sparse.isspmatrix_csr(A):
 
-        Sp = np.empty_like(A.indptr)
-        Sj = np.empty_like(A.indices)
-        Sx = np.empty_like(A.data)
+        S_rowptr = np.empty_like(A.indptr)
+        S_colinds = np.empty_like(A.indices)
+        S_data = np.empty_like(A.data)
 
         fn = amg_core.symmetric_strength_of_connection
-        fn(A.shape[0], theta, A.indptr, A.indices, A.data, Sp, Sj, Sx)
+        fn(A.shape[0], theta, A.indptr, A.indices, A.data, S_rowptr, S_colinds, S_data)
         # Assume takes ~0.5 pass to find diagonals, 1 pass to filter
         cost[0] += 1.5
 
-        S = sparse.csr_matrix((Sx, Sj, Sp), shape=A.shape)
+        S = sparse.csr_matrix((S_data, S_colinds, S_rowptr), shape=A.shape)
 
     elif sparse.isspmatrix_bsr(A):
         M, N = A.shape
@@ -917,11 +911,6 @@ def evolution_strength_of_connection(A, B=None, epsilon=4.0, k=2,
                                        Atilde.indices, Atilde.data)
         Atilde.eliminate_zeros()
 
-    # Symmetrize
-    if symmetrize_measure:
-        Atilde = 0.5*(Atilde + Atilde.T)
-        cost[0] += Atilde.nnz / float(A.nnz)
-
     # Set diagonal to 1.0, as each point is strongly connected to itself.
     I = sparse.eye(dimen, dimen, format="csr")
     I.data -= Atilde.diagonal()
@@ -951,6 +940,11 @@ def evolution_strength_of_connection(A, B=None, epsilon=4.0, k=2,
     # Scale C by the largest magnitude entry in each row
     Atilde = scale_rows_by_largest_entry(Atilde)
     cost[0] += Atilde.nnz / float(A.nnz)
+    
+    # Symmetrize
+    if symmetrize_measure:
+        Atilde = 0.5*(Atilde + Atilde.T)
+        cost[0] += Atilde.nnz / float(A.nnz)
 
     return Atilde
 

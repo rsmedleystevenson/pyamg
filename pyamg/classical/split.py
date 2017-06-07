@@ -23,7 +23,7 @@ C/F Splitting Methods
 ---------------------
 
 RS : Original Ruge-Stuben method
-    - Produces good C/F splittings but is inherently serial.
+    - Produces good C/F splittings.
     - May produce AMG hierarchies with relatively high operator complexities.
     - See References [1,4]
 
@@ -108,7 +108,8 @@ __all__ = ['RS', 'PMIS', 'PMISc', 'CLJP', 'CLJPc', 'MIS', 'weighted_matching']
 __docformat__ = "restructuredtext en"
 
 
-def RS(S, second_pass=True, cost=[0]):
+
+def RS(S, second_pass=False, cost=[0]):
     """Compute a C/F splitting using Ruge-Stuben coarsening
 
     Parameters
@@ -116,7 +117,9 @@ def RS(S, second_pass=True, cost=[0]):
     S : csr_matrix
         Strength of connection matrix indicating the strength between nodes i
         and j (S_ij)
-    influence : TODO -- what is this?
+    second_pass : bool, default False
+        Perform second pass of classical AMG coarsening. Can be important for
+        classical AMG interpolation. Typically not done in parallel (e.g. Hypre).
 
     Returns
     -------
@@ -157,7 +160,7 @@ def RS(S, second_pass=True, cost=[0]):
                              splitting)
     if second_pass:
         amg_core.rs_cf_splitting_pass2(S.shape[0], S.indptr,
-                                S.indices, splitting)
+                                       S.indices, splitting)
 
     return splitting
 
