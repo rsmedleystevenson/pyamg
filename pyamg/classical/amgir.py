@@ -272,6 +272,17 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
             temp_C = C.T.tocsr()
             R = standard_interpolation(temp_A, temp_C, splitting, **kwargs)
             R = R.T.tocsr()
+    elif fn == 'distance_two':
+        if isspmatrix_bsr(A):
+            temp_A = A.T.tobsr()
+            temp_C = C.T.tobsr()
+            R = distance_two_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R = R.T.tobsr()
+        else: 
+            temp_A = A.T.tocsr()
+            temp_C = C.T.tocsr()
+            R = distance_two_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R = R.T.tocsr()
     elif fn == 'direct':
         if isspmatrix_bsr(A):
             temp_A = A.T.tobsr()
@@ -345,6 +356,17 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
             temp_A = A.T.tocsr()
             temp_C = C.T.tocsr()
             R_temp = standard_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R_temp = R_temp.T.tocsr()
+    elif fn == 'distance_two':
+        if isspmatrix_bsr(A):
+            temp_A = A.T.tobsr()
+            temp_C = C.T.tobsr()
+            R_temp = distance_two_interpolation(temp_A, temp_C, splitting, **kwargs)
+            R_temp = R_temp.T.tobsr()
+        else: 
+            temp_A = A.T.tocsr()
+            temp_C = C.T.tocsr()
+            R_temp = distance_two_interpolation(temp_A, temp_C, splitting, **kwargs)
             R_temp = R_temp.T.tocsr()
     elif fn == 'direct':
         if isspmatrix_bsr(A):

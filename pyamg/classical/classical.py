@@ -6,14 +6,14 @@ __docformat__ = "restructuredtext en"
 from warnings import warn
 from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr, \
     SparseEfficiencyWarning
-
 from pyamg.multilevel import multilevel_solver
 from pyamg.relaxation.smoothing import change_smoothers
 from pyamg.strength import classical_strength_of_connection, \
-    symmetric_strength_of_connection, evolution_strength_of_connection, \
-    distance_strength_of_connection, energy_based_strength_of_connection, \
+    symmetric_strength_of_connection, evolution_strength_of_connection,\
+    distance_strength_of_connection, energy_based_strength_of_connection,\
     algebraic_distance, affinity_distance
 from pyamg.util.utils import mat_mat_complexity, unpack_arg
+
 from .interpolate import direct_interpolation, standard_interpolation, \
     distance_two_interpolation, one_point_interpolation, \
     injection_interpolation
@@ -22,15 +22,15 @@ from .cr import CR
 
 __all__ = ['ruge_stuben_solver']
 
+
 def ruge_stuben_solver(A,
-                       strength=('classical', {'theta': 0.25 ,'do_amalgamation': False}),
+                       strength=('classical', {'theta': 0.25}),
                        CF='RS',
                        interpolation='direct',
                        restriction='galerkin',
                        presmoother=('gauss_seidel', {'sweep': 'symmetric'}),
                        postsmoother=('gauss_seidel', {'sweep': 'symmetric'}),
-                       max_levels=20, max_coarse=20, keep=False,
-                       block_starts=None, **kwargs):
+                       max_levels=10, max_coarse=10, keep=False, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
@@ -66,9 +66,6 @@ def ruge_stuben_solver(A,
         Flag to indicate keeping extra operators in the hierarchy for
         diagnostics.  For example, if True, then strength of connection (C) and
         tentative prolongation (T) are kept.
-    block_starts: list of integers
-        If non-trivial, list of starting row indices of blocks of A if A represents a system
-        (used for unknown-based approach for systems).
 
     Returns
     -------
@@ -136,6 +133,9 @@ def ruge_stuben_solver(A,
         except:
             raise TypeError('Argument A must have type csr_matrix, bsr_matrix, \
                              or be convertible to csr_matrix')
+    
+    # if isspmatrix_bsr(A):
+    #     warn("Classical AMG is often more effective on CSR matrices.")
 
     # preprocess A
     A = A.asfptype()
@@ -144,7 +144,6 @@ def ruge_stuben_solver(A,
 
     levels = [multilevel_solver.level()]
     levels[-1].A = A
-    levels[-1].block_starts = block_starts
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
         extend_hierarchy(levels, strength, CF, interpolation, restriction, keep)
@@ -156,6 +155,7 @@ def ruge_stuben_solver(A,
 
 # internal function
 def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
+    """ helper function for local methods """
 
     A = levels[-1].A
 
@@ -214,7 +214,7 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
         P = direct_interpolation(A, C, splitting, **kwargs)
     elif fn == 'one_point':
         P = one_point_interpolation(A, C, splitting, **kwargs)
-    elif fn == 'inject':
+    elif fn == 'injection':
         P = injection_interpolation(A, splitting, **kwargs)
     else:
         raise ValueError('unknown interpolation method (%s)' % interpolation)
@@ -245,7 +245,7 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
             temp_C = C.T.tocsr()
             R = one_point_interpolation(A, temp_C, splitting, **kwargs)
             R = R.T.tocsr()
-        elif fn == 'inject':         # Don't need A^T or C^T here
+        elif fn == 'injection':         # Don't need A^T or C^T here
             R = injection_interpolation(A, splitting, **kwargs)
             R = R.T.tocsr()
         else:
@@ -272,7 +272,7 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
             temp_C = C.T.tocsr()
             R = one_point_interpolation(A, temp_C, splitting, **kwargs)
             R = R.T.tobsr()
-        elif fn == 'inject':         # Don't need A^T or C^T here
+        elif fn == 'injection':         # Don't need A^T or C^T here
             R = injection_interpolation(A, splitting, **kwargs)
             R = R.T.tobsr()
         else:
@@ -280,15 +280,19 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
     
     levels[-1].complexity['restriction'] = kwargs['cost'][0]
 
+    # Store relevant information for this level
+    if keep:
+        levels[-1].C = C                  # strength of connection matrix
+        levels[-1].splitting = splitting  # C/F splitting
+
     levels[-1].P = P                  # prolongation operator
     levels[-1].R = R                  # restriction operator
-    levels[-1].splitting = splitting  # C/F splitting
 
     # Form coarse grid operator, get complexity
     levels[-1].complexity['RAP'] = mat_mat_complexity(R,A) / float(A.nnz)
     RA = R * A
     levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P) / float(A.nnz)
-    A = RA * P
+    A = RA * P      # Galerkin operator, Ac = RAP
 
     # Make sure coarse-grid operator is in correct sparse format
     if (isspmatrix_csr(P) and (not isspmatrix_csr(A))):
@@ -296,7 +300,6 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
     elif (isspmatrix_bsr(P) and (not isspmatrix_bsr(A))):
         A = A.tobsr()
 
+    # Form next level through Galerkin product
     levels.append(multilevel_solver.level())
     levels[-1].A = A
-
-
