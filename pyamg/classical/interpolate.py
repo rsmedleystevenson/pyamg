@@ -515,9 +515,6 @@ def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, cost=[0]):
 
     Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
     Fpts = np.array(np.where(splitting == 0)[0], dtype='int32')
-    nc = Cpts.shape[0]
-    nf = Fpts.shape[0]
-    n = C.shape[0]
 
     # Convert block CF-splitting into scalar CF-splitting so that we can access
     # submatrices of BSR matrix A
@@ -533,6 +530,9 @@ def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, cost=[0]):
         Cpts.sort()
         Fpts.sort()
     
+    nc = Cpts.shape[0]
+    nf = Fpts.shape[0]
+    n = A.shape[0]
     C = csr_matrix(A, copy=True)
     if theta > 0.0:
         filter_matrix_rows(C, theta, diagonal=True, lump=False)
