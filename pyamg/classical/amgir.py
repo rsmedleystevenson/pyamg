@@ -4,7 +4,7 @@ from __future__ import absolute_import
 __docformat__ = "restructuredtext en"
 
 from warnings import warn
-from scipy.sparse import csr_matrix, isspmatrix_csr, isspmatrix_bsr, \
+from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr, isspmatrix_bsr, \
     SparseEfficiencyWarning, block_diag
 import numpy as np
 from copy import deepcopy

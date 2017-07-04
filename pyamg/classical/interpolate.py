@@ -513,19 +513,29 @@ def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, cost=[0]):
     Does not support block matrices.
     """
 
-    if not isspmatrix_csr(A):
-        A = A.tocsr()
-        warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
-    
-    C = csr_matrix(A, copy=True)
-    if theta > 0.0:
-        filter_matrix_rows(C, theta, diagonal=True, lump=False)
-
     Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
     Fpts = np.array(np.where(splitting == 0)[0], dtype='int32')
     nc = Cpts.shape[0]
     nf = Fpts.shape[0]
     n = C.shape[0]
+
+    # Convert block CF-splitting into scalar CF-splitting so that we can access
+    # submatrices of BSR matrix A
+    if isspmatrix_bsr(A):
+        bsize = A.blocksize[0]
+        Cpts *= bsize
+        Fpts *= bsize
+        Cpts0 = Cpts
+        Fpts0 = Fpts
+        for i in range(1,bsize):
+            Cpts = np.hstack([Cpts,Cpts0+i])
+            Fpts = np.hstack([Fpts,Fpts0+i])
+        Cpts.sort()
+        Fpts.sort()
+    
+    C = csr_matrix(A, copy=True)
+    if theta > 0.0:
+        filter_matrix_rows(C, theta, diagonal=True, lump=False)
 
     # Expand sparsity pattern for R
     C.data[np.abs(C.data)<1e-16] = 0
@@ -560,7 +570,10 @@ def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, cost=[0]):
 
     # Form R = [Z, I], reorder and return
     R = hstack([Z, eye(nc, format='csr')])
-    R = csr_matrix(R * permute)
+    if isspmatrix_bsr(A):
+        R = bsr_matrix(R * permute, blocksize=[bsize,bsize])
+    else:
+        R = csr_matrix(R * permute)
     return R
 
 
