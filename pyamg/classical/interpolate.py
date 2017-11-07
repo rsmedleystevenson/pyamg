@@ -471,10 +471,13 @@ def one_point_interpolation(A, C, splitting, cost=[0]):
             raise TypeError("Invalid matrix type, must be CSR or BSR.")
 
     nc = np.sum(splitting)
-    P_rowptr = np.arange(start=0, stop=(n+1), step=1, dtype='int32')
+    #P_rowptr = np.arange(start=0, stop=(n+1), step=1, dtype='int32')
+    P_rowptr = np.empty((n+1,), dtype='int32') # P: n x nc, at most 'n' nnz
     P_colinds = np.empty((n,),dtype='int32')
     amg_core.one_point_interpolation(P_rowptr, P_colinds, C.indptr,
                                      C.indices, C.data, splitting)
+    #amg_core.one_point_interpolation(P_rowptr, P_colinds, A.indptr,
+    #                                 A.indices, A.data, splitting)
     if blocksize == 1:
         P_data = np.ones((n,), dtype=A.dtype)
         return csr_matrix((P_data,P_colinds,P_rowptr), shape=[n,nc])
@@ -658,7 +661,7 @@ def neumann_ideal_interpolation(A, splitting, theta=0.0, degree=1, cost=[0]):
     return P
 
 
-def approximate_ideal_restriction(A, splitting, theta=0.1, degree=1, use_gmres=False,
+def approximate_ideal_restriction(A, splitting, theta=0.1, norm='abs', degree=1, use_gmres=False,
                                   maxiter=10, precondition=True, cost=[0]):
     """ Compute approximate ideal restriction by setting RA = 0, within the
     sparsity pattern of R. Sparsity pattern of R for the ith row (i.e. ith
@@ -697,16 +700,16 @@ def approximate_ideal_restriction(A, splitting, theta=0.1, degree=1, use_gmres=F
 
     # Get SOC matrix containing neighborhood to be included in local solve
     if isspmatrix_bsr(A):
-        C = classical_strength_of_connection(A=A, theta=theta, block='amalgamate', norm='abs')
+        C = classical_strength_of_connection(A=A, theta=theta, block='amalgamate', norm=norm)
         blocksize = A.blocksize[0]
     elif isspmatrix_csr(A):
         blocksize = 1
-        C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
+        C = classical_strength_of_connection(A=A, theta=theta, block=None, norm=norm)
     else:
         try:
             A = A.tocsr()
             warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
-            C = classical_strength_of_connection(A=A, theta=theta, block=None, norm='abs')
+            C = classical_strength_of_connection(A=A, theta=theta, block=None, norm=norm)
             blocksize = 1
         except:
             raise TypeError("Invalid matrix type, must be CSR or BSR.")

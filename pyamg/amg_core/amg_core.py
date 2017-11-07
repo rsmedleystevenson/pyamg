@@ -552,8 +552,8 @@ def classical_strength_of_connection_min(*args):
 
 def one_point_interpolation(*args):
     """
-    one_point_interpolation(int const [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting)
-    one_point_interpolation(int const [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting)
+    one_point_interpolation(int [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting)
+    one_point_interpolation(int [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting)
     """
     return _amg_core.one_point_interpolation(*args)
 

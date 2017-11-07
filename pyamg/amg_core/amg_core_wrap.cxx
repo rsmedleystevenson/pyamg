@@ -3392,7 +3392,7 @@ SWIG_AsVal_std_complex_Sl_float_Sg_ (PyObject *o, std::complex<float> *val)
 
 
 SWIGINTERNINLINE PyObject*
-SWIG_From_std_complex_Sl_float_Sg_  (/*@SWIG:/usr/local/Cellar/swig/3.0.12/share/swig/3.0.12/typemaps/swigmacros.swg,104,%ifcplusplus@*/
+SWIG_From_std_complex_Sl_float_Sg_  (/*@SWIG:/home/li50/anaconda2/envs/fenicsproject/share/swig/3.0.12/typemaps/swigmacros.swg,104,%ifcplusplus@*/
 
 const std::complex<float>&
 
@@ -3423,7 +3423,7 @@ SWIG_AsVal_std_complex_Sl_double_Sg_  (PyObject *o, std::complex<double>* val)
 
 
 SWIGINTERNINLINE PyObject*
-SWIG_From_std_complex_Sl_double_Sg_  (/*@SWIG:/usr/local/Cellar/swig/3.0.12/share/swig/3.0.12/typemaps/swigmacros.swg,104,%ifcplusplus@*/
+SWIG_From_std_complex_Sl_double_Sg_  (/*@SWIG:/home/li50/anaconda2/envs/fenicsproject/share/swig/3.0.12/typemaps/swigmacros.swg,104,%ifcplusplus@*/
 
 const std::complex<double>&
 
@@ -29843,7 +29843,7 @@ SWIGINTERN PyObject *_wrap_one_point_interpolation__SWIG_1(PyObject *SWIGUNUSEDP
     arg12 = 1;
     for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
   }
-  one_point_interpolation< int,float >((int const (*))arg1,arg2,arg3,arg4,(int const (*))arg5,arg6,(int const (*))arg7,arg8,(float const (*))arg9,arg10,(int const (*))arg11,arg12);
+  one_point_interpolation< int,float >(arg1,arg2,arg3,arg4,(int const (*))arg5,arg6,(int const (*))arg7,arg8,(float const (*))arg9,arg10,(int const (*))arg11,arg12);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -29933,7 +29933,7 @@ SWIGINTERN PyObject *_wrap_one_point_interpolation__SWIG_2(PyObject *SWIGUNUSEDP
     arg12 = 1;
     for (i11=0; i11 < array_numdims(array11); ++i11) arg12 *= array_size(array11,i11);
   }
-  one_point_interpolation< int,double >((int const (*))arg1,arg2,arg3,arg4,(int const (*))arg5,arg6,(int const (*))arg7,arg8,(double const (*))arg9,arg10,(int const (*))arg11,arg12);
+  one_point_interpolation< int,double >(arg1,arg2,arg3,arg4,(int const (*))arg5,arg6,(int const (*))arg7,arg8,(double const (*))arg9,arg10,(int const (*))arg11,arg12);
   resultobj = SWIG_Py_Void();
   return resultobj;
 fail:
@@ -30043,8 +30043,8 @@ SWIGINTERN PyObject *_wrap_one_point_interpolation(PyObject *self, PyObject *arg
 fail:
   SWIG_SetErrorMsg(PyExc_NotImplementedError,"Wrong number or type of arguments for overloaded function 'one_point_interpolation'.\n"
     "  Possible C/C++ prototypes are:\n"
-    "    one_point_interpolation< int,float >(int const [],int const,int [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const)\n"
-    "    one_point_interpolation< int,double >(int const [],int const,int [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const)\n");
+    "    one_point_interpolation< int,float >(int [],int const,int [],int const,int const [],int const,int const [],int const,float const [],int const,int const [],int const)\n"
+    "    one_point_interpolation< int,double >(int [],int const,int [],int const,int const [],int const,int const [],int const,double const [],int const,int const [],int const)\n");
   return 0;
 }
 
@@ -41702,8 +41702,8 @@ static PyMethodDef SwigMethods[] = {
 		"classical_strength_of_connection_min(int const n_row, double const theta, int const [] A_rowptr, int const [] A_colinds, double const [] A_data, int [] C_rowptr, int [] C_colinds, double [] C_data)\n"
 		""},
 	 { (char *)"one_point_interpolation", _wrap_one_point_interpolation, METH_VARARGS, (char *)"\n"
-		"one_point_interpolation(int const [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting)\n"
-		"one_point_interpolation(int const [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting)\n"
+		"one_point_interpolation(int [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting)\n"
+		"one_point_interpolation(int [] rowptr, int [] colinds, int const [] C_rowptr, int const [] C_colinds, double const [] C_data, int const [] splitting)\n"
 		""},
 	 { (char *)"rs_direct_interpolation_pass2", _wrap_rs_direct_interpolation_pass2, METH_VARARGS, (char *)"\n"
 		"rs_direct_interpolation_pass2(int const n_nodes, int const [] A_rowptr, int const [] A_colinds, float const [] A_data, int const [] C_rowptr, int const [] C_colinds, float const [] C_data, int const [] splitting, int const [] P_rowptr, int [] P_colinds, float [] P_data)\n"

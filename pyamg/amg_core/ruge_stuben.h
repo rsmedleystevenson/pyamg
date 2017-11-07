@@ -936,11 +936,11 @@ void cr_helper(const I A_rowptr[], const int A_rowptr_size,
  *
  */
 template<class I, class T>
-void one_point_interpolation(const I rowptr[], const int rowptr_size,
-                                   I colinds[], const int colinds_size,
-                             const I C_rowptr[], const int C_rowptr_size,
+void one_point_interpolation(      I rowptr[],    const int rowptr_size,
+                                   I colinds[],   const int colinds_size,
+                             const I C_rowptr[],  const int C_rowptr_size,
                              const I C_colinds[], const int C_colinds_size,
-                             const T C_data[], const int C_data_size,
+                             const T C_data[],    const int C_data_size,
                              const I splitting[], const int splitting_size )
 {
     I n = rowptr_size-1;
@@ -953,6 +953,7 @@ void one_point_interpolation(const I rowptr[], const int rowptr_size,
         pointInd[i] = pointInd[i-1] + splitting[i-1];
     }
 
+    rowptr[0] = 0;
     // Build interpolation operator as CSR matrix
     I next = 0;
     for (I row=0; row<n; row++) {
@@ -965,20 +966,31 @@ void one_point_interpolation(const I rowptr[], const int rowptr_size,
         // For F-points, find strongest connection to C-point
         // and interpolate directly from C-point. 
         else {
-
-            T max = 0.0;
-            I ind = 0;
+            T max = -1.0;
+            I ind = -1;
             for (I i=C_rowptr[row]; i<C_rowptr[row+1]; i++) {
                 if (splitting[C_colinds[i]] == C_NODE) {
-                    if (std::abs(C_data[i]) > max) {
-                        max = C_data[i];
+                    double vv = std::abs(C_data[i]);
+#if 0
+                    vv = vv < 1e-14 ? 1e-14 : vv;
+                    if (vv == max && C_colinds[i] < ind) {
+                        max = vv;
+                        ind = C_colinds[i];
+                        continue;
+                    }
+#endif
+                    if (vv > max) {
+                        max = vv;
                         ind = C_colinds[i];
                     }
                 }
             }
-            colinds[next] = pointInd[ind];
-            next += 1;
+            if (ind > -1) {
+              colinds[next] = pointInd[ind];
+              next += 1;
+            }
         }
+        rowptr[row+1] = next;
     }
 }
 
