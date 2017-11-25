@@ -437,7 +437,7 @@ def injection_interpolation(A, splitting, cost=[0]):
                           shape=[n*blocksize,nc*blocksize])
 
 
-def one_point_interpolation(A, C, splitting, cost=[0]):
+def one_point_interpolation(A, C, splitting, by_val=False, cost=[0]):
     """ Create one-point interpolation operator, that is C-points are
     interpolated by value and F-points are interpolated by value from
     their strongest-connected C-point neighbor.
@@ -448,6 +448,10 @@ def one_point_interpolation(A, C, splitting, cost=[0]):
         NxN matrix in CSR format
     C : {csr_matrix}
         Strength-of-Connection matrix (does not need zero diagonal)
+    by_val : bool
+        For CSR matrices only right now, use values of -Afc in interp as an
+        approximation to P_ideal. If false, F-points are interpolated by value
+        with weight 1.
     splitting : array
         C/F splitting stored in an array of length N
 
@@ -471,17 +475,25 @@ def one_point_interpolation(A, C, splitting, cost=[0]):
             raise TypeError("Invalid matrix type, must be CSR or BSR.")
 
     nc = np.sum(splitting)
-    #P_rowptr = np.arange(start=0, stop=(n+1), step=1, dtype='int32')
     P_rowptr = np.empty((n+1,), dtype='int32') # P: n x nc, at most 'n' nnz
     P_colinds = np.empty((n,),dtype='int32')
-    amg_core.one_point_interpolation(P_rowptr, P_colinds, C.indptr,
-                                     C.indices, C.data, splitting)
+    P_data = np.empty((n,),dtype='int32')
+
     #amg_core.one_point_interpolation(P_rowptr, P_colinds, A.indptr,
     #                                 A.indices, A.data, splitting)
     if blocksize == 1:
-        P_data = np.ones((n,), dtype=A.dtype)
-        return csr_matrix((P_data,P_colinds,P_rowptr), shape=[n,nc])
+        if by_val:
+            amg_core.one_point_interpolation(P_rowptr, P_colinds, P_data, A.indptr,
+                                     A.indices, A.data, splitting)
+            return csr_matrix((P_data,P_colinds,P_rowptr), shape=[n,nc])
+        else:
+            amg_core.one_point_interpolation(P_rowptr, P_colinds, P_data, C.indptr,
+                                     C.indices, C.data, splitting)
+            P_data = np.ones((n,), dtype=A.dtype)
+            return csr_matrix((P_data,P_colinds,P_rowptr), shape=[n,nc])
     else:
+        amg_core.one_point_interpolation(P_rowptr, P_colinds, P_data, C.indptr,
+                         C.indices, C.data, splitting)
         P_data = np.array(n*[np.identity(blocksize, dtype=A.dtype)], dtype=A.dtype)
         return bsr_matrix((P_data,P_colinds,P_rowptr), blocksize=[blocksize,blocksize],
                           shape=[blocksize*n,blocksize*nc])

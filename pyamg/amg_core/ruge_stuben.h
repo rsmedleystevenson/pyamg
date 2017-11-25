@@ -938,10 +938,11 @@ void cr_helper(const I A_rowptr[], const int A_rowptr_size,
 template<class I, class T>
 void one_point_interpolation(      I rowptr[],    const int rowptr_size,
                                    I colinds[],   const int colinds_size,
+                                   T data[],   const int data_size,
                              const I C_rowptr[],  const int C_rowptr_size,
                              const I C_colinds[], const int C_colinds_size,
                              const T C_data[],    const int C_data_size,
-                             const I splitting[], const int splitting_size )
+                             const I splitting[], const int splitting_size)
 {
     I n = rowptr_size-1;
 
@@ -968,6 +969,7 @@ void one_point_interpolation(      I rowptr[],    const int rowptr_size,
         else {
             T max = -1.0;
             I ind = -1;
+            T val = 0.0;
             for (I i=C_rowptr[row]; i<C_rowptr[row+1]; i++) {
                 if (splitting[C_colinds[i]] == C_NODE) {
                     double vv = std::abs(C_data[i]);
@@ -982,11 +984,13 @@ void one_point_interpolation(      I rowptr[],    const int rowptr_size,
                     if (vv > max) {
                         max = vv;
                         ind = C_colinds[i];
+                        val = C_data[i];
                     }
                 }
             }
             if (ind > -1) {
               colinds[next] = pointInd[ind];
+              data[next] = -val;
               next += 1;
             }
         }
