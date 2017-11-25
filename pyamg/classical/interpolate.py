@@ -477,7 +477,7 @@ def one_point_interpolation(A, C, splitting, by_val=False, cost=[0]):
     nc = np.sum(splitting)
     P_rowptr = np.empty((n+1,), dtype='int32') # P: n x nc, at most 'n' nnz
     P_colinds = np.empty((n,),dtype='int32')
-    P_data = np.empty((n,),dtype='int32')
+    P_data = np.empty((n,),dtype=A.dtype)
 
     #amg_core.one_point_interpolation(P_rowptr, P_colinds, A.indptr,
     #                                 A.indices, A.data, splitting)
