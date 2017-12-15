@@ -579,7 +579,7 @@ def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, post_theta=0,
     Z = -Acf*Z
 
     if post_theta > 0.0:
-        if not Z.isspmatrix_csr():
+        if not isspmatrix_csr(Z):
             Z = Z.tocsr()
         filter_matrix_rows(Z, post_theta, diagonal=False, lump=False)
 
