@@ -499,7 +499,7 @@ def one_point_interpolation(A, C, splitting, by_val=False, cost=[0]):
                           shape=[blocksize*n,blocksize*nc])
 
 
-def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, cost=[0]):
+def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
     """ Approximate ideal restriction using a truncated Neumann expansion for A_ff^{-1},
     where 
         R = [-Acf*D, I],   where
@@ -577,6 +577,11 @@ def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, cost=[0]):
 
     # Multiply Acf by approximation to Aff^{-1}
     Z = -Acf*Z
+
+    if post_theta > 0.0:
+        if not Z.isspmatrix_csr():
+            Z = Z.tocsr()
+        filter_matrix_rows(Z, post_theta, diagonal=False, lump=False)
 
     # Get sizes and permutation matrix from [F, C] block
     # ordering to natural matrix ordering.
