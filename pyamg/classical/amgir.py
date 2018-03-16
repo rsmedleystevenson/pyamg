@@ -19,7 +19,8 @@ from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_bl
     filter_matrix_rows
 from pyamg.classical.interpolate import direct_interpolation, standard_interpolation, \
      one_point_interpolation, injection_interpolation, approximate_ideal_restriction, \
-     neumann_ideal_restriction, neumann_ideal_interpolation, distance_two_interpolation
+     neumann_ideal_restriction, neumann_ideal_interpolation, distance_two_interpolation, \
+     scaled_Afc_interpolation
 from pyamg.classical.split import *
 from pyamg.classical.cr import CR
 
@@ -225,6 +226,8 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         P = injection_interpolation(A, splitting, **kwargs)
     elif fn == 'neumann':
         P = neumann_ideal_interpolation(A, splitting, **kwargs)
+    elif fn == 'scaledAfc':
+        P = scaled_Afc_interpolation(A, splitting, **kwargs)
     elif fn == 'air':
         if isspmatrix_bsr(A):
             temp_A = bsr_matrix(A.T)

@@ -4,7 +4,7 @@ __docformat__ = "restructuredtext en"
 from warnings import warn
 import numpy as np
 from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr, \
-        isspmatrix_bsr, SparseEfficiencyWarning, eye, hstack, vstack
+        isspmatrix_bsr, SparseEfficiencyWarning, eye, hstack, vstack, diags
 from pyamg import amg_core
 from pyamg.relaxation.relaxation import boundary_relaxation
 from pyamg.strength import classical_strength_of_connection
@@ -595,6 +595,72 @@ def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, post_theta=0,
     else:
         R = csr_matrix(R * permute)
     return R
+
+
+def scaled_Afc_interpolation(A, splitting, theta=0.0, cost=[0]):
+    """ Approximate ideal interpolation using a scaled Afc: 
+        P = [-D*Afc; I],   where
+        D is such that P has row-sum 1
+
+    Parameters
+    ----------
+    A : {csr_matrix}
+        NxN matrix in CSR format
+    splitting : array
+        C/F splitting stored in an array of length N
+    theta : float : default 0.025
+        Compute approximation to ideal restriction for C, where C has rows filtered
+        with tolerance theta, that is for j s.t.
+            |C_ij| <= theta * |C_ii|        --> C_ij = 0.
+        Helps keep R sparse. 
+    degree : int in [0,4] : default 1
+        Degree of Neumann expansion. Only supported up to degree 4.
+
+    Returns
+    -------
+    Approximate ideal interpolation in CSR format.
+
+    Notes
+    -----
+    Does not support block matrices.
+    """
+    A = A.tocsr()
+    warn("Implicit conversion of A to csr", SparseEfficiencyWarning)
+
+    if theta > 0.0:
+        C = csr_matrix(A, copy=True)
+        filter_matrix_rows(C, theta, diagonal=True, lump=False)
+    else:
+        C = A
+
+    Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
+    Fpts = np.array(np.where(splitting == 0)[0], dtype='int32')
+    nc = Cpts.shape[0]
+    nf = Fpts.shape[0]
+    n = C.shape[0]
+
+    # Expand sparsity pattern for R
+    C.data[np.abs(C.data)<1e-16] = 0
+    C.eliminate_zeros()
+    Afc = C[Fpts,:][:,Cpts]
+    Afc = Afc.tocsr()
+    rowsums = Afc.sum(0)
+    D = diags(rowsums,0,format='csr')
+    Afc = -D*Afc
+
+    import pdb
+    pdb.set_trace()
+
+    # Get sizes and permutation matrix from [F, C] block
+    # ordering to natural matrix ordering.
+    permute = eye(n,format='csr')
+    permute.indices = np.concatenate((Fpts,Cpts))
+    permute = permute.T
+
+    # Form R = [P, I], reorder and return
+    P = vstack([Afc, eye(nc, format='csr')])
+    P = csr_matrix(permute * P)
+    return P
 
 
 def neumann_ideal_interpolation(A, splitting, theta=0.0, degree=1, cost=[0]):
