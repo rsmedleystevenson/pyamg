@@ -644,12 +644,11 @@ def scaled_Afc_interpolation(A, splitting, theta=0.0, cost=[0]):
     C.eliminate_zeros()
     Afc = C[Fpts,:][:,Cpts]
     Afc = Afc.tocsr()
-    rowsums = Afc.sum(0)
-    D = diags(rowsums,0,format='csr')
-    Afc = -D*Afc
-
-    import pdb
-    pdb.set_trace()
+    rowsums = Afc.sum(1)
+    rowsums[np.abs(rowsums) < 1e-15] = 1
+    rowsums = 1.0/rowsums
+    D = diags(rowsums.A1,0,format='csr')
+    Afc = D*Afc
 
     # Get sizes and permutation matrix from [F, C] block
     # ordering to natural matrix ordering.
