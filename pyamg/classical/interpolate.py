@@ -12,8 +12,8 @@ from pyamg.util.utils import filter_matrix_rows, UnAmal
 
 __all__ = ['direct_interpolation', 'standard_interpolation',
            'one_point_interpolation', 'injection_interpolation',
-           'neumann_ideal_interpolation', 'neumann_ideal_restriction',
-           'approximate_ideal_restriction', 'distance_two_interpolation']
+           'neumann_ideal_interpolation', 'neumann_AIR',
+           'local_AIR', 'distance_two_interpolation']
 
 
 def direct_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
@@ -499,7 +499,7 @@ def one_point_interpolation(A, C, splitting, by_val=False, cost=[0]):
                           shape=[blocksize*n,blocksize*nc])
 
 
-def neumann_ideal_restriction(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
+def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
     """ Approximate ideal restriction using a truncated Neumann expansion for A_ff^{-1},
     where 
         R = [-Acf*D, I],   where
@@ -743,7 +743,7 @@ def neumann_ideal_interpolation(A, splitting, theta=0.0, degree=1, cost=[0]):
     return P
 
 
-def approximate_ideal_restriction(A, splitting, theta=0.1, norm='abs', degree=1, use_gmres=False,
+def local_AIR(A, splitting, theta=0.1, norm='abs', degree=1, use_gmres=False,
                                   maxiter=10, precondition=True, cost=[0]):
     """ Compute approximate ideal restriction by setting RA = 0, within the
     sparsity pattern of R. Sparsity pattern of R for the ith row (i.e. ith

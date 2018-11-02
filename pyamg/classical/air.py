@@ -18,8 +18,8 @@ from pyamg.strength import classical_strength_of_connection, \
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks, \
     filter_matrix_rows
 from pyamg.classical.interpolate import direct_interpolation, standard_interpolation, \
-     one_point_interpolation, injection_interpolation, approximate_ideal_restriction, \
-     neumann_ideal_restriction, neumann_ideal_interpolation, distance_two_interpolation, \
+     one_point_interpolation, injection_interpolation, local_AIR, \
+     neumann_AIR, neumann_ideal_interpolation, distance_two_interpolation, \
      scaled_Afc_interpolation
 from pyamg.classical.split import *
 from pyamg.classical.cr import CR
@@ -231,11 +231,11 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     elif fn == 'air':
         if isspmatrix_bsr(A):
             temp_A = bsr_matrix(A.T)
-            P = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P = local_AIR(temp_A, splitting, **kwargs)
             P = bsr_matrix(P.T)
         else:
             temp_A = csr_matrix(A.T)
-            P = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P = local_AIR(temp_A, splitting, **kwargs)
             P = csr_matrix(P.T)
     elif fn == 'restrict':
         r_flag = True
@@ -248,9 +248,9 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     if fn is None:
         R = P.T
     elif fn == 'air':
-        R = approximate_ideal_restriction(A, splitting, **kwargs)
+        R = local_AIR(A, splitting, **kwargs)
     elif fn == 'neumann':
-        R = neumann_ideal_restriction(A, splitting, **kwargs)
+        R = neumann_AIR(A, splitting, **kwargs)
     elif fn == 'one_point':         # Don't need A^T here
         temp_C = C.T.tocsr()
         R = one_point_interpolation(A, temp_C, splitting, **kwargs)
@@ -321,11 +321,11 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     elif fn == 'air':
         if isspmatrix_bsr(A): 
             temp_A = bsr_matrix(A.T)
-            P_temp = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P_temp = local_AIR(temp_A, splitting, **kwargs)
             P_temp = bsr_matrix(P_temp.T)
         else:
             temp_A = csr_matrix(A.T)
-            P_temp = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P_temp = local_AIR(temp_A, splitting, **kwargs)
             P_temp = csr_matrix(P_temp.T)
     else:
         P_temp = P
@@ -333,9 +333,9 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     # Optional different restriction for RAP
     fn, kwargs = unpack_arg(coarse_grid_R)
     if fn == 'air':
-        R_temp = approximate_ideal_restriction(A, splitting, **kwargs)
+        R_temp = local_AIR(A, splitting, **kwargs)
     elif fn == 'neumann':
-        R_temp = neumann_ideal_restriction(A, splitting, **kwargs)
+        R_temp = neumann_AIR(A, splitting, **kwargs)
     elif fn == 'one_point':         # Don't need A^T here
         temp_C = C.T.tocsr()
         R_temp = one_point_interpolation(A, temp_C, splitting, **kwargs)
