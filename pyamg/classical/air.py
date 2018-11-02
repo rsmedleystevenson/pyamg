@@ -1,4 +1,4 @@
-"""Ideal restriction AMG"""
+"""Approximate ideal restriction AMG"""
 from __future__ import absolute_import
 
 __docformat__ = "restructuredtext en"
@@ -24,22 +24,22 @@ from pyamg.classical.interpolate import direct_interpolation, standard_interpola
 from pyamg.classical.split import *
 from pyamg.classical.cr import CR
 
-__all__ = ['AMGir_solver']
+__all__ = ['AIR_solver']
 
-def AMGir_solver(A,
-                 strength=('classical', {'theta': 0.3 ,'norm': 'min'}),
-                 CF='RS',
-                 interp='one_point',
-                 restrict='neumann',
-                 presmoother=None,
-                 postsmoother=('FC_jacobi', {'omega': 1.0, 'iterations': 1,
-                                'withrho': False,  'F_iterations': 2,
-                                'C_iterations': 0} ),
-                 filter_operator=None,
-                 coarse_grid_P=None, 
-                 coarse_grid_R=None, 
-                 max_levels=20, max_coarse=20,
-                 keep=False, **kwargs):
+def AIR_solver(A,
+               strength=('classical', {'theta': 0.3 ,'norm': 'min'}),
+               CF='RS',
+               interp='one_point',
+               restrict='neumann',
+               presmoother=None,
+               postsmoother=('FC_jacobi', {'omega': 1.0, 'iterations': 1,
+                              'withrho': False,  'F_iterations': 2,
+                              'C_iterations': 0} ),
+               filter_operator=None,
+               coarse_grid_P=None, 
+               coarse_grid_R=None, 
+               max_levels=20, max_coarse=20,
+               keep=False, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
@@ -55,8 +55,8 @@ def AMGir_solver(A,
     CF : {string} : default 'RS'
         Method used for coarse grid selection (C/F splitting)
         Supported methods are RS, PMIS, PMISc, CLJP, CLJPc, and CR.
-    interp : {string} : default 'inject'
-        Options include 'direct', 'standard', 'inject' and 'trivial'.
+    interp : {string} : default 'one-point'
+        Options include 'direct', 'standard', 'inject' and 'one-point'.
     restrict : {string} : default 'neumann'
         Options include 'air' for approximate ideal
         restriction.
