@@ -530,6 +530,7 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
 
     Cpts = np.array(np.where(splitting == 1)[0], dtype='int32')
     Fpts = np.array(np.where(splitting == 0)[0], dtype='int32')
+    nf0 = len(Fpts)
 
     # Convert block CF-splitting into scalar CF-splitting so that we can access
     # submatrices of BSR matrix A
@@ -556,11 +557,27 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
     C.data[np.abs(C.data)<1e-16] = 0
     C.eliminate_zeros()
 
-    Lff = -C[Fpts,:][:,Fpts]
-    pts = np.arange(0,nf)
-    Lff[pts,pts] = 0.0
-    Lff.eliminate_zeros()
     Acf = C[Cpts,:][:,Fpts]
+    Lff = -C[Fpts,:][:,Fpts]
+    if isspmatrix_bsr(A):
+        bsize = A.blocksize[0]
+        Lff = Lff.tobsr(blocksize=[bsize,bsize])
+        D_data = np.empty((nf0,bsize,bsize))
+        for i in range(0,nf0):
+            offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
+            # Save (pseudo)inverse of diagonal block
+            D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
+            # Set diagonal block to zero in Lff
+            Lff.data[Lff.indptr[i]+offset][:] = 0.0
+        Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
+        Lff = Dff_inv*Lff
+    else:
+        pts = np.arange(0,nf)
+        D_data = -1.0/Lff.diagonal()
+        Lff[pts,pts] = 0.0
+        Lff.eliminate_zeros()
+        Dff_inv = csr_matrix((D_data,np.arange(0,nf),np.arange(0,nf+1)))
+        Lff = Dff_inv*Lff
 
     # Form Neuman approximation to Aff^{-1}
     Z = eye(nf,format='csr')
@@ -574,6 +591,7 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         Z += Lff*Lff*Lff*Lff
     if degree > 4:
         raise ValueError("Only sparsity degree 0-4 supported.")
+    Z = Z*Dff_inv
 
     # Multiply Acf by approximation to Aff^{-1}
     Z = -Acf*Z
