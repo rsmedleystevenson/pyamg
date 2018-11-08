@@ -242,6 +242,11 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     else:
         raise ValueError('unknown interpolation method (%s)' % interp)
     levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
+    
+    # BS - have run into cases where no C-points are designated, and it
+    # throws off the next routines. If everything is an F-point, return here
+    if np.sum(splitting) == len(splitting):
+        return 1
 
     # Build restriction operator
     fn, kwargs = unpack_arg(restrict)
