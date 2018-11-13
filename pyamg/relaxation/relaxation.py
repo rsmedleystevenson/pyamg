@@ -406,7 +406,7 @@ def f_relaxation(A, x, b, splitting, iterations=1, sweep='forward'):
             amg_core.f_relaxation(A.indptr, A.indices, A.data, x, b, splitting,
                                   row_start, row_stop, row_step)
     else:
-        print "Expected csr matrix for f-relaxation"
+        print("Expected csr matrix for f-relaxation")
 
 
 def jacobi(A, x, b, iterations=1, omega=1.0):
