@@ -243,13 +243,13 @@ class multilevel_solver:
         if verbose:
             for i in range(0,len(self.levels)-1):
                 lvl = self.levels[i]
-                print "Level",i,"setup cost = ","%.3f"%lvl.SC, "WUs"
+                print("Level",i,"setup cost = ","%.3f"%lvl.SC, "WUs")
                 for method, cost in (lvl.complexity).iteritems(): 
                     temp = cost*(lvl.A.nnz / nnz)
                     if method == "RAP":
-                        print "\t",method,"\t\t= ","%.3f"%temp,"WUs"
+                        print("\t",method,"\t\t= ","%.3f"%temp,"WUs")
                     else:
-                        print "\t",method,"\t= ","%.3f"%temp,"WUs"
+                        print("\t",method,"\t= ","%.3f"%temp,"WUs")
 
         return self.SC
 
