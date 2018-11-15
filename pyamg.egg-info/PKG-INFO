@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: pyamg
-Version: 3.2.0.dev0+19847f8
+Version: 4.0.0
 Summary: UNKNOWN
 Home-page: https://github.com/pyamg/pyamg
 Author: Luke Olson
@@ -42,12 +42,11 @@ Classifier: Operating System :: OS Independent
 Classifier: Programming Language :: C++
 Classifier: Programming Language :: Python
 Classifier: Programming Language :: Python :: 2
-Classifier: Programming Language :: Python :: 2.6
 Classifier: Programming Language :: Python :: 2.7
 Classifier: Programming Language :: Python :: 3
-Classifier: Programming Language :: Python :: 3.3
-Classifier: Programming Language :: Python :: 3.4
 Classifier: Programming Language :: Python :: 3.5
+Classifier: Programming Language :: Python :: 3.6
+Classifier: Programming Language :: Python :: 3.7
 Classifier: Topic :: Education
 Classifier: Topic :: Scientific/Engineering
 Classifier: Topic :: Scientific/Engineering :: Mathematics

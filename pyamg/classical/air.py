@@ -1,4 +1,4 @@
-"""Ideal restriction AMG"""
+"""Approximate ideal restriction AMG"""
 from __future__ import absolute_import
 
 __docformat__ = "restructuredtext en"
@@ -18,28 +18,28 @@ from pyamg.strength import classical_strength_of_connection, \
 from pyamg.util.utils import mat_mat_complexity, unpack_arg, extract_diagonal_blocks, \
     filter_matrix_rows
 from pyamg.classical.interpolate import direct_interpolation, standard_interpolation, \
-     one_point_interpolation, injection_interpolation, approximate_ideal_restriction, \
-     neumann_ideal_restriction, neumann_ideal_interpolation, distance_two_interpolation, \
+     one_point_interpolation, injection_interpolation, local_AIR, \
+     neumann_AIR, neumann_ideal_interpolation, distance_two_interpolation, \
      scaled_Afc_interpolation
 from pyamg.classical.split import *
 from pyamg.classical.cr import CR
 
-__all__ = ['AMGir_solver']
+__all__ = ['AIR_solver']
 
-def AMGir_solver(A,
-                 strength=('classical', {'theta': 0.3 ,'norm': 'min'}),
-                 CF='RS',
-                 interp='one_point',
-                 restrict='neumann',
-                 presmoother=None,
-                 postsmoother=('FC_jacobi', {'omega': 1.0, 'iterations': 1,
-                                'withrho': False,  'F_iterations': 2,
-                                'C_iterations': 0} ),
-                 filter_operator=None,
-                 coarse_grid_P=None, 
-                 coarse_grid_R=None, 
-                 max_levels=20, max_coarse=20,
-                 keep=False, **kwargs):
+def AIR_solver(A,
+               strength=('classical', {'theta': 0.3 ,'norm': 'min'}),
+               CF='RS',
+               interp='one_point',
+               restrict='neumann',
+               presmoother=None,
+               postsmoother=('FC_jacobi', {'omega': 1.0, 'iterations': 1,
+                              'withrho': False,  'F_iterations': 2,
+                              'C_iterations': 0} ),
+               filter_operator=None,
+               coarse_grid_P=None, 
+               coarse_grid_R=None, 
+               max_levels=20, max_coarse=20,
+               keep=False, **kwargs):
     """Create a multilevel solver using Classical AMG (Ruge-Stuben AMG)
 
     Parameters
@@ -55,8 +55,8 @@ def AMGir_solver(A,
     CF : {string} : default 'RS'
         Method used for coarse grid selection (C/F splitting)
         Supported methods are RS, PMIS, PMISc, CLJP, CLJPc, and CR.
-    interp : {string} : default 'inject'
-        Options include 'direct', 'standard', 'inject' and 'trivial'.
+    interp : {string} : default 'one-point'
+        Options include 'direct', 'standard', 'inject' and 'one-point'.
     restrict : {string} : default 'neumann'
         Options include 'air' for approximate ideal
         restriction.
@@ -231,26 +231,31 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     elif fn == 'air':
         if isspmatrix_bsr(A):
             temp_A = bsr_matrix(A.T)
-            P = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P = local_AIR(temp_A, splitting, **kwargs)
             P = bsr_matrix(P.T)
         else:
             temp_A = csr_matrix(A.T)
-            P = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P = local_AIR(temp_A, splitting, **kwargs)
             P = csr_matrix(P.T)
     elif fn == 'restrict':
         r_flag = True
     else:
         raise ValueError('unknown interpolation method (%s)' % interp)
     levels[-1].complexity['interpolate'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
+    
+    # BS - have run into cases where no C-points are designated, and it
+    # throws off the next routines. If everything is an F-point, return here
+    if np.sum(splitting) == len(splitting):
+        return 1
 
     # Build restriction operator
     fn, kwargs = unpack_arg(restrict)
     if fn is None:
         R = P.T
     elif fn == 'air':
-        R = approximate_ideal_restriction(A, splitting, **kwargs)
+        R = local_AIR(A, splitting, **kwargs)
     elif fn == 'neumann':
-        R = neumann_ideal_restriction(A, splitting, **kwargs)
+        R = neumann_AIR(A, splitting, **kwargs)
     elif fn == 'one_point':         # Don't need A^T here
         temp_C = C.T.tocsr()
         R = one_point_interpolation(A, temp_C, splitting, **kwargs)
@@ -321,11 +326,11 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     elif fn == 'air':
         if isspmatrix_bsr(A): 
             temp_A = bsr_matrix(A.T)
-            P_temp = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P_temp = local_AIR(temp_A, splitting, **kwargs)
             P_temp = bsr_matrix(P_temp.T)
         else:
             temp_A = csr_matrix(A.T)
-            P_temp = approximate_ideal_restriction(temp_A, splitting, **kwargs)
+            P_temp = local_AIR(temp_A, splitting, **kwargs)
             P_temp = csr_matrix(P_temp.T)
     else:
         P_temp = P
@@ -333,9 +338,9 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     # Optional different restriction for RAP
     fn, kwargs = unpack_arg(coarse_grid_R)
     if fn == 'air':
-        R_temp = approximate_ideal_restriction(A, splitting, **kwargs)
+        R_temp = local_AIR(A, splitting, **kwargs)
     elif fn == 'neumann':
-        R_temp = neumann_ideal_restriction(A, splitting, **kwargs)
+        R_temp = neumann_AIR(A, splitting, **kwargs)
     elif fn == 'one_point':         # Don't need A^T here
         temp_C = C.T.tocsr()
         R_temp = one_point_interpolation(A, temp_C, splitting, **kwargs)
