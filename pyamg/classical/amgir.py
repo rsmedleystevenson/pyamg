@@ -129,7 +129,6 @@ def AMGir_solver(A,
     levels[-1].A = A
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
-        print("level=", len(levels))
         bottom = extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
                                   coarse_grid_P, coarse_grid_R, keep)
         if bottom:
