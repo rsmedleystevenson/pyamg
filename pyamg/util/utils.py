@@ -2400,7 +2400,8 @@ def mat_mat_complexity(A, P, test_cols=10, incomplete=False):
             else:
                 work += A0[:,inds].nnz
 
-        work = work * P0.shape[1] / float(test_cols)
+        if test_cols > 0:
+            work = work * P0.shape[1] / float(test_cols)
         return work
 
     # Approximation of complexity of matrix product.
