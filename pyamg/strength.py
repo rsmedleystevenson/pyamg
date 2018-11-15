@@ -241,15 +241,6 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
         S_rowptr = np.empty_like(A.indptr)
         S_colinds = np.empty_like(A.indices)
         S_data = np.empty_like(data)
-        print(np.version.version)
-        print(N)
-        print(theta)
-        print(A.indptr)
-        print(A.indices)
-        print(data)
-        print(S_rowptr)
-        print(S_colinds)
-        print(S_data)
 
         if norm == 'abs' or norm == 'fro':
             amg_core.classical_strength_of_connection_abs(N, theta, A.indptr, A.indices, data,
