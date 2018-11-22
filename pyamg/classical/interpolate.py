@@ -9,12 +9,17 @@ from pyamg import amg_core
 from pyamg.relaxation.relaxation import boundary_relaxation
 from pyamg.strength import classical_strength_of_connection
 from pyamg.util.utils import filter_matrix_rows, UnAmal
+import numba
 
 __all__ = ['direct_interpolation', 'standard_interpolation',
            'one_point_interpolation', 'injection_interpolation',
            'neumann_ideal_interpolation', 'neumann_AIR',
            'local_AIR', 'distance_two_interpolation']
 
+
+@numba.jit
+def pinv_nla_jit(A):
+    return numpy.linalg.pinv(A)
 
 def direct_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
     """Create prolongator using direct interpolation
@@ -566,7 +571,8 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         for i in range(0,nf0):
             offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
             # Save (pseudo)inverse of diagonal block
-            D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
+            #D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
+            D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
             # Set diagonal block to zero in Lff
             Lff.data[Lff.indptr[i]+offset][:] = 0.0
         Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
