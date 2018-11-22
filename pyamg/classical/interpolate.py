@@ -568,11 +568,11 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         bsize = A.blocksize[0]
         Lff = Lff.tobsr(blocksize=[bsize,bsize])
 
-        rows = numpy.zeros(Lff.indices.shape[0])
-        for i in range(Lff.indptr.shape[0]-1):
+        rows = numpy.zeros(nf0)
+        for i in range(0,nf0):
             rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
         rows = rows-Lff.indices[:]
-        D_data = Lff.data[numpy.nonzero(rows),:,:]
+        D_data = Lff.data[numpy.zero(rows),:,:]
         Lff.data[numpy.zero(rows),:,:] = 0.0; del rows #keep block off-diagonals only
         for i in range(0,nf0):
             D_data[i] = -pinv_nla_jit(D_data[i])
