@@ -31,7 +31,8 @@ def dff_inv_calc(nf0,bsize,Lff):
         #D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
         # Set diagonal block to zero in Lff
         Lff.data[Lff.indptr[i]+offset][:] = 0.0
-    return bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
+    Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
+    return Dff_inv
 
 def direct_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
     """Create prolongator using direct interpolation
