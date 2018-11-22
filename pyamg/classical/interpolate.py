@@ -584,8 +584,8 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         D_data = np.empty((nf0,bsize,bsize))
         for i in range(0,nf0):
             offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
-            if offset != diag[i]:
-                print("Comparison:",offset,diag[i])
+            if Lff.indptr[i]+offset != diag[i]:
+                print("Comparison:",Lff.indptr[i]+offset,diag[i])
             # Save (pseudo)inverse of diagonal block
             #D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
             D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
