@@ -576,6 +576,7 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         #D_data = Lff.data[diag][:]
         ## Set diagonal block to zero in Lff
         #Lff.data[diag][:] = 0.0
+        D_data = np.empty((nf0,bsize,bsize))
         for i in range(0,nf0):
             D_data[i] = -pinv_nla_jit(Lff.data[diag[i]])
             Lff.data[diag[i]][:] = 0.0
