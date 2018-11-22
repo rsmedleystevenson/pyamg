@@ -31,8 +31,7 @@ def dff_inv_calc(nf0,bsize,Lff):
         #D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
         # Set diagonal block to zero in Lff
         Lff.data[Lff.indptr[i]+offset][:] = 0.0
-    Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
-    return Dff_inv
+    return D_data
 
 def direct_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
     """Create prolongator using direct interpolation
@@ -589,7 +588,7 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         #    # Set diagonal block to zero in Lff
         #    Lff.data[Lff.indptr[i]+offset][:] = 0.0
         #Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
-        Dff_inv = dff_inv_calc(nf0,bsize,Lff)
+        Dff_inv = bsr_matrix((dff_inv_calc(nf0,bsize,Lff),np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
         Lff = Dff_inv*Lff
     else:
         pts = np.arange(0,nf)
