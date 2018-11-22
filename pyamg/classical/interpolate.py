@@ -19,7 +19,7 @@ __all__ = ['direct_interpolation', 'standard_interpolation',
 
 @numba.jit
 def pinv_nla_jit(A):
-    return numpy.linalg.pinv(A)
+    return np.linalg.pinv(A)
 
 def direct_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
     """Create prolongator using direct interpolation
