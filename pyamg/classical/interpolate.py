@@ -568,7 +568,7 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         bsize = A.blocksize[0]
         Lff = Lff.tobsr(blocksize=[bsize,bsize])
 
-        rows = np.zeros(nf0)
+        rows = np.zeros(Lff.indices.shape[0])
         for i in range(0,nf0):
             rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
         rows = rows-Lff.indices[:]
