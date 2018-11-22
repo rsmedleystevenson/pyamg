@@ -572,7 +572,9 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         for i in range(0,nf0):
             rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
         rows = rows-Lff.indices[:]
+        print(rows)
         diag = np.nonzero(rows == 0)
+        print(diag)
         #D_data = Lff.data[diag][:]
         ## Set diagonal block to zero in Lff
         #Lff.data[diag][:] = 0.0
