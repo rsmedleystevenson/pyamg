@@ -17,18 +17,18 @@ __all__ = ['direct_interpolation', 'standard_interpolation',
            'local_AIR', 'distance_two_interpolation']
 
 
-@numba.jit(cache=True)
+@numba.jit(cache=True, nopython=True)
 def pinv_nla_jit(A):
     return np.linalg.pinv(A)
 
-@numba.jit(cache=True)
+@numba.jit(cache=True, nopython=True)
 def dff_inv_calc(nf0,bsize,Lff):
     D_data = np.empty((nf0,bsize,bsize))
     for i in range(0,nf0):
         offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
         # Save (pseudo)inverse of diagonal block
-        #D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
-        D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
+        D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
+        #D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
         # Set diagonal block to zero in Lff
         Lff.data[Lff.indptr[i]+offset][:] = 0.0
     return bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
