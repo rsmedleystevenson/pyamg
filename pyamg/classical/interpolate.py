@@ -567,14 +567,24 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
     if isspmatrix_bsr(A):
         bsize = A.blocksize[0]
         Lff = Lff.tobsr(blocksize=[bsize,bsize])
-        D_data = np.empty((nf0,bsize,bsize))
+
+        rows = numpy.zeros(Asp.indices.shape[0])
+        for i in range(Asp.indptr.shape[0]-1):
+            rows[Asp.indptr[i]:Asp.indptr[i+1]] = i
+        rows = rows-Asp.indices[:]
+        D_data = Lff.data[numpy.nonzero(rows),:,:]
+        Lff.data[numpy.zero(rows),:,:] = 0.0; del rows #keep block off-diagonals only
         for i in range(0,nf0):
-            offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
-            # Save (pseudo)inverse of diagonal block
-            #D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
-            D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
-            # Set diagonal block to zero in Lff
-            Lff.data[Lff.indptr[i]+offset][:] = 0.0
+            D_data[i] = -pinv_nla_jit(D_data[i])
+        
+        #D_data = np.empty((nf0,bsize,bsize))
+        #for i in range(0,nf0):
+        #    offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
+        #    # Save (pseudo)inverse of diagonal block
+        #    #D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
+        #    D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
+        #    # Set diagonal block to zero in Lff
+        #    Lff.data[Lff.indptr[i]+offset][:] = 0.0
         Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
         Lff = Dff_inv*Lff
     else:
