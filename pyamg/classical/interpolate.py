@@ -17,7 +17,7 @@ __all__ = ['direct_interpolation', 'standard_interpolation',
            'local_AIR', 'distance_two_interpolation']
 
 
-@numba.jit
+@numba.jit(cache=True)
 def pinv_nla_jit(A):
     return np.linalg.pinv(A)
 
