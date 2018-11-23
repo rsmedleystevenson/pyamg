@@ -13,6 +13,28 @@ from scipy.sparse.sputils import upcast
 from pyamg.util.linalg import norm, cond, pinv_array
 from scipy.linalg import eigvals
 import pyamg.amg_core
+import numba
+
+@numba.jit()
+def strip_diag(csr_array):
+    rowPtr=csr_array.indptr
+    colInd=csr_array.indices
+    data  =csr_array.data
+    rowPtr_new=numpy.empty_like(csr_array.indptr)
+    colInd_new=numpy.empty_like(csr_array.indices)
+    data_new  =numpy.empty_like(csr_array.data)
+
+    ii=0
+    for i in range(rowPtr.shape[0]-1):
+      rowPtr_new[i] = ii
+      for j in range(rowPtr[i],rowPtr[i+1]):
+        if (i!=colInd[j]):
+          colInd_new[ii]=colInd[j]
+          data_new  [ii]=data  [j]
+          ii+=1
+    rowPtr_new[rowPtr.shape[0]] = ii
+
+    return csr_matrix((rowPtr_new,colInd_new[:ii],data_new[:ii]),shape=csr_matrix.get_shape())
 
 __all__ = ['unpack_arg', 'blocksize', 'diag_sparse', 'profile_solver', 
            'to_type', 'type_prep', 'get_diagonal', 'UnAmal', 'Coord2RBM',
@@ -1920,8 +1942,9 @@ def remove_diagonal(S):
     if S.shape[0] != S.shape[1]:
         raise ValueError('expected square matrix, shape=%s' % (S.shape,))
 
-    S.setdiag(0.0)
-    S.eliminate_zeros()
+    #S.setdiag(0.0)
+    #S.eliminate_zeros()
+    S = strip_diag(S)
     return S
 
 
