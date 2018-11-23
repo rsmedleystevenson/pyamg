@@ -34,7 +34,7 @@ def strip_diag(csr_array):
           ii+=1
     rowPtr_new[rowPtr.shape[0]-1] = ii
 
-    return csr_matrix((rowPtr_new,colInd_new[:ii],data_new[:ii]),shape=csr_matrix.get_shape())
+    return csr_matrix((rowPtr_new,colInd_new[:ii],data_new[:ii]),shape=csr_matrix.get_shape(csr_array))
 
 __all__ = ['unpack_arg', 'blocksize', 'diag_sparse', 'profile_solver', 
            'to_type', 'type_prep', 'get_diagonal', 'UnAmal', 'Coord2RBM',
