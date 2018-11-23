@@ -21,6 +21,21 @@ __all__ = ['direct_interpolation', 'standard_interpolation',
 def pinv_nla_jit(A):
     return np.linalg.pinv(A)
 
+@numba.jit()
+def get_diag_ind(bsr_array):
+    rowPtr=bsr_array.indptr
+    colInd=bsr_array.indices
+    ind=np.empty(rowPtr.shape[0]-1,dtype=np.uint64)
+
+    ii=0
+    for i in range(rowPtr.shape[0]-1):
+      for j in range(rowPtr[i],rowPtr[i+1]):
+        if (i==colInd[j]):
+          ind[ii]=j
+          ii+=1
+
+    return ind[:ii]
+
 def direct_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
     """Create prolongator using direct interpolation
 
@@ -568,11 +583,12 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         bsize = A.blocksize[0]
         Lff = Lff.tobsr(blocksize=[bsize,bsize])
 
-        rows = np.zeros(Lff.indices.shape[0])
-        for i in range(0,nf0):
-            rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
-        rows = rows-Lff.indices[:]
-        diag = np.nonzero(rows == 0)[0]
+        #rows = np.zeros(Lff.indices.shape[0])
+        #for i in range(0,nf0):
+        #    rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
+        #rows = rows-Lff.indices[:]
+        #diag = np.nonzero(rows == 0)[0]
+        diag = get_diag_ind(Lff)
         #D_data = Lff.data[diag][:]
         ## Set diagonal block to zero in Lff
         #Lff.data[diag][:] = 0.0
