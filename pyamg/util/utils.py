@@ -32,7 +32,7 @@ def strip_diag(csr_array):
           colInd_new[ii]=colInd[j]
           data_new  [ii]=data  [j]
           ii+=1
-    rowPtr_new[rowPtr.shape[0]] = ii
+    rowPtr_new[rowPtr.shape[0]-1] = ii
 
     return csr_matrix((rowPtr_new,colInd_new[:ii],data_new[:ii]),shape=csr_matrix.get_shape())
 
