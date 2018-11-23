@@ -20,9 +20,9 @@ def strip_diag(csr_array):
     rowPtr=csr_array.indptr
     colInd=csr_array.indices
     data  =csr_array.data
-    rowPtr_new=numpy.empty_like(csr_array.indptr)
-    colInd_new=numpy.empty_like(csr_array.indices)
-    data_new  =numpy.empty_like(csr_array.data)
+    rowPtr_new=np.empty_like(csr_array.indptr)
+    colInd_new=np.empty_like(csr_array.indices)
+    data_new  =np.empty_like(csr_array.data)
 
     ii=0
     for i in range(rowPtr.shape[0]-1):
