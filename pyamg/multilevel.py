@@ -8,7 +8,7 @@ from pyamg.util.utils import unpack_arg
 import scipy as sp
 import numpy as np
 from pyamg.vis.vis_coarse import vis_splitting
-from pyamg.relaxation.relaxation import boundary_relaxation, f_relaxation
+import pyamg.relaxation.smoothing as sm
 
 __all__ = ['multilevel_solver', 'coarse_grid_solver']
 
