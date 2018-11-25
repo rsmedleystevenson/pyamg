@@ -207,23 +207,23 @@ class multilevel_solver:
         grid in hierarchy. Used, for example, to precondition a
         quadratic finite element discretization with linears.
         """
-        ml.levels[0].A = A0
-        fn1, kwargs1 = ml.levels[0].smoothers['presmoother']
-        fn2, kwargs2 = ml.levels[0].smoothers['postsmoother']
+        self.levels[0].A = A0
+        fn1, kwargs1 = self.levels[0].smoothers['presmoother']
+        fn2, kwargs2 = self.levels[0].smoothers['postsmoother']
 
         # Rebuild presmoother
         try:
             setup_presmoother = eval('sm.setup_' + str(fn1))
         except NameError:
             raise NameError("invalid presmoother method: ", fn1)
-        ml.levels[0].presmoother = setup_presmoother(ml.levels[0], **kwargs1)
+        self.levels[0].presmoother = setup_presmoother(self.levels[0], **kwargs1)
       
         # Rebuild postsmoother
         try:
             setup_postsmoother = eval('sm.setup_' + str(fn2))
         except NameError:
             raise NameError("invalid presmoother method: ", fn2)
-        ml.levels[0].postsmoother = setup_postsmoother(ml.levels[0], **kwargs2)
+        self.levels[0].postsmoother = setup_postsmoother(self.levels[0], **kwargs2)
 
     def setup_complexity(self, verbose=False):
         """Setup complexity of this multigrid hierarchy.
