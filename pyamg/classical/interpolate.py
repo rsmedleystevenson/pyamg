@@ -519,6 +519,7 @@ def one_point_interpolation(A, C, splitting, by_val=False, cost=[0]):
                           shape=[blocksize*n,blocksize*nc])
 
 
+@profiler
 def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
     """ Approximate ideal restriction using a truncated Neumann expansion for A_ff^{-1},
     where 
