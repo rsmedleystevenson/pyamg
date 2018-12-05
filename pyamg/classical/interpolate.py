@@ -577,8 +577,13 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
     C.data[np.abs(C.data)<1e-16] = 0
     C.eliminate_zeros()
 
-    Acf = C[Cpts,:][:,Fpts]
-    Lff = -C[Fpts,:][:,Fpts]
+    #Acf = C[Cpts,:][:,Fpts]
+    #Lff = -C[Fpts,:][:,Fpts]
+    Fr = np.array(Fpts)[:, None]  # make Fr a (nf x 1 )-array
+    Cr = np.array(Cpts)[:, None]  # make Cr a (nc x 1 )-array
+    Fc = np.array(Fpts)[None, :]  # make Fc a (1  x nf)-array
+    Acf = C[Cr,Fc]
+    Lff = -C[Fr,Fc]
     if isspmatrix_bsr(A):
         bsize = A.blocksize[0]
         Lff = Lff.tobsr(blocksize=[bsize,bsize])
