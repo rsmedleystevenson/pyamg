@@ -399,16 +399,16 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     levels[-1].splitting = splitting  # C/F splitting
 
     # Form coarse grid operator, get complexity
-    #levels[-1].complexity['RAP'] = mat_mat_complexity(R_temp,A) / float(A.nnz)
-    #RA = R_temp * A
-    #levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P_temp) / float(A.nnz)
-    #A = RA * P_temp
+    levels[-1].complexity['RAP'] = mat_mat_complexity(R_temp,A) / float(A.nnz)
+    RA = R_temp * A
+    levels[-1].complexity['RAP'] += mat_mat_complexity(RA,P_temp) / float(A.nnz)
+    A = RA * P_temp
     
     # RL: RAP = R*(A*P)
-    levels[-1].complexity['RAP'] = mat_mat_complexity(A, P_temp) / float(A.nnz)
-    AP = A * P_temp
-    levels[-1].complexity['RAP'] += mat_mat_complexity(R_temp, AP) / float(A.nnz)
-    A = R_temp * AP
+    #levels[-1].complexity['RAP'] = mat_mat_complexity(A, P_temp) / float(A.nnz)
+    #AP = A * P_temp
+    #levels[-1].complexity['RAP'] += mat_mat_complexity(R_temp, AP) / float(A.nnz)
+    #A = R_temp * AP
     
 
     # Make sure coarse-grid operator is in correct sparse format
