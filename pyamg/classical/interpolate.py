@@ -607,7 +607,10 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
     permute.indices = np.concatenate((Fpts,Cpts))
 
     # Form R = [Z, I], reorder and return
-    R = hstack([Z, eye(nc, format='csr')])
+    try:
+        R = hstack([Z, eye(nc, format='csr')])
+    except:
+        raise ValueError("Either zero C-points or zero F-points encountered.")
     if isspmatrix_bsr(A):
         R = bsr_matrix(R * permute, blocksize=[bsize,bsize])
     else:
