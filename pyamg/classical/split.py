@@ -549,7 +549,7 @@ def weighted_matching(A, B=None, theta=0.5, use_weights=True, get_SOC=False, cos
 
     # Get CF splitting
     temp_cost = np.ones((1,), dtype=A.dtype)
-    splitting = np.empty(n, dtype='int32')
+    splitting = np.empty(n, dtype='int32'); splitting[:] = -100
     amg_core.drake_CF_matching(A.indptr, A.indices, weights, splitting, theta, temp_cost )
     cost[0] += temp_cost[0] / float(A.nnz)
 
