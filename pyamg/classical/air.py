@@ -210,6 +210,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
         raise ValueError('unknown C/F splitting method (%s)' % CF)
     levels[-1].complexity['CF'] += kwargs['cost'][0] * C.nnz / float(A.nnz)
     temp = np.sum(splitting)
+    print("C-points=",temp,"F-points=",len(splitting)-temp)
     if (temp == len(splitting)) or (temp == 0):
         return 1
 
