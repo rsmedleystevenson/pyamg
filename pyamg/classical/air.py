@@ -211,10 +211,10 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     levels[-1].complexity['CF'] += kwargs['cost'][0] * C.nnz / float(A.nnz)
     temp = np.sum(splitting)
     npts = np.sum(np.logical_or(splitting == 0,splitting == 1))
-    print("F-points=",np.sum(splitting == 0),"C-points=",np.sum(splitting == 1))
     if (temp == len(splitting)) or (temp == 0):
         return 1
     if npts != len(splitting):
+        print "F-points=",np.sum(splitting == 0)," C-points=",np.sum(splitting == 1)," remainder=",len(splitting)-npts
         raise RuntimeError('CF-splitting failed to label all degrees of freedom as either fine or coarse')
 
     # Generate the interpolation matrix that maps from the coarse-grid to the
