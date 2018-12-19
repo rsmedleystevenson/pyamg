@@ -223,7 +223,7 @@ void drake_CF_matching(const I A_rowptr[], const int A_rowptr_size,
                         M[i] = C_NODE;
                         break;
                     }
-		}
+                }
             }
         }
         splitting[i] = M[i];
