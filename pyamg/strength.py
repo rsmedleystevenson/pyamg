@@ -135,7 +135,7 @@ def distance_strength_of_connection(A, V, theta=2.0, relative_drop=True, cost=[0
     return C
 
 
-def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost=[0]):
+def classical_strength_of_connection(A, theta=0.25, block='block', norm='abs', cost=[0]):
     """
     Return a strength of connection matrix using the classical AMG measure
     An off-diagonal entry A[i,j] is a strong connection iff::
@@ -213,9 +213,10 @@ def classical_strength_of_connection(A, theta=0.25, block=None, norm='abs', cost
         blocksize = A.blocksize[0]
     else:
         blocksize = 1
+        block = None
 
     # Block structure considered before computing SOC
-    if (block == 'block') or sparse.isspmatrix_bsr(A):
+    if block == 'block':
         R, C = A.blocksize
         if (R != C) or (R < 1):
             raise ValueError('Matrix must have square blocks')
