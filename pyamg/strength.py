@@ -269,6 +269,10 @@ def classical_strength_of_connection(A, theta=0.25, block='block', norm='abs', c
 
     # SOC computed based on A as CSR
     else:
+        if not sparse.isspmatrix_csr(A):
+            warn("Implicit conversion of A to csr", sparse.SparseEfficiencyWarning)
+            A = sparse.csr_matrix(A)
+        
         S_rowptr = np.empty_like(A.indptr)
         S_colinds = np.empty_like(A.indices)
         S_data = np.empty_like(A.data)
