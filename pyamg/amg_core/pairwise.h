@@ -215,15 +215,15 @@ void drake_CF_matching(const I A_rowptr[], const int A_rowptr_size,
             }
             if (diag_ind == -1) {
                 M[i] = C_NODE;
-                break;
-            }
-            // Check if strongly connected to F-points
-            for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
-                if ((diag_ind != j) && is_larger(j,diag_ind,A_data,theta) && 
-                    (M[A_colinds[j]] == F_NODE)) {
-                    M[i] = C_NODE;
-                    break;
-                }
+            } else {
+                // Check if strongly connected to F-points
+                for (I j=A_rowptr[i]; j<A_rowptr[i+1]; j++) {
+                    if ((diag_ind != j) && is_larger(j,diag_ind,A_data,theta) && 
+                        (M[A_colinds[j]] == F_NODE)) {
+                        M[i] = C_NODE;
+                        break;
+                    }
+		}
             }
         }
         splitting[i] = M[i];
