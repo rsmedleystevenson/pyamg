@@ -8,7 +8,7 @@ from scipy.sparse import csr_matrix, bsr_matrix, isspmatrix_csr, \
 from pyamg import amg_core
 from pyamg.relaxation.relaxation import boundary_relaxation
 from pyamg.strength import classical_strength_of_connection
-from pyamg.util.utils import filter_matrix_rows, UnAmal
+from pyamg.util.utils import filter_matrix_rows, UnAmal, scale_block_inverse
 import numba
 
 __all__ = ['direct_interpolation', 'standard_interpolation',
@@ -583,32 +583,34 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         bsize = A.blocksize[0]
         Lff = Lff.tobsr(blocksize=[bsize,bsize])
 
-        #rows = np.zeros(Lff.indices.shape[0])
-        #for i in range(0,nf0):
-        #    rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
-        #rows = rows-Lff.indices[:]
-        #diag = np.nonzero(rows == 0)[0]
-        diag = get_diag_ind(Lff)
-        #D_data = Lff.data[diag][:]
-        ## Set diagonal block to zero in Lff
-        #Lff.data[diag][:] = 0.0
-        D_data = np.empty((nf0,bsize,bsize))
-        for i in range(0,nf0):
-            D_data[i] = -pinv_nla_jit(Lff.data[diag[i]])
-            Lff.data[diag[i]][:] = 0.0
-        
+        Lff, Dff_inv = scale_block_inverse(A, blocksize)
+        Lff -= eye(nf,format='csr')
+        ##rows = np.zeros(Lff.indices.shape[0])
+        ##for i in range(0,nf0):
+        ##    rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
+        ##rows = rows-Lff.indices[:]
+        ##diag = np.nonzero(rows == 0)[0]
+        #diag = get_diag_ind(Lff)
+        ##D_data = Lff.data[diag][:]
+        ### Set diagonal block to zero in Lff
+        ##Lff.data[diag][:] = 0.0
         #D_data = np.empty((nf0,bsize,bsize))
         #for i in range(0,nf0):
-        #    offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
-        #    if Lff.indptr[i]+offset != diag[i] & i <= 10:
-        #        print("Comparison:",i,Lff.indptr[i]+offset,diag[i])
-        #    # Save (pseudo)inverse of diagonal block
-        #    #D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
-        #    D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
-        #    # Set diagonal block to zero in Lff
-        #    Lff.data[Lff.indptr[i]+offset][:] = 0.0
-        Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
-        Lff = Dff_inv*Lff
+        #    D_data[i] = -pinv_nla_jit(Lff.data[diag[i]])
+        #    Lff.data[diag[i]][:] = 0.0
+        
+        ##D_data = np.empty((nf0,bsize,bsize))
+        ##for i in range(0,nf0):
+        ##    offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
+        ##    if Lff.indptr[i]+offset != diag[i] & i <= 10:
+        ##        print("Comparison:",i,Lff.indptr[i]+offset,diag[i])
+        ##    # Save (pseudo)inverse of diagonal block
+        ##    #D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
+        ##    D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
+        ##    # Set diagonal block to zero in Lff
+        ##    Lff.data[Lff.indptr[i]+offset][:] = 0.0
+        #Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
+        #Lff = Dff_inv*Lff
     else:
         pts = np.arange(0,nf)
         D_data = -1.0/Lff.diagonal()
