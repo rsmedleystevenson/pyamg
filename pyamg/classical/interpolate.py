@@ -583,7 +583,7 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         bsize = A.blocksize[0]
         Lff = Lff.tobsr(blocksize=[bsize,bsize])
 
-        Lff, Dff_inv = scale_block_inverse(A, blocksize)
+        Lff, Dff_inv = scale_block_inverse(Lff, bsize)
         Lff -= eye(nf,format='csr')
         ##rows = np.zeros(Lff.indices.shape[0])
         ##for i in range(0,nf0):
