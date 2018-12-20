@@ -584,7 +584,7 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         Lff = Lff.tobsr(blocksize=[bsize,bsize])
 
         Lff, Dff_inv = scale_block_inverse(-Lff, bsize)
-        Lff = eye(nf,format='csr')-Lff
+        Lff = eye(nf,format='csr').tobsr(blocksize=[bsize,bsize])-Lff
         ##rows = np.zeros(Lff.indices.shape[0])
         ##for i in range(0,nf0):
         ##    rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
@@ -611,6 +611,9 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
         ##    Lff.data[Lff.indptr[i]+offset][:] = 0.0
         #Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
         #Lff = Dff_inv*Lff
+        Lff     = Lff.tocsr()
+        Lff.eliminate_zeros()
+        Dff_inv = Dff_inv.tocsr()
     else:
         pts = np.arange(0,nf)
         D_data = -1.0/Lff.diagonal()
