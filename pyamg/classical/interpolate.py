@@ -17,25 +17,6 @@ __all__ = ['direct_interpolation', 'standard_interpolation',
            'local_AIR', 'distance_two_interpolation']
 
 
-@numba.jit(cache=True, nopython=True)
-def pinv_nla_jit(A):
-    return np.linalg.pinv(A)
-
-@numba.jit()
-def get_diag_ind(bsr_array):
-    rowPtr=bsr_array.indptr
-    colInd=bsr_array.indices
-    ind=np.empty(rowPtr.shape[0]-1,dtype=np.uint64)
-
-    ii=0
-    for i in range(rowPtr.shape[0]-1):
-      for j in range(rowPtr[i],rowPtr[i+1]):
-        if (i==colInd[j]):
-          ind[ii]=j
-          ii+=1
-
-    return ind[:ii]
-
 def direct_interpolation(A, C, splitting, theta=None, norm='min', cost=[0]):
     """Create prolongator using direct interpolation
 
@@ -581,37 +562,8 @@ def neumann_AIR(A, splitting, theta=0.025, degree=1, post_theta=0, cost=[0]):
     Lff = -C[Fpts,:][:,Fpts]
     if isspmatrix_bsr(A):
         bsize = A.blocksize[0]
-        Lff = Lff.tobsr(blocksize=[bsize,bsize])
-
         Lff, Dff_inv = scale_block_inverse(-Lff, bsize)
-        Lff = eye(nf,format='csr').tobsr(blocksize=[bsize,bsize])-Lff
-        ##rows = np.zeros(Lff.indices.shape[0])
-        ##for i in range(0,nf0):
-        ##    rows[Lff.indptr[i]:Lff.indptr[i+1]] = i
-        ##rows = rows-Lff.indices[:]
-        ##diag = np.nonzero(rows == 0)[0]
-        #diag = get_diag_ind(Lff)
-        ##D_data = Lff.data[diag][:]
-        ### Set diagonal block to zero in Lff
-        ##Lff.data[diag][:] = 0.0
-        #D_data = np.empty((nf0,bsize,bsize))
-        #for i in range(0,nf0):
-        #    D_data[i] = -pinv_nla_jit(Lff.data[diag[i]])
-        #    Lff.data[diag[i]][:] = 0.0
-        
-        ##D_data = np.empty((nf0,bsize,bsize))
-        ##for i in range(0,nf0):
-        ##    offset = np.where(Lff.indices[Lff.indptr[i]:Lff.indptr[i+1]]==i)[0][0]
-        ##    if Lff.indptr[i]+offset != diag[i] & i <= 10:
-        ##        print("Comparison:",i,Lff.indptr[i]+offset,diag[i])
-        ##    # Save (pseudo)inverse of diagonal block
-        ##    #D_data[i] = -np.linalg.pinv(Lff.data[Lff.indptr[i]+offset])
-        ##    D_data[i] = -pinv_nla_jit(Lff.data[Lff.indptr[i]+offset])
-        ##    # Set diagonal block to zero in Lff
-        ##    Lff.data[Lff.indptr[i]+offset][:] = 0.0
-        #Dff_inv = bsr_matrix((D_data,np.arange(0,nf0),np.arange(0,nf0+1)),blocksize=[bsize,bsize])
-        #Lff = Dff_inv*Lff
-        Lff     = Lff.tocsr()
+        Lff = eye(nf,format='csr')-Lff.tocsr()
         Lff.eliminate_zeros()
         Dff_inv = Dff_inv.tocsr()
     else:
