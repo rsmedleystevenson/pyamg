@@ -1,5 +1,5 @@
 """Approximate ideal restriction AMG"""
-from __future__ import absolute_import print_function
+from __future__ import absolute_import, print_function
 
 __docformat__ = "restructuredtext en"
 
