@@ -1,5 +1,5 @@
 """Approximate ideal restriction AMG"""
-from __future__ import absolute_import
+from __future__ import absolute_import print_function
 
 __docformat__ = "restructuredtext en"
 
@@ -214,7 +214,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     if (temp == len(splitting)) or (temp == 0):
         return 1
     if npts != len(splitting):
-        print "F-points=",np.sum(splitting == 0)," C-points=",np.sum(splitting == 1)," remainder=",len(splitting)-npts
+        print("F-points=",np.sum(splitting == 0)," C-points=",np.sum(splitting == 1)," remainder=",len(splitting)-npts)
         raise RuntimeError('CF-splitting failed to label all degrees of freedom as either fine or coarse')
 
     # Generate the interpolation matrix that maps from the coarse-grid to the
