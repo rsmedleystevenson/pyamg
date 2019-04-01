@@ -419,6 +419,7 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     elif (isspmatrix_bsr(P) and (not isspmatrix_bsr(A))):
         A = A.tobsr()
 
+    A.eliminate_zeros()
     levels.append(multilevel_solver.level())
     levels[-1].A = A
     return 0
