@@ -256,24 +256,24 @@ class multilevel_solver:
 
         if self.SC is None: 
             self.SC = 0.0
-            for lvl in self.levels:
-                if lvl.SC is None:
-                    lvl.SC = 0.0
-                    for cost in (lvl.complexity).itervalues():
-                        lvl.SC += cost * (lvl.A.nnz / nnz)
+            # for lvl in self.levels:
+            #     if lvl.SC is None:
+            #         lvl.SC = 0.0
+            #         for cost in (lvl.complexity).itervalues():
+            #             lvl.SC += cost * (lvl.A.nnz / nnz)
 
-                self.SC += lvl.SC
+            #     self.SC += lvl.SC
 
         if verbose:
             for i in range(0,len(self.levels)-1):
                 lvl = self.levels[i]
-                print "Level",i,"setup cost = ","%.3f"%lvl.SC, "WUs"
+                print("Level",i,"setup cost = ","%.3f"%lvl.SC, "WUs")
                 for method, cost in (lvl.complexity).iteritems(): 
                     temp = cost*(lvl.A.nnz / nnz)
                     if method == "RAP":
-                        print "\t",method,"\t\t= ","%.3f"%temp,"WUs"
+                        print("\t",method,"\t\t= ","%.3f"%temp,"WUs")
                     else:
-                        print "\t",method,"\t= ","%.3f"%temp,"WUs"
+                        print("\t",method,"\t= ","%.3f"%temp,"WUs")
 
         return self.SC
 
@@ -641,7 +641,7 @@ class multilevel_solver:
             M = self.aspreconditioner(cycle=cycle)
 
             try:  # try PyAMG style interface which has a residuals parameter
-                return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,
+                return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,\
                              callback=callback, residuals=residuals)[0]
             except:
                 # try the scipy.sparse.linalg.isolve style interface,
@@ -660,7 +660,7 @@ class multilevel_solver:
                         if cb is not None:
                             cb(x)
 
-                return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,
+                return accel(A, b, x0=x0, tol=tol, maxiter=maxiter, M=M,\
                              callback=callback)[0]
 
         else:
@@ -804,8 +804,8 @@ class multilevel_solver:
                 filename = directory + '/cf_' + str(i) + '.vtu'
                 vis_splitting(self.levels[i].verts, self.levels[i].splitting, fname=filename)
         else:
-            print 'Cannot visulize coarse grids: missing dof locations or splittings in multilevel instance. \
-                Pass in parameters verts = [nx2 array of dof locations] and keep = True when creating multilevel instance.'
+            print('Cannot visulize coarse grids: missing dof locations or splittings in multilevel instance. \
+                Pass in parameters verts = [nx2 array of dof locations] and keep = True when creating multilevel instance.')
 
 
 def coarse_grid_solver(solver):
