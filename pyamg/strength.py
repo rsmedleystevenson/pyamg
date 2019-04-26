@@ -221,7 +221,7 @@ def classical_strength_of_connection(A, theta=0.25, block='block', norm='abs', c
         if (R != C) or (R < 1):
             raise ValueError('Matrix must have square blocks')
 
-        N = A.shape[0] / R
+        N = int(A.shape[0] / R)
 
         # SOC based on maximum absolute value element in each block
         if norm == 'abs':
