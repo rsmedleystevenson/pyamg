@@ -1,3 +1,4 @@
+
 #!/usr/bin/env python
 """PyAMG: Algebraic Multigrid Solvers in Python
 
@@ -60,6 +61,7 @@ MAJOR = 3
 MINOR = 0
 MICRO = 2
 ISRELEASED = False
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 INSTALL_REQUIRES = ['nose', 'numpy', 'scipy']
 
@@ -141,7 +143,6 @@ if not release:
                               "before building.")
     else:
         GIT_REVISION = "Unknown"
-    GIT_REVISION = "0000000"
     
 
     if not ISRELEASED:
