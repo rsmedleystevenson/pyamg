@@ -141,6 +141,8 @@ if not release:
                               "before building.")
     else:
         GIT_REVISION = "Unknown"
+    GIT_REVISION = "0000000"
+    
 
     if not ISRELEASED:
         FULLVERSION += '.dev-' + GIT_REVISION[:7]
