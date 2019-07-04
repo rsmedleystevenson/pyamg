@@ -59,7 +59,7 @@ LICENSE = 'BSD'
 MAJOR = 3
 MINOR = 0
 MICRO = 2
-ISRELEASED = False
+ISRELEASED = True
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 INSTALL_REQUIRES = ['nose', 'numpy', 'scipy']
 
