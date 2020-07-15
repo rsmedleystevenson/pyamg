@@ -17,7 +17,7 @@ from pyamg.util.utils import mat_mat_complexity, unpack_arg
 from .interpolate import direct_interpolation, standard_interpolation, \
     distance_two_interpolation, one_point_interpolation, \
     injection_interpolation
-from pyamg.classical.split import *
+from . import split
 from .cr import CR
 
 __all__ = ['ruge_stuben_solver']
@@ -199,7 +199,7 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
     elif fn == 'CR':
         splitting = CR(C, **kwargs)
     elif fn == 'weighted_matching':
-        splitting, soc = weighted_matching(C, **kwargs)
+        splitting, soc = split.weighted_matching(C, **kwargs)
         if soc is not None:
             C = soc
     else:
