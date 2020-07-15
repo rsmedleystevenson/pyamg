@@ -198,6 +198,10 @@ def extend_hierarchy(levels, strength, CF, interpolation, restriction, keep):
         splitting = split.CLJPc(C, **kwargs)
     elif fn == 'CR':
         splitting = CR(C, **kwargs)
+    elif fn == 'weighted_matching':
+        splitting, soc = weighted_matching(C, **kwargs)
+        if soc is not None:
+            C = soc
     else:
         raise ValueError('unknown C/F splitting method (%s)' % CF)
 
