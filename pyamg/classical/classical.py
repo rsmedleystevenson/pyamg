@@ -17,7 +17,7 @@ from pyamg.util.utils import mat_mat_complexity, unpack_arg
 from .interpolate import direct_interpolation, standard_interpolation, \
     distance_two_interpolation, one_point_interpolation, \
     injection_interpolation
-from . import split
+from pyamg.classical.split import *
 from .cr import CR
 
 __all__ = ['ruge_stuben_solver']
