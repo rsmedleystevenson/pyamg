@@ -28,6 +28,7 @@ __all__ = ['AIR_solver']
 
 def AIR_solver(A,
                strength=('classical', {'theta': 0.3 ,'norm': 'min'}),
+               coarsening_degree=1,
                CF='RS',
                interp='one_point',
                restrict='neumann',
@@ -129,7 +130,7 @@ def AIR_solver(A,
     levels[-1].A = A
 
     while len(levels) < max_levels and levels[-1].A.shape[0] > max_coarse:
-        bottom = extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
+        bottom = extend_hierarchy(levels, strength, coarsening_degree, CF, interp, restrict, filter_operator,
                                   coarse_grid_P, coarse_grid_R, keep)
         if bottom:
             break
@@ -140,7 +141,7 @@ def AIR_solver(A,
 
 
 # internal function
-def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
+def extend_hierarchy(levels, strength, coarsening_degree, CF, interp, restrict, filter_operator,
                      coarse_grid_P, coarse_grid_R, keep):
     """ helper function for local methods """
 
@@ -158,6 +159,11 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     # Check if matrix was filtered to be diagonal --> coarsest grid
     if A.nnz == A.shape[0]:
         return 1
+    
+    if coarsening_degree == 2:
+        AC = A*A # Aggressive coarsening
+    else:
+        AC = A
 
     # Zero initial complexities for strength, splitting and interpolation
     levels[-1].complexity['CF'] = 0.0
@@ -168,25 +174,25 @@ def extend_hierarchy(levels, strength, CF, interp, restrict, filter_operator,
     # C[i,j] denote stronger couplings between i and j.
     fn, kwargs = unpack_arg(strength)
     if fn == 'symmetric':
-        C = symmetric_strength_of_connection(A, **kwargs)
+        C = symmetric_strength_of_connection(AC, **kwargs)
     elif fn == 'classical':
-        C = classical_strength_of_connection(A, **kwargs)
+        C = classical_strength_of_connection(AC, **kwargs)
     elif fn == 'distance':
-        C = distance_strength_of_connection(A, **kwargs)
+        C = distance_strength_of_connection(AC, **kwargs)
     elif (fn == 'ode') or (fn == 'evolution'):
-        C = evolution_strength_of_connection(A, **kwargs)
+        C = evolution_strength_of_connection(AC, **kwargs)
     elif fn == 'energy_based':
-        C = energy_based_strength_of_connection(A, **kwargs)
+        C = energy_based_strength_of_connection(AC, **kwargs)
     elif fn == 'algebraic_distance':
-        C = algebraic_distance(A, **kwargs)
+        C = algebraic_distance(AC, **kwargs)
     elif fn == 'affinity':
-        C = affinity_distance(A, **kwargs)
+        C = affinity_distance(AC, **kwargs)
     elif fn is None:
-        C = A
+        C = AC
     else:
         raise ValueError('unrecognized strength of connection method: %s' %
                          str(fn))
-    levels[-1].complexity['strength'] += kwargs['cost'][0] * A.nnz / float(A.nnz)
+    levels[-1].complexity['strength'] += kwargs['cost'][0] * AC.nnz / float(A.nnz)
 
     # Generate the C/F splitting
     fn, kwargs = unpack_arg(CF)
