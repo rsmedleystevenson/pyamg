@@ -192,7 +192,7 @@ class multilevel_solver:
 
         total_nnz = sum([level.A.nnz for level in self.levels])
 
-        output += '  level   unknowns     nonzeros\n'
+        output += '  level   unknowns     nonzeros sparsity\n'
         for n, level in enumerate(self.levels):
             A = level.A
             output += '   %2d   %10d   %10d    %5.2f [%5.2f%%]\n' %\
