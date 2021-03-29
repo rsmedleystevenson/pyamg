@@ -195,8 +195,8 @@ class multilevel_solver:
         output += '  level   unknowns     nonzeros\n'
         for n, level in enumerate(self.levels):
             A = level.A
-            output += '   %2d   %10d   %10d [%5.2f%%]\n' %\
-                (n, A.shape[1], A.nnz,
+            output += '   %2d   %10d   %10d    %10d [%5.2f%%]\n' %\
+                (n, A.shape[1], A.nnz, A.nnz/float(A.shape[1]),
                  (100 * float(A.nnz) / float(total_nnz)))
 
         return output
